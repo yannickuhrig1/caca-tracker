@@ -59,6 +59,14 @@ async function signOut() {
   _currentProfile = null;
 }
 
+async function resetPassword(email) {
+  const sb = getSB(); if (!sb) throw new Error('Supabase non disponible');
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname
+  });
+  if (error) throw new Error(error.message);
+}
+
 async function getSession() {
   const sb = getSB(); if (!sb) return null;
   const { data } = await sb.auth.getSession();
@@ -296,6 +304,7 @@ window.SupabaseClient = {
   signUp,
   signIn,
   signOut,
+  resetPassword,
   savePoopCloud,
   deletePoopCloud,
   syncLocalToCloud,

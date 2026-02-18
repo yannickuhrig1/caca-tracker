@@ -2,7 +2,7 @@
   "name": "Caca-Tracker 3000 Deluxe",
   "short_name": "CacaTracker",
   "description": "Le tracker de selles ultime de Clémence 💩",
-  "start_url": "./Index.Html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#fef3c7",
   "theme_color": "#d97706",
