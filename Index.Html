@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>💩 Les cacas de Clémence</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="CacaTracker" />
+  <meta name="theme-color" content="#d97706" id="theme-color-meta" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+  <!-- Apple Touch Icon PWA iOS -->
+    <link rel="apple-touch-icon" href="https://em-content.zobj.net/source/twitter/376/pile-of-poo_1f4a9.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://em-content.zobj.net/source/twitter/376/pile-of-poo_1f4a9.png">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+    /* ===================== THEMES ===================== */
+    :root {
+      --bg-from: #fef3c7; --bg-via: #fff7ed; --bg-to: #fdf2f8;
+      --header-from: #d97706; --header-to: #ea580c;
+      --card-bg: rgba(255,255,255,0.7);
+      --card-border: rgba(255,255,255,0.5);
+      --text-primary: #0f172a; --text-secondary: #475569;
+      --nav-bg: rgba(255,255,255,0.92);
+      --btn-shadow: #92400e;
+      --accent: #f59e0b;
+      --font: 'Fredoka', system-ui, sans-serif;
+    }
+
+    [data-theme="dark"] {
+      --bg-from: #0f172a; --bg-via: #1e1b4b; --bg-to: #0c0a09;
+      --header-from: #1e293b; --header-to: #312e81;
+      --card-bg: rgba(30,27,75,0.7);
+      --card-border: rgba(99,102,241,0.3);
+      --text-primary: #e2e8f0; --text-secondary: #94a3b8;
+      --nav-bg: rgba(15,23,42,0.95);
+      --btn-shadow: #312e81;
+      --accent: #818cf8;
+      --font: 'Fredoka', system-ui, sans-serif;
+    }
+
+    [data-theme="medical"] {
+      --bg-from: #f0fdf4; --bg-via: #f0f9ff; --bg-to: #f8fafc;
+      --header-from: #059669; --header-to: #0284c7;
+      --card-bg: rgba(255,255,255,0.9);
+      --card-border: rgba(5,150,105,0.2);
+      --text-primary: #134e4a; --text-secondary: #64748b;
+      --nav-bg: rgba(255,255,255,0.97);
+      --btn-shadow: #047857;
+      --accent: #059669;
+      --font: 'Space Mono', monospace;
+    }
+
+    /* ===================== BASE ===================== */
+    * { box-sizing: border-box; }
+    body {
+      font-family: var(--font);
+      background: linear-gradient(135deg, var(--bg-from), var(--bg-via), var(--bg-to));
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding-bottom: max(96px, env(safe-area-inset-bottom, 0px) + 80px);
+      color: var(--text-primary);
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior-y: contain;
+      transition: background 0.4s ease;
+    }
+
+    /* safe area top for iPhone notch */
+    header {
+      padding-top: max(24px, env(safe-area-inset-top, 0px) + 16px) !important;
+    }
+
+    /* safe area bottom for iPhone home indicator */
+    nav {
+      padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    /* ===================== HEADER ===================== */
+    .app-header {
+      background: linear-gradient(135deg, var(--header-from), var(--header-to));
+      transition: background 0.4s ease;
+    }
+
+    /* ===================== CARDS ===================== */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: background 0.4s ease;
+    }
+
+    /* ===================== POOP BTN ===================== */
+    .poop-btn {
+      box-shadow: 0 14px 0 0 var(--btn-shadow);
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .poop-btn:active {
+      transform: translateY(10px) scale(.97);
+      box-shadow: 0 4px 0 0 var(--btn-shadow);
+    }
+
+    /* ===================== TABS ===================== */
+    .tab-content { display:none; }
+    .tab-content.active { display:block; animation: slideUp .22s ease-out; }
+    @keyframes slideUp { from{ opacity:0; transform:translateY(12px);} to{opacity:1; transform:translateY(0);} }
+
+    /* ===================== NAV ===================== */
+    .bottom-nav {
+      background: var(--nav-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--card-border);
+      transition: background 0.4s ease;
+    }
+    .tab-btn { color: var(--text-secondary); border-radius: 1rem; transition: all .15s ease; }
+    .tab-btn.active { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+    /* ===================== TOGGLE ===================== */
+    .toggle-wrap { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+    .toggle-wrap input { display: none; }
+    .toggle-track {
+      width: 52px; height: 28px; background: #e2e8f0; border-radius: 99px;
+      position: relative; transition: background .2s;
+      flex-shrink: 0;
+    }
+    .toggle-wrap input:checked ~ .toggle-track { background: var(--accent); }
+    .toggle-thumb {
+      position: absolute; top: 4px; left: 4px;
+      width: 20px; height: 20px;
+      background: white; border-radius: 50%;
+      transition: transform .2s; box-shadow: 0 2px 6px #0003;
+    }
+    .toggle-wrap input:checked ~ .toggle-track .toggle-thumb { transform: translateX(24px); }
+
+    /* ===================== STAT BARS ===================== */
+    .stat-bar { height: 12px; border-radius: 99px; background: color-mix(in srgb, var(--text-secondary) 15%, transparent); overflow: hidden; }
+    .stat-fill { height: 100%; border-radius: 99px; transition: width .6s cubic-bezier(.4,0,.2,1); }
+    .stat-row { display: grid; grid-template-columns: 75px 1fr 55px; align-items: center; gap: 8px; }
+
+    /* ===================== CONFETTI ===================== */
+    .confetti { position: fixed; pointer-events:none; z-index: 9999; animation: fall 3s linear forwards; font-size: 28px; }
+    @keyframes fall { 0%{transform:translateY(-80px) rotate(0deg);opacity:1;} 100%{transform:translateY(110vh) rotate(720deg);opacity:0;} }
+
+    /* ===================== THEME PICKER ===================== */
+    .theme-dot { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: border-color .15s, transform .15s; flex-shrink: 0; }
+    .theme-dot.selected { border-color: white; transform: scale(1.2); box-shadow: 0 0 0 2px var(--accent); }
+
+    /* ===================== DRAWER ===================== */
+    #drawer { overscroll-behavior: contain; }
+    .drawer-inner { max-height: 92dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+    /* ===================== DARK TEXT ON DARK THEME ===================== */
+    [data-theme="dark"] .text-slate-600 { color: #94a3b8; }
+    [data-theme="dark"] .text-slate-700 { color: #cbd5e1; }
+    [data-theme="dark"] .text-slate-900 { color: #e2e8f0; }
+    [data-theme="dark"] .bg-white\/60, [data-theme="dark"] .bg-white\/70 {
+      background: rgba(30,27,75,0.7) !important;
+    }
+    [data-theme="dark"] .border-gray-200 { border-color: rgba(99,102,241,0.2); }
+    [data-theme="dark"] #drawer > div { background: #1e1b4b; }
+    [data-theme="dark"] .bg-white { background: #1e1b4b !important; }
+    [data-theme="dark"] .border-b { border-color: rgba(99,102,241,0.2); }
+    [data-theme="dark"] textarea, [data-theme="dark"] input[type="datetime-local"] {
+      background: #0f172a; color: #e2e8f0; border-color: #4338ca;
+    }
+    [data-theme="dark"] .text-slate-800 { color: #e2e8f0; }
+    [data-theme="dark"] .bg-gray-200 { background: #334155; }
+    [data-theme="dark"] .bg-amber-50 { background: #1e1b4b; }
+    [data-theme="dark"] .bg-green-50 { background: rgba(5,150,105,0.15); }
+    [data-theme="dark"] .bg-red-50 { background: rgba(239,68,68,0.15); }
+    [data-theme="dark"] .bg-yellow-50 { background: rgba(234,179,8,0.12); }
+    [data-theme="dark"] .bg-orange-50 { background: rgba(249,115,22,0.12); }
+    [data-theme="dark"] .bg-gray-50 { background: #1e293b; }
+    [data-theme="dark"] .bg-amber-100 { background: rgba(245,158,11,0.15); }
+    [data-theme="dark"] .texture-btn { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+    [data-theme="dark"] .texture-btn.selected { border-color: #818cf8 !important; background: #312e81 !important; }
+
+    /* MEDICAL THEME */
+    [data-theme="medical"] body, [data-theme="medical"] { font-family: 'Space Mono', monospace; }
+    [data-theme="medical"] h1, [data-theme="medical"] h3, [data-theme="medical"] h4 { letter-spacing: -0.02em; }
+    [data-theme="medical"] .poop-btn { box-shadow: 0 14px 0 0 #047857; }
+
+    /* ===================== KAWAII THEME ===================== */
+    [data-theme="kawaii"] {
+      --bg-from: #fce4ec; --bg-via: #fce4ec; --bg-to: #f3e5f5;
+      --header-from: #e91e8c; --header-to: #9c27b0;
+      --card-bg: rgba(255,255,255,0.78);
+      --card-border: rgba(233,30,140,0.18);
+      --text-primary: #4a0030; --text-secondary: #880e4f;
+      --nav-bg: rgba(255,240,248,0.97);
+      --btn-shadow: #ad1457;
+      --accent: #e91e8c;
+      --font: 'Fredoka', system-ui, sans-serif;
+    }
+    [data-theme="kawaii"] .poop-btn { box-shadow: 0 14px 0 0 #ad1457; }
+    [data-theme="kawaii"] .texture-btn.selected { border-color: #e91e8c !important; background: #fce4ec !important; }
+
+    /* ===================== FORÊT THEME ===================== */
+    [data-theme="foret"] {
+      --bg-from: #e8f5e9; --bg-via: #f1f8e9; --bg-to: #e0f2f1;
+      --header-from: #2e7d32; --header-to: #558b2f;
+      --card-bg: rgba(255,255,255,0.78);
+      --card-border: rgba(67,160,71,0.2);
+      --text-primary: #1b5e20; --text-secondary: #388e3c;
+      --nav-bg: rgba(240,249,240,0.97);
+      --btn-shadow: #1b5e20;
+      --accent: #43a047;
+      --font: 'Fredoka', system-ui, sans-serif;
+    }
+    [data-theme="foret"] .poop-btn { box-shadow: 0 14px 0 0 #1b5e20; }
+    [data-theme="foret"] .texture-btn.selected { border-color: #43a047 !important; background: #e8f5e9 !important; }
+
+    /* ===================== OCÉAN THEME ===================== */
+    [data-theme="ocean"] {
+      --bg-from: #e0f7fa; --bg-via: #e3f2fd; --bg-to: #e8eaf6;
+      --header-from: #0277bd; --header-to: #00838f;
+      --card-bg: rgba(255,255,255,0.78);
+      --card-border: rgba(2,136,209,0.2);
+      --text-primary: #01579b; --text-secondary: #0277bd;
+      --nav-bg: rgba(224,247,250,0.97);
+      --btn-shadow: #01579b;
+      --accent: #0288d1;
+      --font: 'Fredoka', system-ui, sans-serif;
+    }
+    [data-theme="ocean"] .poop-btn { box-shadow: 0 14px 0 0 #01579b; }
+    [data-theme="ocean"] .texture-btn.selected { border-color: #0288d1 !important; background: #e0f7fa !important; }
+
+    /* ===================== INSTALL BANNER ===================== */
+    #install-banner {
+      position: fixed; bottom: max(80px, env(safe-area-inset-bottom,0px) + 80px);
+      left: 16px; right: 16px; z-index: 200;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      color: white; padding: 14px 18px; border-radius: 20px;
+      box-shadow: 0 8px 32px #0008;
+      display: flex; align-items: center; gap: 12px;
+      animation: slideUp .3s ease-out;
+    }
+    #install-banner.hidden { display: none; }
+  </style>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+
+  <!-- PWA Install Banner (iOS) -->
+  <div id="install-banner" class="hidden">
+    <span class="text-3xl">💩</span>
+    <div class="flex-1 text-sm">
+      <div class="font-bold">Installer l'app</div>
+      <div class="opacity-75 text-xs">Appuie sur <i class="fas fa-share-from-square"></i> puis "Sur l'écran d'accueil"</div>
+    </div>
+    <button id="dismiss-banner" class="text-white/60 text-xl px-2">✕</button>
+  </div>
+
+  <!-- HEADER -->
+  <header class="app-header px-6 pb-5 text-white shadow-2xl sticky top-0 z-50 rounded-b-[2rem]">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="bg-white/20 p-3 rounded-[1.25rem]">
+          <i class="fas fa-poop text-3xl"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold leading-tight">Les cacas de Clémence 💖</h1>
+          <p class="text-xs opacity-80">Caca‑Tracker 3000 Deluxe</p>
+        </div>
+      </div>
+      <div class="flex flex-col items-end gap-2">
+        <div class="flex items-center gap-2">
+          <div id="streak-badge" class="hidden bg-red-500 px-3 py-1 rounded-full flex items-center gap-1 text-sm font-bold">
+            <i class="fas fa-fire"></i><span id="streak-val">0</span> j 🔥
+          </div>
+          <button id="user-badge" class="bg-white/20 px-3 py-1.5 rounded-full flex items-center gap-1.5 text-sm font-bold hover:bg-white/30 transition">
+            <span id="user-avatar">👤</span>
+            <span id="user-name" class="text-xs max-w-[70px] truncate">Connexion</span>
+          </button>
+        </div>
+        <!-- Theme picker -->
+        <div class="flex flex-col gap-1 items-end">
+          <div class="flex gap-2 items-center">
+            <button class="theme-dot selected" data-theme-btn="default" style="background:linear-gradient(135deg,#d97706,#ea580c)" title="Chaud 🟠"></button>
+            <button class="theme-dot" data-theme-btn="dark" style="background:linear-gradient(135deg,#1e1b4b,#312e81)" title="Dark 🌙"></button>
+            <button class="theme-dot" data-theme-btn="medical" style="background:linear-gradient(135deg,#059669,#0284c7)" title="Médical 🩺"></button>
+          </div>
+          <div class="flex gap-2 items-center">
+            <button class="theme-dot" data-theme-btn="kawaii" style="background:linear-gradient(135deg,#e91e8c,#9c27b0)" title="Kawaii 🌸"></button>
+            <button class="theme-dot" data-theme-btn="foret" style="background:linear-gradient(135deg,#2e7d32,#558b2f)" title="Forêt 🌿"></button>
+            <button class="theme-dot" data-theme-btn="ocean" style="background:linear-gradient(135deg,#0277bd,#00838f)" title="Océan 🌊"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto px-4 py-6">
+
+    <!-- ====== DASHBOARD ====== -->
+    <section id="dashboard-tab" class="tab-content active">
+      <div class="mb-5 text-center">
+        <div class="text-sm opacity-70">✨ Mission du jour :</div>
+        <div class="font-bold text-lg">Que Clémence règne sur les statistiques 💩</div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="card p-5 rounded-[2rem] shadow-xl text-center">
+          <div class="text-4xl font-bold mb-1" style="color:var(--accent)" id="today-count">0</div>
+          <div class="text-sm" style="color:var(--text-secondary)">Aujourd'hui</div>
+        </div>
+        <div class="card p-5 rounded-[2rem] shadow-xl text-center">
+          <div class="text-4xl font-bold text-emerald-500 mb-1" id="total-count">0</div>
+          <div class="text-sm" style="color:var(--text-secondary)">Total</div>
+        </div>
+      </div>
+
+      <div class="card p-5 rounded-[2rem] shadow mb-6 text-center">
+        <div class="text-3xl font-bold text-blue-400 mb-1" id="mass">0.0 kg</div>
+        <div class="text-sm" style="color:var(--text-secondary)">⚖️ Tonnage estimé</div>
+      </div>
+
+      <div class="flex justify-center mb-8">
+        <button id="poop-btn" class="poop-btn w-36 h-36 rounded-full text-6xl flex items-center justify-center"
+          style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">
+          💩
+        </button>
+      </div>
+
+      <!-- Blague du jour -->
+      <div class="card p-4 rounded-[2rem] shadow mb-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-2xl">🤣</span>
+          <h4 class="font-bold text-sm">Blague de merde du jour</h4>
+        </div>
+        <p id="daily-joke" class="text-sm italic opacity-80 mb-3">—</p>
+        <button id="random-joke-btn" class="w-full py-2 rounded-[1rem] text-sm font-bold transition"
+          style="background:color-mix(in srgb, var(--accent) 15%, transparent);color:var(--accent)">
+          🔄 Autre blague
+        </button>
+      </div>
+
+      <!-- Prédiction -->
+      <div class="card p-4 rounded-[2rem] shadow mb-4 flex items-center gap-3">
+        <span class="text-2xl flex-shrink-0">🔮</span>
+        <p id="prediction-text" class="text-sm font-bold" style="color:var(--text-secondary)">Ajoute des cacas pour obtenir une prédiction…</p>
+      </div>
+
+      <div class="card p-5 rounded-[2rem] shadow">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-lg">7 derniers jours</h3>
+          <span id="chart-mode" class="text-xs opacity-60">…</span>
+        </div>
+        <div style="height:200px; position:relative;">
+          <canvas id="week-chart"></canvas>
+          <div id="chart-fallback" class="hidden text-sm text-center py-12 opacity-60">
+            Graphique non disponible (Chart.js absent)
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== STATS ====== -->
+    <section id="stats-tab" class="tab-content">
+      <h3 class="font-bold text-2xl mb-1 text-center">📊 Clémence vs le Monde</h3>
+      <p class="text-center text-xs opacity-60 mb-6">Études épidémiologiques digestives 2019-2023</p>
+
+      <!-- Fréquence -->
+      <div class="card rounded-[2rem] p-5 mb-4 shadow">
+        <h4 class="font-bold mb-1">💩 Fréquence quotidienne</h4>
+        <p class="text-xs opacity-60 mb-4">Moyenne sur tes 7 derniers jours</p>
+        <div class="space-y-3">
+          <div class="stat-row">
+            <span class="text-sm font-bold" style="color:var(--accent)">Toi 🫵</span>
+            <div class="stat-bar"><div id="bar-me" class="stat-fill" style="width:0%;background:var(--accent)"></div></div>
+            <span class="text-sm font-bold" id="val-me">0.0/j</span>
+          </div>
+          <div class="stat-row">
+            <span class="text-sm font-bold text-blue-500">🇫🇷 France</span>
+            <div class="stat-bar"><div class="stat-fill bg-blue-400" style="width:50%"></div></div>
+            <span class="text-sm font-bold text-blue-500">1.1/j</span>
+          </div>
+          <div class="stat-row">
+            <span class="text-sm font-bold text-emerald-500">🌍 Monde</span>
+            <div class="stat-bar"><div class="stat-fill bg-emerald-400" style="width:45%"></div></div>
+            <span class="text-sm font-bold text-emerald-500">1.0/j</span>
+          </div>
+        </div>
+        <div id="freq-verdict" class="mt-4 text-center text-sm font-bold p-3 rounded-2xl opacity-90">—</div>
+      </div>
+
+      <!-- Transit -->
+      <div class="card rounded-[2rem] p-5 mb-4 shadow">
+        <h4 class="font-bold mb-1">⏱️ Transit intestinal moyen</h4>
+        <p class="text-xs opacity-60 mb-4">Intervalle moyen entre tes cacas</p>
+        <div class="space-y-3">
+          <div class="stat-row">
+            <span class="text-sm font-bold" style="color:var(--accent)">Toi 🫵</span>
+            <div class="stat-bar"><div id="bar-transit-me" class="stat-fill" style="width:0%;background:var(--accent)"></div></div>
+            <span class="text-sm font-bold" id="val-transit-me">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="text-sm font-bold text-blue-500">🇫🇷 France</span>
+            <div class="stat-bar"><div class="stat-fill bg-blue-400" style="width:55%"></div></div>
+            <span class="text-sm font-bold text-blue-500">~22h</span>
+          </div>
+          <div class="stat-row">
+            <span class="text-sm font-bold text-emerald-500">🌍 Monde</span>
+            <div class="stat-bar"><div class="stat-fill bg-emerald-400" style="width:50%"></div></div>
+            <span class="text-sm font-bold text-emerald-500">~24h</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Textures -->
+      <div class="card rounded-[2rem] p-5 mb-4 shadow">
+        <h4 class="font-bold mb-3">🎨 Répartition des textures</h4>
+        <div id="texture-stats" class="space-y-2"></div>
+        <div class="mt-3 p-3 rounded-2xl text-xs font-bold" style="background:rgba(5,150,105,0.12);color:#059669">
+          ✅ Idéal médical : 75–85% Normal, &lt;5% Liquide/Explosif
+        </div>
+      </div>
+
+      <!-- Graphiques avancés (injectés par charts.js) -->
+      <div id="advanced-charts-container" class="mb-4"></div>
+
+      <!-- Fun facts -->
+      <div class="rounded-[2rem] p-5 text-white shadow" style="background:linear-gradient(135deg,#7c3aed,#db2777)">
+        <h4 class="font-bold text-lg mb-3">🌟 Le saviez-vous ?</h4>
+        <ul class="space-y-2 text-sm list-none">
+          <li>💩 Un Français produit ~<strong>150 g</strong> de selles/jour</li>
+          <li>🌍 La moyenne mondiale est de <strong>128 g/jour</strong></li>
+          <li>⏳ Le transit dure entre <strong>12 et 72h</strong> selon les individus</li>
+          <li>🏆 Record de rétention documenté : <strong>28 jours</strong></li>
+          <li>🔬 L'<strong>Échelle de Bristol</strong> classe 7 types de selles</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ====== BADGES ====== -->
+    <section id="badges-tab" class="tab-content">
+      <h3 class="font-bold text-2xl mb-6 text-center">🏆 Badges de Clémence</h3>
+      <div class="grid grid-cols-2 gap-4" id="badges-grid">
+        <!-- injected by JS -->
+      </div>
+    </section>
+
+    <!-- ====== SOCIAL ====== -->
+    <section id="social-tab" class="tab-content">
+      <!-- Non connecté -->
+      <div id="social-guest" class="text-center py-12">
+        <div class="text-6xl mb-4">👥</div>
+        <h3 class="font-bold text-xl mb-2">Rejoins tes amies !</h3>
+        <p class="text-sm opacity-60 mb-6">Crée un compte pour comparer tes stats, rejoindre des groupes et te challenger avec tes copines.</p>
+        <button id="social-login-btn" class="w-full py-4 rounded-[1.25rem] font-bold text-white"
+          style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">
+          👤 Se connecter / Créer un compte
+        </button>
+      </div>
+
+      <!-- Connecté -->
+      <div id="social-connected" class="hidden space-y-4">
+
+        <!-- Mes groupes -->
+        <div class="card p-5 rounded-[2rem] shadow">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-bold">👥 Mes groupes</h4>
+            <button id="create-group-btn" class="text-xs font-bold px-3 py-1.5 rounded-full"
+              style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">
+              + Créer
+            </button>
+          </div>
+          <div id="groups-list" class="space-y-2 mb-3">
+            <div class="text-sm opacity-60 text-center py-2">Aucun groupe</div>
+          </div>
+          <div class="flex gap-2">
+            <input id="invite-code-input" type="text" placeholder="Code d'invitation (ex: A1B2C3D4)"
+              class="flex-1 p-3 border rounded-[1rem] text-sm focus:outline-none focus:ring-2"
+              style="border-color:var(--card-border);background:var(--card-bg);color:var(--text-primary)" maxlength="8" />
+            <button id="join-group-btn" class="px-4 py-2 rounded-[1rem] font-bold text-white text-sm"
+              style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">Rejoindre</button>
+          </div>
+        </div>
+
+        <!-- Groupe sélectionné -->
+        <div id="group-content" class="hidden space-y-4">
+
+          <!-- Sélecteur de groupe -->
+          <div class="flex items-center gap-2">
+            <select id="group-selector" class="flex-1 p-3 rounded-[1rem] text-sm font-bold border focus:outline-none"
+              style="border-color:var(--card-border);background:var(--card-bg);color:var(--text-primary)"></select>
+            <button id="share-group-btn" class="p-3 rounded-[1rem]"
+              style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">
+              <i class="fas fa-share-nodes"></i>
+            </button>
+          </div>
+
+          <!-- Podium -->
+          <div class="card p-5 rounded-[2rem] shadow">
+            <h4 class="font-bold mb-4 text-center">🏆 Podium du mois</h4>
+            <div id="podium-container" class="flex items-end justify-center gap-3 mb-4" style="height:120px"></div>
+            <div id="podium-list" class="space-y-2"></div>
+          </div>
+
+          <!-- Comparatif 7 jours -->
+          <div class="card p-5 rounded-[2rem] shadow">
+            <h4 class="font-bold mb-4">📊 Comparatif 7 jours</h4>
+            <div id="compare-chart" class="space-y-3"></div>
+          </div>
+
+          <!-- Défi de la semaine -->
+          <div id="challenge-card" class="card p-5 rounded-[2rem] shadow">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="font-bold">🎯 Défi de la semaine</h4>
+              <span id="challenge-countdown" class="text-xs opacity-60"></span>
+            </div>
+            <p id="challenge-title" class="text-sm mb-3 font-bold" style="color:var(--accent)">Qui fera le plus de cacas cette semaine ?</p>
+            <div id="challenge-bars" class="space-y-2"></div>
+          </div>
+
+          <!-- Feed d'activité -->
+          <div class="card p-5 rounded-[2rem] shadow">
+            <h4 class="font-bold mb-3">📣 Activité du groupe</h4>
+            <div id="activity-feed" class="space-y-2">
+              <div class="text-sm opacity-60 text-center py-2">Aucune activité récente</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== HISTORIQUE ====== -->
+    <section id="admin-tab" class="tab-content">
+      <h3 class="font-bold text-xl mb-4">📜 Historique</h3>
+      <div id="history-list" class="space-y-3 mb-6" style="max-height:60vh;overflow-y:auto;"></div>
+      <div class="space-y-3">
+        <button id="export-btn" class="w-full bg-blue-500 text-white py-3 rounded-[1.25rem] font-bold text-sm">📤 Exporter JSON</button>
+        <button id="clear-btn" class="w-full bg-red-500 text-white py-3 rounded-[1.25rem] font-bold text-sm">🗑️ Tout supprimer</button>
+      </div>
+      <div class="mt-5 card p-4 rounded-[1.5rem] text-xs text-center opacity-50 space-y-1">
+        <div>💩 Les cacas de Clémence</div>
+        <div>Version 2.0.1 — Février 2026</div>
+        <div>Fait avec ❤️ par Papa</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- NAV BOTTOM -->
+  <nav class="bottom-nav fixed bottom-0 left-0 right-0 p-3 z-40">
+    <div class="max-w-md mx-auto flex justify-around">
+      <button class="tab-btn active py-2 px-4 flex flex-col items-center gap-1" data-tab="dashboard">
+        <i class="fas fa-home text-xl"></i><span class="text-xs">Accueil</span>
+      </button>
+      <button class="tab-btn py-2 px-4 flex flex-col items-center gap-1" data-tab="stats">
+        <i class="fas fa-chart-bar text-xl"></i><span class="text-xs">Stats</span>
+      </button>
+      <button class="tab-btn py-2 px-4 flex flex-col items-center gap-1" data-tab="badges">
+        <i class="fas fa-trophy text-xl"></i><span class="text-xs">Badges</span>
+      </button>
+      <button class="tab-btn py-2 px-4 flex flex-col items-center gap-1" data-tab="admin">
+        <i class="fas fa-list text-xl"></i><span class="text-xs">Historique</span>
+      </button>
+      <button class="tab-btn py-2 px-4 flex flex-col items-center gap-1" data-tab="social">
+        <i class="fas fa-users text-xl"></i><span class="text-xs">Social</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- AUTH MODAL -->
+  <div id="auth-modal" class="fixed inset-0 z-[60] hidden" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);">
+    <div class="flex items-center justify-center h-full p-4">
+      <div id="auth-inner" class="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden">
+
+        <!-- Tabs -->
+        <div class="flex border-b border-gray-100">
+          <button id="auth-tab-login" class="flex-1 py-4 text-sm font-bold border-b-2 transition" style="border-color:var(--accent);color:var(--accent)">
+            Connexion
+          </button>
+          <button id="auth-tab-signup" class="flex-1 py-4 text-sm font-bold border-b-2 border-transparent opacity-60 transition">
+            Créer un compte
+          </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+
+          <!-- LOGIN FORM -->
+          <div id="form-login" class="space-y-3">
+            <input id="auth-email" type="email" placeholder="Email" autocomplete="email"
+              class="w-full p-3 border border-gray-200 rounded-[1rem] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            <input id="auth-password" type="password" placeholder="Mot de passe" autocomplete="current-password"
+              class="w-full p-3 border border-gray-200 rounded-[1rem] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            <div id="auth-error" class="hidden text-xs text-red-500 font-bold px-1"></div>
+            <button id="auth-submit" class="w-full py-4 rounded-[1.25rem] font-bold text-white"
+              style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">
+              Se connecter
+            </button>
+          </div>
+
+          <!-- SIGNUP FORM (hidden by default) -->
+          <div id="form-signup" class="space-y-3 hidden">
+            <input id="signup-username" type="text" placeholder="Pseudo (ex: Clémence)" maxlength="20"
+              class="w-full p-3 border border-gray-200 rounded-[1rem] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            <input id="signup-email" type="email" placeholder="Email" autocomplete="email"
+              class="w-full p-3 border border-gray-200 rounded-[1rem] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            <input id="signup-password" type="password" placeholder="Mot de passe (min. 6 caractères)"
+              class="w-full p-3 border border-gray-200 rounded-[1rem] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            <div>
+              <div class="text-xs font-bold mb-2 opacity-70">Avatar</div>
+              <div id="avatar-picker" class="flex gap-2 flex-wrap">
+                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400 selected" data-avatar="💩">💩</button>
+                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="🦄">🦄</button>
+                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="🌸">🌸</button>
+                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="🔥">🔥</button>
+                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="⭐">⭐</button>
+                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="🎀">🎀</button>
+              </div>
+            </div>
+            <div id="signup-error" class="hidden text-xs text-red-500 font-bold px-1"></div>
+            <button id="signup-submit" class="w-full py-4 rounded-[1.25rem] font-bold text-white"
+              style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">
+              Créer mon compte
+            </button>
+          </div>
+
+          <button id="auth-guest-btn" class="w-full py-3 text-sm opacity-60 font-bold">
+            Continuer sans compte →
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE MODAL -->
+  <div id="profile-modal" class="fixed inset-0 z-[60] hidden" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);">
+    <div class="flex items-center justify-center h-full p-4">
+      <div class="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-6 space-y-4">
+        <div class="text-center">
+          <div id="profile-avatar-display" class="text-5xl mb-2">💩</div>
+          <div id="profile-username-display" class="font-bold text-xl"></div>
+          <div id="profile-email-display" class="text-xs opacity-60 mt-1"></div>
+        </div>
+        <div class="p-3 rounded-2xl text-sm text-center" style="background:color-mix(in srgb,var(--accent) 10%,transparent)">
+          <span id="profile-stats-display"></span>
+        </div>
+        <button id="sync-cloud-btn" class="w-full py-3 rounded-[1.25rem] font-bold text-sm"
+          style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">
+          ☁️ Synchroniser mes données
+        </button>
+        <button id="signout-btn" class="w-full py-3 rounded-[1.25rem] font-bold text-sm bg-red-50 text-red-500">
+          🚪 Se déconnecter
+        </button>
+        <button id="close-profile-modal" class="w-full py-2 text-sm opacity-50">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DRAWER -->
+  <div id="drawer" class="fixed inset-0 z-50 hidden" style="background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);">
+    <div class="flex items-end justify-center h-full" id="drawer-outer">
+      <div class="drawer-inner bg-white w-full max-w-md rounded-t-[2.5rem] shadow-2xl" id="drawer-inner">
+
+        <!-- Handle -->
+        <div class="flex justify-center pt-4 pb-2">
+          <div class="w-12 h-1.5 rounded-full bg-gray-200"></div>
+        </div>
+
+        <div class="px-6 pb-3 border-b border-gray-100">
+          <h2 class="text-2xl font-bold text-center text-slate-900">Nouveau 💩</h2>
+          <p class="text-center text-slate-500 text-sm">Texture + couleur obligatoires</p>
+        </div>
+
+        <div class="p-6 space-y-5">
+
+          <!-- Toggle rétro -->
+          <div class="bg-amber-50 border border-amber-200 rounded-[1.5rem] p-4">
+            <label class="toggle-wrap" for="retro-chk">
+              <input type="checkbox" id="retro-chk">
+              <div class="toggle-track"><div class="toggle-thumb"></div></div>
+              <div>
+                <div class="font-bold text-sm text-slate-800">⏪ Caca en retard</div>
+                <div class="text-xs text-slate-500">Saisir date/heure passée</div>
+              </div>
+            </label>
+            <div id="retro-date-wrap" class="hidden mt-3">
+              <label class="text-xs font-bold text-slate-600 block mb-1">Date et heure du caca :</label>
+              <input type="datetime-local" id="retro-date"
+                class="w-full p-3 border border-amber-300 bg-white rounded-[1rem] text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            </div>
+          </div>
+
+          <!-- Texture -->
+          <div>
+            <div class="text-sm font-bold mb-3 text-slate-800">Texture <span id="texture-err" class="text-red-500 text-xs hidden">← obligatoire</span></div>
+            <div class="grid grid-cols-3 gap-3">
+              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="normal">💩<div class="text-xs mt-1">Normal</div></button>
+              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="dur">🗿<div class="text-xs mt-1">Dur</div></button>
+              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="mou">🍮<div class="text-xs mt-1">Mou</div></button>
+              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="spray">💦<div class="text-xs mt-1">Spray</div></button>
+              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="liquide">🌊<div class="text-xs mt-1">Liquide</div></button>
+              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="explosif">💥<div class="text-xs mt-1">Explosif</div></button>
+            </div>
+          </div>
+
+          <!-- Couleur -->
+          <div>
+            <div class="text-sm font-bold mb-3 text-slate-800">Couleur <span id="color-err" class="text-red-500 text-xs hidden">← obligatoire</span></div>
+            <div class="flex gap-3 flex-wrap">
+              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:#8B4513" data-color="marron" title="Marron"></button>
+              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:#FFD700" data-color="jaune" title="Jaune"></button>
+              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:#228B22" data-color="vert" title="Vert"></button>
+              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:#111" data-color="noir" title="Noir"></button>
+              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:linear-gradient(45deg,#ff69b4,#ffd700,#00ced1,#9370db)" data-color="arc-en-ciel" title="Arc-en-ciel"></button>
+              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:#ef4444" data-color="rouge" title="Rouge"></button>
+            </div>
+          </div>
+
+          <!-- Note -->
+          <div>
+            <div class="text-sm font-bold mb-2 text-slate-800">Note (optionnel)</div>
+            <textarea id="comment" class="w-full p-3 border border-gray-200 rounded-[1.25rem] resize-none text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400" rows="2" placeholder="Ex: Record perso !"></textarea>
+          </div>
+
+          <!-- Boutons -->
+          <div class="flex gap-3 pb-2">
+            <button id="cancel-drawer" class="flex-1 bg-gray-100 text-slate-700 py-4 rounded-[1.25rem] font-bold">Annuler</button>
+            <button id="save-poop" class="flex-1 text-white py-4 rounded-[1.25rem] font-bold" style="background:linear-gradient(135deg,#10b981,#059669)">💥 Valider</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // ===================================================
+  //  UTILS
+  // ===================================================
+  const $id = id => document.getElementById(id);
+  const $debug = msg => {
+    const el = $id('debug-box');
+    if (!el) return;
+    el.textContent = (String(msg) + '\n' + el.textContent).slice(0, 3000);
+  };
+  window.addEventListener('error', e => $debug('❌ ' + e.message));
+  window.addEventListener('unhandledrejection', e => $debug('❌ promise: ' + (e.reason?.message || e.reason)));
+
+  // ===================================================
+  //  STORAGE
+  // ===================================================
+  const STORAGE_KEY = 'cacaTracker.v2';
+  let _memFallback = null;
+
+  function lsAvailable() {
+    try { localStorage.setItem('__t','1'); localStorage.removeItem('__t'); return true; } catch { return false; }
+  }
+  const LS_OK = lsAvailable();
+
+  function loadState() {
+    try {
+      const raw = LS_OK ? localStorage.getItem(STORAGE_KEY) : null;
+      return raw ? JSON.parse(raw) : _memFallback;
+    } catch(e) { $debug('load err: ' + e.message); return null; }
+  }
+
+  function saveState(s) {
+    try {
+      if (LS_OK) localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+      else _memFallback = s;
+    } catch(e) { $debug('save err: ' + e.message); _memFallback = s; }
+  }
+
+  // ===================================================
+  //  STATE
+  // ===================================================
+  let state = { logs: [], theme: 'default' };
+  let selectedTexture = null;
+  let selectedColor = null;
+  let weekChart = null;
+
+  // ===================================================
+  //  INIT
+  // ===================================================
+  document.addEventListener('DOMContentLoaded', () => {
+    // Load
+    const saved = loadState();
+    if (saved?.logs && Array.isArray(saved.logs)) state = { ...state, ...saved };
+
+    // Theme
+    applyTheme(state.theme || 'default');
+
+    // Datetime max
+    refreshRetroMax();
+
+    // Status
+    $id('status-pill') && ($id('status-pill').textContent = [LS_OK ? 'localStorage ✅' : 'Mémoire ⚠️', navigator.onLine ? '🌐' : '✈️'].join(' '));
+
+    // Events
+    setupEvents();
+    buildBadgesGrid();
+    renderAll();
+    initChart();
+
+    // PWA
+    registerSW();
+    showInstallBanner();
+
+    // Modules v2.0 init
+    window.JokesModule?.displayDailyJoke();
+
+    // Supabase : restaurer session si déjà connecté
+    if (window.SupabaseClient) {
+      window.SupabaseClient.getSession().then(profile => {
+        if (profile) {
+          updateUserBadge(profile);
+          $debug('☁️ session restored: ' + profile.username);
+        }
+      }).catch(() => {});
+    }
+
+    $debug('✅ ready. logs=' + state.logs.length);
+  });
+
+  // ===================================================
+  //  SERVICE WORKER
+  // ===================================================
+  function registerSW() {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('./sw.js').then(r => {
+      $debug('SW registered');
+    }).catch(e => $debug('SW err: ' + e.message));
+  }
+
+  function showInstallBanner() {
+    // iOS standalone check
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isStandalone = window.navigator.standalone === true;
+    const dismissed = LS_OK && localStorage.getItem('install-dismissed');
+    if (isIos && !isStandalone && !dismissed) {
+      setTimeout(() => $id('install-banner')?.classList.remove('hidden'), 2000);
+    }
+  }
+
+  // ===================================================
+  //  EVENTS
+  // ===================================================
+  function setupEvents() {
+    $id('poop-btn').addEventListener('click', openDrawer);
+    $id('cancel-drawer').addEventListener('click', closeDrawer);
+    $id('save-poop').addEventListener('click', addPoop);
+    $id('export-btn').addEventListener('click', exportData);
+    $id('clear-btn').addEventListener('click', clearAll);
+
+    // Close drawer on backdrop click
+    $id('drawer-outer').addEventListener('click', e => {
+      if (e.target === $id('drawer-outer')) closeDrawer();
+    });
+
+    // Tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    // Texture buttons
+    document.querySelectorAll('.texture-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedTexture = btn.dataset.texture;
+        document.querySelectorAll('.texture-btn').forEach(b => b.classList.remove('border-amber-500', 'bg-amber-100', 'selected'));
+        btn.classList.add('border-amber-500', 'bg-amber-100', 'selected');
+        $id('texture-err')?.classList.add('hidden');
+      });
+    });
+
+    // Color buttons
+    document.querySelectorAll('.color-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedColor = btn.dataset.color;
+        document.querySelectorAll('.color-btn').forEach(b => b.style.transform = '');
+        btn.style.transform = 'scale(1.25)';
+        btn.style.outline = '3px solid var(--accent)';
+        document.querySelectorAll('.color-btn').forEach(b => { if (b !== btn) b.style.outline = ''; });
+        $id('color-err')?.classList.add('hidden');
+      });
+    });
+
+    // Retro toggle
+    $id('retro-chk').addEventListener('change', e => {
+      $id('retro-date-wrap').classList.toggle('hidden', !e.target.checked);
+      if (e.target.checked) refreshRetroMax();
+    });
+
+    // Theme dots
+    document.querySelectorAll('[data-theme-btn]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const t = btn.dataset.themeBtn;
+        applyTheme(t);
+        state.theme = t;
+        saveState(state);
+        document.querySelectorAll('[data-theme-btn]').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+      });
+    });
+
+    // Install banner dismiss
+    $id('dismiss-banner')?.addEventListener('click', () => {
+      $id('install-banner').classList.add('hidden');
+      if (LS_OK) localStorage.setItem('install-dismissed', '1');
+    });
+
+    // Blague aléatoire
+    $id('random-joke-btn')?.addEventListener('click', () => window.JokesModule?.showRandomJoke());
+
+    // User badge → ouvre auth ou profil
+    $id('user-badge')?.addEventListener('click', () => {
+      if (window.SupabaseClient?.isLoggedIn()) {
+        window.SocialModule?.openProfileModal();
+      } else {
+        openAuthModal('login');
+      }
+    });
+
+    // Social tab login button
+    $id('social-login-btn')?.addEventListener('click', () => openAuthModal('login'));
+
+    // Auth modal tabs
+    $id('auth-tab-login')?.addEventListener('click', () => switchAuthTab('login'));
+    $id('auth-tab-signup')?.addEventListener('click', () => switchAuthTab('signup'));
+
+    // Auth guest
+    $id('auth-guest-btn')?.addEventListener('click', closeAuthModal);
+
+    // Auth submit (login)
+    $id('auth-submit')?.addEventListener('click', async () => {
+      const email = $id('auth-email').value.trim();
+      const pass = $id('auth-password').value;
+      if (!email || !pass) return;
+      $id('auth-submit').textContent = '⏳ Connexion…';
+      $id('auth-submit').disabled = true;
+      try {
+        await window.SupabaseClient.signIn(email, pass);
+        closeAuthModal();
+        await window.SocialModule?.afterLogin();
+      } catch(e) {
+        const err = $id('auth-error');
+        err.textContent = e.message || 'Erreur de connexion';
+        err.classList.remove('hidden');
+      } finally {
+        $id('auth-submit').textContent = 'Se connecter';
+        $id('auth-submit').disabled = false;
+      }
+    });
+
+    // Signup submit
+    $id('signup-submit')?.addEventListener('click', async () => {
+      const username = $id('signup-username').value.trim();
+      const email = $id('signup-email').value.trim();
+      const pass = $id('signup-password').value;
+      const avatar = document.querySelector('.avatar-opt.selected')?.dataset.avatar || '💩';
+      if (!username || !email || !pass) return;
+      $id('signup-submit').textContent = '⏳ Création…';
+      $id('signup-submit').disabled = true;
+      try {
+        await window.SupabaseClient.signUp(email, pass, username, avatar);
+        closeAuthModal();
+        await window.SocialModule?.afterLogin();
+      } catch(e) {
+        const err = $id('signup-error');
+        err.textContent = e.message || 'Erreur à la création du compte';
+        err.classList.remove('hidden');
+      } finally {
+        $id('signup-submit').textContent = 'Créer mon compte';
+        $id('signup-submit').disabled = false;
+      }
+    });
+
+    // Avatar picker
+    document.querySelectorAll('.avatar-opt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.avatar-opt').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+      });
+    });
+
+    // Profile modal
+    $id('close-profile-modal')?.addEventListener('click', closeProfileModal);
+    $id('signout-btn')?.addEventListener('click', async () => {
+      await window.SupabaseClient?.signOut();
+      updateUserBadge(null);
+      closeProfileModal();
+      renderAll();
+      $debug('🚪 signed out');
+    });
+    $id('sync-cloud-btn')?.addEventListener('click', async () => {
+      $id('sync-cloud-btn').textContent = '⏳ Synchronisation…';
+      try {
+        await window.SupabaseClient.syncLocalToCloud(state.logs);
+        $id('sync-cloud-btn').textContent = '✅ Synchronisé !';
+        setTimeout(() => { $id('sync-cloud-btn').textContent = '☁️ Synchroniser mes données'; }, 2000);
+      } catch(e) {
+        $id('sync-cloud-btn').textContent = '❌ Erreur — réessaie';
+        setTimeout(() => { $id('sync-cloud-btn').textContent = '☁️ Synchroniser mes données'; }, 2000);
+      }
+    });
+  }
+
+  // Auth modal helpers
+  function openAuthModal(tab = 'login') {
+    $id('auth-modal').classList.remove('hidden');
+    switchAuthTab(tab);
+  }
+  function closeAuthModal() { $id('auth-modal').classList.add('hidden'); }
+  function openProfileModal() { window.SocialModule?.openProfileModal(); }
+  function closeProfileModal() { $id('profile-modal').classList.add('hidden'); }
+
+  function switchAuthTab(tab) {
+    const isLogin = tab === 'login';
+    $id('form-login').classList.toggle('hidden', !isLogin);
+    $id('form-signup').classList.toggle('hidden', isLogin);
+    $id('auth-tab-login').style.borderColor = isLogin ? 'var(--accent)' : 'transparent';
+    $id('auth-tab-login').style.color = isLogin ? 'var(--accent)' : '';
+    $id('auth-tab-login').style.opacity = isLogin ? '1' : '0.6';
+    $id('auth-tab-signup').style.borderColor = !isLogin ? 'var(--accent)' : 'transparent';
+    $id('auth-tab-signup').style.color = !isLogin ? 'var(--accent)' : '';
+    $id('auth-tab-signup').style.opacity = !isLogin ? '1' : '0.6';
+  }
+
+  function updateUserBadge(profile) {
+    const avatar = $id('user-avatar');
+    const name = $id('user-name');
+    if (profile) {
+      if (avatar) avatar.textContent = profile.avatar || '👤';
+      if (name) name.textContent = profile.username || 'Moi';
+    } else {
+      if (avatar) avatar.textContent = '👤';
+      if (name) name.textContent = 'Connexion';
+    }
+  }
+  window.updateUserBadge = updateUserBadge;
+
+  // ===================================================
+  //  THEME
+  // ===================================================
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme === 'default' ? '' : theme);
+    const metaColor = {
+      default: '#d97706', dark: '#1e1b4b', medical: '#059669',
+      kawaii: '#e91e8c', foret: '#2e7d32', ocean: '#0277bd'
+    };
+    $id('theme-color-meta').setAttribute('content', metaColor[theme] || '#d97706');
+
+    // Update active dot
+    document.querySelectorAll('[data-theme-btn]').forEach(b => {
+      b.classList.toggle('selected', b.dataset.themeBtn === theme);
+    });
+
+    // Drawer bg selon le thème
+    const drawerBg = {
+      dark: '#1e1b4b', medical: '#f0fdf4',
+      kawaii: '#fce4ec', foret: '#f1f8e9', ocean: '#e0f7fa'
+    };
+    const drawerInner = $id('drawer-inner');
+    if (drawerInner) {
+      drawerInner.style.background = drawerBg[theme] || '';
+    }
+  }
+
+  // ===================================================
+  //  TABS
+  // ===================================================
+  function switchTab(name) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    $id(name + '-tab')?.classList.add('active');
+    document.querySelector(`.tab-btn[data-tab="${name}"]`)?.classList.add('active');
+    if (name === 'stats') renderStats();
+    if (name === 'badges') updateBadges();
+    if (name === 'admin') renderHistory();
+    if (name === 'dashboard') renderDashboard();
+    if (name === 'social') window.SocialModule?.renderSocialTab();
+  }
+
+  // ===================================================
+  //  DRAWER
+  // ===================================================
+  function openDrawer() {
+    refreshRetroMax();
+    $id('drawer').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    $id('drawer').classList.add('hidden');
+    document.body.style.overflow = '';
+    // Reset
+    $id('comment').value = '';
+    selectedTexture = null;
+    selectedColor = null;
+    $id('retro-chk').checked = false;
+    $id('retro-date-wrap').classList.add('hidden');
+    document.querySelectorAll('.texture-btn').forEach(b => b.classList.remove('border-amber-500', 'bg-amber-100', 'selected'));
+    document.querySelectorAll('.color-btn').forEach(b => { b.style.transform = ''; b.style.outline = ''; });
+    $id('texture-err')?.classList.add('hidden');
+    $id('color-err')?.classList.add('hidden');
+  }
+
+  function refreshRetroMax() {
+    const inp = $id('retro-date');
+    if (!inp) return;
+    // "now" in local timezone for datetime-local input
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60000;
+    const localIso = new Date(now - offset).toISOString().slice(0, 16);
+    inp.max = localIso;
+    if (!inp.value) inp.value = localIso;
+  }
+
+  // ===================================================
+  //  ADD POOP
+  // ===================================================
+  function addPoop() {
+    let valid = true;
+    if (!selectedTexture) { $id('texture-err')?.classList.remove('hidden'); valid = false; }
+    if (!selectedColor) { $id('color-err')?.classList.remove('hidden'); valid = false; }
+    if (!valid) return;
+
+    let timestamp = Date.now();
+    const isRetro = $id('retro-chk').checked;
+
+    if (isRetro) {
+      const retroVal = $id('retro-date').value;
+      if (!retroVal) { alert('Indique une date/heure !'); return; }
+      const retroTs = new Date(retroVal).getTime();
+      if (isNaN(retroTs)) { alert('Date invalide !'); return; }
+      if (retroTs > Date.now() + 60000) { alert('La date ne peut pas être dans le futur !'); return; }
+      timestamp = retroTs;
+    }
+
+    const poop = {
+      id: Date.now() + Math.random(),
+      date: timestamp,
+      texture: selectedTexture,
+      color: selectedColor,
+      comment: $id('comment').value.trim(),
+      isRetro: isRetro
+    };
+
+    state.logs.push(poop);
+    state.logs.sort((a, b) => b.date - a.date);
+    if (state.logs.length > 2000) state.logs = state.logs.slice(0, 2000);
+    saveState(state);
+
+    closeDrawer();
+    renderAll();
+
+    // Modules v2.0
+    if (!isRetro) {
+      if (typeof celebratePoopAdded === 'function') {
+        celebratePoopAdded(calculateStreak());
+      } else {
+        showConfetti();
+      }
+    }
+    if (typeof achievementManager !== 'undefined') {
+      achievementManager.checkAchievements(state.logs).forEach(a => achievementManager.showAchievementPopup(a));
+    }
+
+    // Sync cloud si connecté
+    if (window.SupabaseClient?.isLoggedIn()) {
+      window.SupabaseClient.savePoopCloud(poop).catch(e => $debug('cloud save err: ' + e.message));
+    }
+
+    $debug('➕ ' + poop.texture + '/' + poop.color + (isRetro ? ' [rétro ' + new Date(timestamp).toLocaleString('fr') + ']' : ''));
+  }
+
+  // ===================================================
+  //  RENDER ALL
+  // ===================================================
+  function renderAll() {
+    renderDashboard();
+    renderHistory();
+    updateStreakBadge();
+    updateBadges();
+  }
+
+  // ===================================================
+  //  DASHBOARD
+  // ===================================================
+  function renderDashboard() {
+    const today = new Date().toDateString();
+    const todayCount = state.logs.filter(l => new Date(l.date).toDateString() === today).length;
+    $id('today-count').textContent = todayCount;
+    $id('total-count').textContent = state.logs.length;
+    $id('mass').textContent = (state.logs.length * 0.15).toFixed(1) + ' kg';
+    updateChart();
+
+    // Blague du jour
+    window.JokesModule?.displayDailyJoke();
+
+    // Prédiction
+    const predEl = $id('prediction-text');
+    if (predEl && typeof PredictionEngine !== 'undefined') {
+      if (state.logs.length >= 2) {
+        try {
+          const pred = new PredictionEngine(state.logs).predictNextPoop();
+          predEl.textContent = (pred.icon || '🔮') + ' ' + pred.message;
+        } catch(e) { predEl.textContent = '🔮 Prédiction indisponible'; }
+      } else {
+        predEl.textContent = '🔮 Ajoute au moins 2 cacas pour une prédiction…';
+      }
+    }
+  }
+
+  // ===================================================
+  //  HISTORY
+  // ===================================================
+  function renderHistory() {
+    const list = $id('history-list');
+    const recent = state.logs.slice(0, 20);
+    if (!recent.length) {
+      list.innerHTML = `<div class="text-center py-12 opacity-60">
+        <div class="text-5xl mb-3">📭</div>
+        <div class="font-bold text-lg">Aucun caca enregistré</div>
+        <div class="text-sm">Clémence, c'est le moment !</div>
+      </div>`;
+      return;
+    }
+    list.innerHTML = recent.map((log, i) => {
+      const dt = new Date(log.date).toLocaleString('fr-FR', {weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+      const icon = textureEmoji(log.texture);
+      const retroTag = log.isRetro ? `<span class="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full ml-1 font-bold">⏪ retard</span>` : '';
+      const note = log.comment ? `<div class="text-xs mt-1 bg-amber-100 text-amber-800 px-2 py-1 rounded-xl">${esc(log.comment)}</div>` : '';
+      return `<div class="card flex items-center gap-3 p-4 rounded-[1.5rem] shadow">
+        <div class="w-12 h-12 rounded-[1rem] flex items-center justify-center text-2xl flex-shrink-0"
+          style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">${icon}</div>
+        <div class="flex-1 min-w-0">
+          <div class="font-bold capitalize text-sm">${esc(log.texture)} ${retroTag}</div>
+          <div class="text-xs capitalize opacity-60">${esc(log.color)}</div>
+          ${note}
+          <div class="text-xs opacity-40 mt-1">${dt}</div>
+        </div>
+        <button class="p-2 text-red-400 hover:text-red-600 transition-colors" onclick="deleteLog('${log.id || i}')">
+          <i class="fas fa-trash text-sm"></i>
+        </button>
+      </div>`;
+    }).join('');
+  }
+
+  window.deleteLog = function(idOrIndex) {
+    const idx = state.logs.findIndex(l => String(l.id) === String(idOrIndex) || String(state.logs.indexOf(l)) === String(idOrIndex));
+    if (idx === -1) return;
+    const deleted = state.logs[idx];
+    state.logs.splice(idx, 1);
+    saveState(state);
+    renderAll();
+    if (window.SupabaseClient?.isLoggedIn()) {
+      window.SupabaseClient.deletePoopCloud(deleted.id).catch(e => $debug('cloud del err: ' + e.message));
+    }
+    $debug('🗑️ deleted');
+  };
+
+  // ===================================================
+  //  STATS
+  // ===================================================
+  function renderStats() {
+    // Fréquence 7j
+    const now = new Date();
+    let totalLast7 = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now); d.setDate(d.getDate() - i);
+      totalLast7 += state.logs.filter(l => new Date(l.date).toDateString() === d.toDateString()).length;
+    }
+    const avgPerDay = totalLast7 / 7;
+    const maxFreq = 2.5;
+
+    $id('bar-me').style.width = Math.min(100, (avgPerDay / maxFreq) * 100) + '%';
+    $id('val-me').textContent = avgPerDay.toFixed(1) + '/j';
+
+    // Verdict
+    const fv = $id('freq-verdict');
+    if (!fv) return;
+    if (avgPerDay === 0) {
+      fv.textContent = '📭 Aucune donnée cette semaine…';
+      fv.style.cssText = 'background:rgba(100,116,139,0.1);color:#64748b';
+    } else if (avgPerDay < 0.5) {
+      fv.textContent = '😬 Attention à la constipation ! En dessous des normes.';
+      fv.style.cssText = 'background:rgba(239,68,68,0.1);color:#dc2626';
+    } else if (avgPerDay < 1.0) {
+      fv.textContent = '🙂 Norme basse — tout va bien !';
+      fv.style.cssText = 'background:rgba(234,179,8,0.12);color:#b45309';
+    } else if (avgPerDay <= 2.0) {
+      fv.textContent = '🏆 Dans les normes françaises et mondiales, bravo Clémence !';
+      fv.style.cssText = 'background:rgba(5,150,105,0.12);color:#059669';
+    } else {
+      fv.textContent = '🚨 Plus de 2/j — surveille peut-être l\'alimentation ?';
+      fv.style.cssText = 'background:rgba(249,115,22,0.12);color:#ea580c';
+    }
+
+    // Transit
+    const sorted = [...state.logs].sort((a, b) => a.date - b.date);
+    let avgTransitH = null;
+    if (sorted.length >= 2) {
+      let totalGap = 0;
+      for (let i = 1; i < sorted.length; i++) totalGap += sorted[i].date - sorted[i-1].date;
+      avgTransitH = totalGap / (sorted.length - 1) / 3600000;
+    }
+    if (avgTransitH !== null) {
+      const h = Math.round(avgTransitH);
+      $id('val-transit-me').textContent = h + 'h';
+      $id('bar-transit-me').style.width = Math.min(100, (h / 72) * 100) + '%';
+    } else {
+      $id('val-transit-me').textContent = '—';
+      $id('bar-transit-me').style.width = '0%';
+    }
+
+    // Textures
+    const textures = ['normal','dur','mou','spray','liquide','explosif'];
+    const total = state.logs.length || 1;
+    const tstats = $id('texture-stats');
+    tstats.innerHTML = textures.map(t => {
+      const count = state.logs.filter(l => l.texture === t).length;
+      const pct = Math.round((count / total) * 100);
+      const emoji = textureEmoji(t);
+      let fillColor = '#f59e0b';
+      if (t === 'normal') fillColor = '#10b981';
+      if ((t === 'liquide' || t === 'explosif') && pct > 5) fillColor = '#ef4444';
+      return `<div style="display:grid;grid-template-columns:28px 64px 1fr 40px 36px;align-items:center;gap:6px;">
+        <span>${emoji}</span>
+        <span class="text-xs font-bold capitalize opacity-80">${t}</span>
+        <div class="stat-bar"><div class="stat-fill" style="width:${pct}%;background:${fillColor}"></div></div>
+        <span class="text-xs font-bold text-right">${pct}%</span>
+        <span class="text-xs opacity-40">(${count})</span>
+      </div>`;
+    }).join('');
+
+    // Graphiques avancés (charts.js)
+    if (typeof createAllCharts === 'function' && state.logs.length > 0) {
+      const chartsEl = $id('advanced-charts-container');
+      if (chartsEl) chartsEl.innerHTML = createAllCharts(state.logs);
+    }
+  }
+
+  // ===================================================
+  //  STREAK
+  // ===================================================
+  function calculateStreak() {
+    const hasDay = d => state.logs.some(l => new Date(l.date).toDateString() === d.toDateString());
+    const today = new Date();
+    if (!hasDay(today)) return 0;
+    let streak = 1;
+    for (let i = 1; i < 90; i++) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      if (hasDay(d)) streak++;
+      else break;
+    }
+    return streak;
+  }
+
+  function updateStreakBadge() {
+    const streak = calculateStreak();
+    const el = $id('streak-badge');
+    if (!el) return;
+    if (streak >= 2) {
+      el.classList.remove('hidden');
+      $id('streak-val').textContent = streak;
+    } else {
+      el.classList.add('hidden');
+    }
+  }
+
+  // ===================================================
+  //  BADGES
+  // ===================================================
+  const BADGE_DEFS = [
+    { id:'first',    icon:'⭐', label:'Première Étoile',  desc:'1er caca enregistré',         color:'#eab308' },
+    { id:'streak3',  icon:'🔥', label:'Flamme x3',         desc:'3 jours d\'affilée',           color:'#ef4444' },
+    { id:'rainbow',  icon:'🌈', label:'Arc‑en‑Ciel',       desc:'Couleur arc-en-ciel utilisée', color:'#8b5cf6' },
+    { id:'veteran',  icon:'🏆', label:'Vétéran',           desc:'10 cacas au total',            color:'#f59e0b' },
+    { id:'retro',    icon:'⏪', label:'Archiviste',        desc:'1 caca en retard saisi',       color:'#7c3aed' },
+    { id:'frenchie', icon:'🇫🇷', label:'À la Française',  desc:'≥ 1.1/j sur 7 jours',         color:'#3b82f6' },
+    { id:'centenaire',icon:'💯',label:'Centenaire',         desc:'100 cacas',                    color:'#059669' },
+    { id:'nightcaca', icon:'🌙', label:'Caca de nuit',     desc:'Caca entre minuit et 5h',      color:'#1e293b' },
+  ];
+
+  function buildBadgesGrid() {
+    const grid = $id('badges-grid');
+    if (!grid) return;
+    grid.innerHTML = BADGE_DEFS.map(b => `
+      <div class="card p-4 rounded-[1.5rem] text-center border-2 border-transparent transition-all" data-badge="${b.id}" style="border-color:transparent">
+        <div class="text-4xl mb-2">${b.icon}</div>
+        <div class="font-bold text-sm">${b.label}</div>
+        <div class="text-xs opacity-60 mb-2">${b.desc}</div>
+        <div class="w-full rounded-full overflow-hidden" style="height:6px;background:rgba(0,0,0,0.1)">
+          <div class="badge-bar" style="height:100%;border-radius:99px;width:0%;background:${b.color};transition:width .5s ease"></div>
+        </div>
+      </div>`).join('');
+  }
+
+  function updateBadges() {
+    const total = state.logs.length;
+    const streak = calculateStreak();
+    const hasRainbow = state.logs.some(l => l.color === 'arc-en-ciel');
+    const hasRetro = state.logs.some(l => l.isRetro);
+    const hasNight = state.logs.some(l => { const h = new Date(l.date).getHours(); return h >= 0 && h < 5; });
+
+    const now = new Date();
+    let totalLast7 = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now); d.setDate(d.getDate() - i);
+      totalLast7 += state.logs.filter(l => new Date(l.date).toDateString() === d.toDateString()).length;
+    }
+    const avg7 = totalLast7 / 7;
+
+    const badges = {
+      first:     { pct: total >= 1 ? 100 : 0, done: total >= 1 },
+      streak3:   { pct: Math.min(100, (streak/3)*100), done: streak >= 3 },
+      rainbow:   { pct: hasRainbow ? 100 : 0, done: hasRainbow },
+      veteran:   { pct: Math.min(100, (total/10)*100), done: total >= 10 },
+      retro:     { pct: hasRetro ? 100 : 0, done: hasRetro },
+      frenchie:  { pct: Math.min(100, (avg7/1.1)*100), done: avg7 >= 1.1 },
+      centenaire:{ pct: Math.min(100, (total/100)*100), done: total >= 100 },
+      nightcaca: { pct: hasNight ? 100 : 0, done: hasNight },
+    };
+
+    Object.entries(badges).forEach(([id, {pct, done}]) => {
+      const card = document.querySelector(`[data-badge="${id}"]`);
+      if (!card) return;
+      const bar = card.querySelector('.badge-bar');
+      if (bar) bar.style.width = pct.toFixed(0) + '%';
+      const def = BADGE_DEFS.find(b => b.id === id);
+      card.style.borderColor = done ? (def?.color || '#f59e0b') : 'transparent';
+      card.style.opacity = done ? '1' : '0.65';
+    });
+  }
+
+  // ===================================================
+  //  CHART
+  // ===================================================
+  function initChart() {
+    if (!window.Chart) {
+      $id('chart-fallback')?.classList.remove('hidden');
+      $id('chart-mode').textContent = 'Graphique: OFF';
+      return;
+    }
+    try {
+      const ctx = $id('week-chart').getContext('2d');
+      weekChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [{
+            data: [],
+            backgroundColor: 'rgba(251,191,36,.8)',
+            borderColor: '#d97706',
+            borderWidth: 2,
+            borderRadius: 8,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } } }
+        }
+      });
+      $id('chart-mode').textContent = 'Chart.js ✅';
+      updateChart();
+    } catch(e) {
+      $id('chart-fallback')?.classList.remove('hidden');
+      $id('chart-mode').textContent = 'Graphique: erreur';
+      $debug('chart err: ' + e.message);
+    }
+  }
+
+  function updateChart() {
+    if (!weekChart) return;
+    const labels = [], data = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now); d.setDate(d.getDate() - i);
+      labels.push(d.toLocaleDateString('fr-FR', {weekday:'short'}));
+      data.push(state.logs.filter(l => new Date(l.date).toDateString() === d.toDateString()).length);
+    }
+    weekChart.data.labels = labels;
+    weekChart.data.datasets[0].data = data;
+    weekChart.update('none');
+  }
+
+  // ===================================================
+  //  EXPORT / CLEAR
+  // ===================================================
+  function exportData() {
+    try {
+      const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'clemence-caca-tracker.json'; a.click();
+      URL.revokeObjectURL(url);
+      $debug('📤 export ok');
+    } catch(e) { $debug('export err: ' + e.message); }
+  }
+
+  function clearAll() {
+    if (!confirm('Supprimer absolument tous les cacas de Clémence ? 😱')) return;
+    state.logs = [];
+    saveState(state);
+    renderAll();
+    $debug('🧹 cleared');
+  }
+
+  // ===================================================
+  //  CONFETTI
+  // ===================================================
+  function showConfetti() {
+    const emojis = ['🎉','✨','🌟','🎊','💩','🫶'];
+    for (let i = 0; i < 30; i++) {
+      const el = document.createElement('div');
+      el.className = 'confetti';
+      el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.animationDelay = (Math.random() * 0.4) + 's';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+  }
+
+  // ===================================================
+  //  UTILS
+  // ===================================================
+  function textureEmoji(t) {
+    return ({normal:'💩',dur:'🗿',mou:'🍮',spray:'💦',liquide:'🌊',explosif:'💥'})[t] || '💩';
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  </script>
+
+    <!-- Nouveaux modules JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/social.js"></script>
+    <script src="js/sounds.js"></script>
+    <script src="js/jokes.js"></script>
+    <script src="js/achievements.js"></script>
+    <script src="js/predictions.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/animations.js"></script>
+</body>
+</html>

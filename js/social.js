@@ -1,0 +1,366 @@
+// ============================================================
+// 👥 Social Module — groupes, podium, comparatif, feed, défis
+// ============================================================
+
+const SocialModule = (() => {
+
+  const textureEmoji = t => ({ normal:'💩',dur:'🗿',mou:'🍮',spray:'💦',liquide:'🌊',explosif:'💥' })[t] || '💩';
+
+  function timeAgo(ts) {
+    const s = Math.round((Date.now() - ts) / 1000);
+    if (s < 60) return 'à l\'instant';
+    if (s < 3600) return `il y a ${Math.floor(s/60)} min`;
+    if (s < 86400) return `il y a ${Math.floor(s/3600)}h`;
+    return `il y a ${Math.floor(s/86400)}j`;
+  }
+
+  // ---- Groupes sélectionné ----
+  let _activeGroupId = null;
+
+  // ============================================================
+  //  RENDU PRINCIPAL
+  // ============================================================
+  async function renderSocialTab() {
+    const guest     = document.getElementById('social-guest');
+    const connected = document.getElementById('social-connected');
+    if (!guest || !connected) return;
+
+    if (!window.SupabaseClient?.isLoggedIn()) {
+      guest.classList.remove('hidden');
+      connected.classList.add('hidden');
+      return;
+    }
+
+    guest.classList.add('hidden');
+    connected.classList.remove('hidden');
+
+    await renderGroupList();
+  }
+
+  // ============================================================
+  //  LISTE DES GROUPES
+  // ============================================================
+  async function renderGroupList() {
+    const listEl = document.getElementById('groups-list');
+    const groupContent = document.getElementById('group-content');
+    const selector = document.getElementById('group-selector');
+    if (!listEl) return;
+
+    listEl.innerHTML = '<div class="text-xs text-center opacity-60 py-2">⏳ Chargement…</div>';
+
+    try {
+      const groups = await window.SupabaseClient.getMyGroups();
+
+      if (!groups.length) {
+        listEl.innerHTML = '<div class="text-sm opacity-60 text-center py-2">Aucun groupe — crée-en un ou rejoins tes amies !</div>';
+        if (groupContent) groupContent.classList.add('hidden');
+        return;
+      }
+
+      listEl.innerHTML = groups.map(g => `
+        <div class="flex items-center justify-between p-3 rounded-[1rem] text-sm font-bold"
+             style="background:color-mix(in srgb,var(--accent) 10%,transparent)">
+          <span>👥 ${esc(g.name)}</span>
+          <span class="text-xs opacity-60 font-mono">${g.invite_code}</span>
+        </div>`).join('');
+
+      // Sélecteur
+      if (selector) {
+        selector.innerHTML = groups.map(g =>
+          `<option value="${g.id}">${esc(g.name)}</option>`).join('');
+        if (_activeGroupId && groups.find(g => g.id === _activeGroupId)) {
+          selector.value = _activeGroupId;
+        } else {
+          _activeGroupId = groups[0].id;
+          selector.value = _activeGroupId;
+        }
+      }
+
+      if (groupContent) groupContent.classList.remove('hidden');
+      await renderGroupContent(_activeGroupId);
+
+    } catch(e) {
+      listEl.innerHTML = `<div class="text-xs text-red-500 text-center">${e.message}</div>`;
+    }
+  }
+
+  // ============================================================
+  //  CONTENU DU GROUPE SÉLECTIONNÉ
+  // ============================================================
+  async function renderGroupContent(groupId) {
+    if (!groupId) return;
+    _activeGroupId = groupId;
+    await Promise.all([
+      renderPodium(groupId),
+      renderCompareChart(groupId),
+      renderFeed(groupId),
+      renderChallenge(groupId)
+    ]);
+  }
+
+  // ============================================================
+  //  PODIUM 🏆
+  // ============================================================
+  async function renderPodium(groupId) {
+    const container = document.getElementById('podium-container');
+    const listEl    = document.getElementById('podium-list');
+    if (!container || !listEl) return;
+
+    container.innerHTML = '<div class="text-xs opacity-60">⏳</div>';
+    listEl.innerHTML = '';
+
+    try {
+      const stats = await window.SupabaseClient.getGroupStats(groupId);
+      const sorted = Object.values(stats).sort((a, b) => b.month - a.month);
+      if (!sorted.length) {
+        container.innerHTML = '<div class="text-xs opacity-60 text-center">Aucun membre avec des données</div>';
+        return;
+      }
+
+      const medals = ['🥇','🥈','🥉'];
+      const heights = ['90px','70px','55px'];
+      const colors  = ['#f59e0b','#94a3b8','#b45309'];
+
+      // Podium visuel (max 3)
+      const top3 = sorted.slice(0, 3);
+      const podiumOrder = top3.length >= 2 ? [top3[1], top3[0], top3[2]].filter(Boolean) : [top3[0]];
+      container.innerHTML = podiumOrder.map((m, i) => {
+        const rank = top3.indexOf(m);
+        return `
+          <div class="flex flex-col items-center gap-1 flex-1">
+            <div class="text-2xl">${m.avatar}</div>
+            <div class="text-xs font-bold truncate max-w-[70px] text-center">${esc(m.username)}</div>
+            <div class="text-xs font-bold" style="color:${colors[rank] || '#64748b'}">${medals[rank] || ''} ${m.month}</div>
+            <div class="w-full rounded-t-xl" style="height:${heights[rank] || '40px'};background:${colors[rank] || '#e2e8f0'}"></div>
+          </div>`;
+      }).join('');
+
+      // Liste complète
+      listEl.innerHTML = sorted.map((m, i) => `
+        <div class="flex items-center gap-3 p-2 rounded-[1rem] text-sm">
+          <span class="text-lg w-8 text-center">${medals[i] || String(i+1)}</span>
+          <span class="text-xl">${m.avatar}</span>
+          <div class="flex-1">
+            <div class="font-bold">${esc(m.username)}</div>
+            <div class="text-xs opacity-60">${m.streak > 0 ? '🔥' + m.streak + 'j ' : ''}${(m.month * 0.15).toFixed(1)}kg ce mois</div>
+          </div>
+          <span class="font-bold text-lg" style="color:var(--accent)">${m.month}</span>
+        </div>`).join('');
+
+    } catch(e) {
+      container.innerHTML = `<div class="text-xs text-red-500">${e.message}</div>`;
+    }
+  }
+
+  // ============================================================
+  //  COMPARATIF 7 JOURS 📊
+  // ============================================================
+  async function renderCompareChart(groupId) {
+    const el = document.getElementById('compare-chart');
+    if (!el) return;
+    el.innerHTML = '<div class="text-xs opacity-60 text-center">⏳</div>';
+
+    try {
+      const stats = await window.SupabaseClient.getGroupStats(groupId);
+      const sorted = Object.values(stats).sort((a, b) => b.week7 - a.week7);
+      const max = sorted[0]?.week7 || 1;
+
+      el.innerHTML = sorted.map(m => {
+        const pct = max > 0 ? Math.round((m.week7 / max) * 100) : 0;
+        const isMe = m.username === window.SupabaseClient.getCurrentProfile()?.username;
+        return `
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm font-bold">${m.avatar} ${esc(m.username)} ${isMe ? '← toi' : ''}</span>
+              <span class="text-sm font-bold" style="color:var(--accent)">${m.week7}/j${m.week7 !== 1 ? '' : ''}</span>
+            </div>
+            <div style="height:10px;background:rgba(0,0,0,0.08);border-radius:99px;overflow:hidden">
+              <div style="width:${pct}%;height:100%;border-radius:99px;background:${isMe ? 'var(--accent)' : '#94a3b8'};transition:width .6s ease"></div>
+            </div>
+          </div>`;
+      }).join('');
+
+    } catch(e) {
+      el.innerHTML = `<div class="text-xs text-red-500">${e.message}</div>`;
+    }
+  }
+
+  // ============================================================
+  //  FEED D'ACTIVITÉ 📣
+  // ============================================================
+  async function renderFeed(groupId) {
+    const el = document.getElementById('activity-feed');
+    if (!el) return;
+    el.innerHTML = '<div class="text-xs opacity-60 text-center">⏳</div>';
+
+    try {
+      const feed = await window.SupabaseClient.getGroupFeed(groupId, 20);
+      if (!feed.length) {
+        el.innerHTML = '<div class="text-sm opacity-60 text-center py-2">Aucune activité récente</div>';
+        return;
+      }
+      el.innerHTML = feed.map(item => `
+        <div class="flex items-center gap-2 p-2 rounded-[1rem] text-sm"
+             style="background:color-mix(in srgb,var(--text-secondary) 6%,transparent)">
+          <span class="text-xl flex-shrink-0">${item.avatar}</span>
+          <div class="flex-1 min-w-0">
+            <span class="font-bold">${esc(item.username)}</span>
+            <span class="opacity-70"> a fait un caca ${textureEmoji(item.texture)} ${esc(item.texture)}</span>
+          </div>
+          <span class="text-xs opacity-50 flex-shrink-0">${timeAgo(item.date)}</span>
+        </div>`).join('');
+
+    } catch(e) {
+      el.innerHTML = `<div class="text-xs text-red-500">${e.message}</div>`;
+    }
+  }
+
+  // ============================================================
+  //  DÉFI DE LA SEMAINE 🎯
+  // ============================================================
+  async function renderChallenge(groupId) {
+    const titleEl     = document.getElementById('challenge-title');
+    const barsEl      = document.getElementById('challenge-bars');
+    const countdownEl = document.getElementById('challenge-countdown');
+    if (!barsEl) return;
+
+    barsEl.innerHTML = '<div class="text-xs opacity-60 text-center">⏳</div>';
+
+    try {
+      const challenge = await window.SupabaseClient.getOrCreateWeeklyChallenge(groupId);
+      if (!challenge) { barsEl.innerHTML = '<div class="text-xs opacity-60">Aucun défi actif</div>'; return; }
+
+      if (titleEl) titleEl.textContent = challenge.title;
+
+      // Countdown
+      if (countdownEl) {
+        const end = new Date(challenge.end_date);
+        end.setHours(23,59,59);
+        const diffMs = end - Date.now();
+        const diffH  = Math.max(0, Math.floor(diffMs / 3600000));
+        const diffD  = Math.floor(diffH / 24);
+        countdownEl.textContent = diffD > 0 ? `${diffD}j restants` : `${diffH}h restantes`;
+      }
+
+      const progress = await window.SupabaseClient.getChallengeProgress(groupId, challenge);
+      const sorted = Object.values(progress).sort((a, b) => b.count - a.count);
+      const max = sorted[0]?.count || 1;
+      const me  = window.SupabaseClient.getCurrentProfile()?.username;
+
+      barsEl.innerHTML = sorted.map((p, i) => {
+        const pct  = max > 0 ? Math.round((p.count / max) * 100) : 0;
+        const isMe = p.username === me;
+        const medal = ['🥇','🥈','🥉'][i] || '';
+        return `
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm font-bold">${medal} ${p.avatar} ${esc(p.username)}${isMe ? ' (toi)' : ''}</span>
+              <span class="text-sm font-bold" style="color:var(--accent)">${p.count} 💩</span>
+            </div>
+            <div style="height:10px;background:rgba(0,0,0,0.08);border-radius:99px;overflow:hidden">
+              <div style="width:${pct}%;height:100%;border-radius:99px;background:${isMe ? 'var(--accent)' : '#94a3b8'};transition:width .6s ease"></div>
+            </div>
+          </div>`;
+      }).join('');
+
+    } catch(e) {
+      barsEl.innerHTML = `<div class="text-xs text-red-500">${e.message}</div>`;
+    }
+  }
+
+  // ============================================================
+  //  MODAL PROFIL
+  // ============================================================
+  function openProfileModal() {
+    const profile = window.SupabaseClient.getCurrentProfile();
+    if (!profile) return;
+    const modal = document.getElementById('profile-modal');
+    if (!modal) return;
+    document.getElementById('profile-avatar-display').textContent  = profile.avatar || '💩';
+    document.getElementById('profile-username-display').textContent = profile.username;
+    const sb = window.SupabaseClient.isLoggedIn ? '' : '';
+    document.getElementById('profile-stats-display').textContent   = '☁️ Données synchronisées avec Supabase';
+    modal.classList.remove('hidden');
+  }
+
+  // ============================================================
+  //  APRÈS LOGIN
+  // ============================================================
+  async function afterLogin() {
+    const profile = window.SupabaseClient.getCurrentProfile();
+    if (!profile) return;
+    window.updateUserBadge?.(profile);
+    // Sync auto des données locales
+    const saved = localStorage.getItem('cacaTracker.v2');
+    if (saved) {
+      try {
+        const state = JSON.parse(saved);
+        if (state?.logs?.length) {
+          await window.SupabaseClient.syncLocalToCloud(state.logs);
+        }
+      } catch(e) { console.warn('Sync auto échouée', e); }
+    }
+    // Aller sur l'onglet social
+    const socialBtn = document.querySelector('[data-tab="social"]');
+    if (socialBtn) socialBtn.click();
+  }
+
+  // ============================================================
+  //  EVENT LISTENERS
+  // ============================================================
+  document.addEventListener('DOMContentLoaded', () => {
+
+    // Créer un groupe
+    document.getElementById('create-group-btn')?.addEventListener('click', async () => {
+      const name = prompt('Nom du groupe (ex: Les Copines 💩)');
+      if (!name?.trim()) return;
+      try {
+        const group = await window.SupabaseClient.createGroup(name.trim());
+        alert(`Groupe créé ! Code d'invitation : ${group.invite_code}\nPartage ce code à tes amies !`);
+        await renderGroupList();
+      } catch(e) { alert('Erreur : ' + e.message); }
+    });
+
+    // Rejoindre un groupe
+    document.getElementById('join-group-btn')?.addEventListener('click', async () => {
+      const code = document.getElementById('invite-code-input')?.value.trim();
+      if (!code) return;
+      try {
+        const group = await window.SupabaseClient.joinGroup(code);
+        document.getElementById('invite-code-input').value = '';
+        alert(`Tu as rejoint le groupe "${group.name}" ! 🎉`);
+        await renderGroupList();
+      } catch(e) { alert('Erreur : ' + e.message); }
+    });
+
+    // Changement de groupe
+    document.getElementById('group-selector')?.addEventListener('change', async e => {
+      _activeGroupId = e.target.value;
+      await renderGroupContent(_activeGroupId);
+    });
+
+    // Partager le code
+    document.getElementById('share-group-btn')?.addEventListener('click', async () => {
+      const groups = await window.SupabaseClient.getMyGroups();
+      const group  = groups.find(g => g.id === _activeGroupId);
+      if (!group) return;
+      const msg = `Rejoins mon groupe Caca-Tracker ! 💩\nCode : ${group.invite_code}`;
+      if (navigator.share) {
+        navigator.share({ title: 'Caca-Tracker', text: msg }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(group.invite_code).then(() => alert('Code copié : ' + group.invite_code));
+      }
+    });
+  });
+
+  // ---- Helper XSS ----
+  function esc(s) {
+    return String(s || '').replace(/[&<>"']/g, c =>
+      ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
+  return { renderSocialTab, openProfileModal, afterLogin };
+
+})();
+
+window.SocialModule = SocialModule;

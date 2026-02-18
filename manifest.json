@@ -1,0 +1,23 @@
+{
+  "name": "Caca-Tracker 3000 Deluxe",
+  "short_name": "CacaTracker",
+  "description": "Le tracker de selles ultime de Clémence 💩",
+  "start_url": "./Index.Html",
+  "display": "standalone",
+  "background_color": "#fef3c7",
+  "theme_color": "#d97706",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://em-content.zobj.net/source/twitter/376/pile-of-poo_1f4a9.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://em-content.zobj.net/source/twitter/376/pile-of-poo_1f4a9.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

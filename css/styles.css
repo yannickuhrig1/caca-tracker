@@ -1,0 +1,466 @@
+/* 🎨 Styles pour les nouvelles fonctionnalités */
+
+/* === GRAPHIQUES === */
+.charts-section {
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-radius: 15px;
+    margin: 20px 0;
+}
+
+.chart-container {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 15px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.chart-container h3 {
+    margin: 0 0 20px 0;
+    color: var(--primary-color);
+}
+
+.bar-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    height: 200px;
+    gap: 2px;
+}
+
+.bar-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+}
+
+.bar {
+    width: 100%;
+    background: linear-gradient(to top, var(--primary-color), var(--secondary-color));
+    border-radius: 8px 8px 0 0;
+    transition: all 0.3s ease;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 5px;
+}
+
+.bar:hover {
+    opacity: 0.8;
+    transform: scaleY(1.05);
+}
+
+.bar-value {
+    font-size: 10px;
+    font-weight: bold;
+    color: white;
+    padding: 2px;
+}
+
+.bar-label {
+    font-size: 11px;
+    margin-top: 5px;
+    color: var(--text-secondary);
+}
+
+.trend-bar {
+    background: linear-gradient(to top, #667eea, #764ba2);
+}
+
+.pie-chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.legend-color {
+    font-size: 20px;
+}
+
+.legend-text {
+    flex: 1;
+    font-weight: 500;
+}
+
+.legend-value {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #f0f0f0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--primary-color);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+/* === PREDICTIONS === */
+.predictions-section {
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-radius: 15px;
+    margin: 20px 0;
+}
+
+.prediction-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 15px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.main-prediction {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-align: center;
+    padding: 30px;
+}
+
+.prediction-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+
+.prediction-text {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 10px 0;
+}
+
+.confidence-bar {
+    width: 100%;
+    height: 10px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 10px;
+    margin: 15px 0 5px 0;
+    overflow: hidden;
+}
+
+.confidence-fill {
+    height: 100%;
+    background: white;
+    border-radius: 10px;
+    transition: width 0.8s ease;
+}
+
+.confidence-label {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin: 10px 0;
+}
+
+.stat-detail {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+/* === ACHIEVEMENTS === */
+.achievements-section {
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-radius: 15px;
+    margin: 20px 0;
+}
+
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.achievement-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.achievement-card.unlocked {
+    border: 2px solid var(--primary-color);
+}
+
+.achievement-card.locked {
+    opacity: 0.5;
+    filter: grayscale(100%);
+}
+
+.achievement-card:hover {
+    transform: translateY(-2px);
+}
+
+.achievement-icon {
+    font-size: 40px;
+}
+
+.achievement-info {
+    flex: 1;
+}
+
+.achievement-name {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.achievement-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.achievement-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    z-index: 10000;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.achievement-popup.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.achievement-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.achievement-content .achievement-icon {
+    font-size: 60px;
+}
+
+.achievement-details h3 {
+    margin: 0 0 10px 0;
+}
+
+/* === ANIMATIONS === */
+.dancing-poop {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 80px;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.dancing-poop.dancing {
+    animation: dance 0.5s ease infinite;
+}
+
+@keyframes dance {
+    0%, 100% { transform: translate(-50%, -50%) rotate(-10deg); }
+    50% { transform: translate(-50%, -50%) rotate(10deg) scale(1.2); }
+}
+
+.confetti-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9998;
+}
+
+.confetti {
+    position: absolute;
+    top: -10px;
+    width: 10px;
+    height: 10px;
+    animation: confetti-fall 3s linear forwards;
+}
+
+@keyframes confetti-fall {
+    to {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+.streak-animation {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 30px 50px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    z-index: 9999;
+    opacity: 0;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.streak-animation.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.streak-icon {
+    font-size: 60px;
+    animation: pulse 0.6s ease infinite;
+}
+
+.streak-text {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+.fireworks-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9998;
+}
+
+.firework {
+    position: absolute;
+}
+
+.firework-particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #ffd700;
+    border-radius: 50%;
+    animation: firework-explode 1s ease-out forwards;
+}
+
+@keyframes firework-explode {
+    to {
+        transform: translate(var(--x), var(--y));
+        opacity: 0;
+    }
+}
+
+.pulse {
+    animation: pulse-animation 0.6s ease;
+}
+
+@keyframes pulse-animation {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.bounce {
+    animation: bounce-animation 1s ease;
+}
+
+@keyframes bounce-animation {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-20px); }
+    60% { transform: translateY(-10px); }
+}
+
+.shake {
+    animation: shake-animation 0.5s ease;
+}
+
+@keyframes shake-animation {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+.spin {
+    animation: spin-animation 1s ease;
+}
+
+@keyframes spin-animation {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* === SOUND CONTROL === */
+.sound-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px;
+    background: white;
+    border-radius: 10px;
+    margin: 10px 0;
+}
+
+#volumeSlider {
+    flex: 1;
+    height: 6px;
+    border-radius: 5px;
+    outline: none;
+}
+
+#volumeLabel {
+    min-width: 40px;
+    text-align: right;
+    font-weight: 600;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    .achievements-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .bar-chart {
+        height: 150px;
+    }
+    
+    .prediction-card {
+        padding: 15px;
+    }
+    
+    .stat-value {
+        font-size: 24px;
+    }
+}
