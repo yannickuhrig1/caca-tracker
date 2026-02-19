@@ -302,6 +302,61 @@ const SocialModule = (() => {
   }
 
   // ============================================================
+  //  GESTION DU GROUPE ⚙️
+  // ============================================================
+  async function renderMembersManagement(groupId) {
+    const listEl      = document.getElementById('members-management-list');
+    const deleteBtn   = document.getElementById('delete-group-btn');
+    const leaveBtn    = document.getElementById('leave-group-btn');
+    if (!listEl) return;
+
+    listEl.innerHTML = '<div class="text-xs opacity-60 text-center">⏳</div>';
+
+    try {
+      const members   = await window.SupabaseClient.getGroupMembers(groupId);
+      const myProfile = window.SupabaseClient.getCurrentProfile();
+      const groups    = await window.SupabaseClient.getMyGroups();
+      const group     = groups.find(g => g.id === groupId);
+      const isCreator = group?.created_by === myProfile?.id;
+
+      // Afficher/masquer les boutons selon le rôle
+      if (deleteBtn) deleteBtn.classList.toggle('hidden', !isCreator);
+      if (leaveBtn)  leaveBtn.classList.toggle('hidden', isCreator);
+
+      listEl.innerHTML = members.map(m => {
+        const isMe      = m.id === myProfile?.id;
+        const canRemove = isCreator && !isMe;
+        return `
+          <div class="flex items-center gap-2 p-2 rounded-[1rem] text-sm"
+               style="background:color-mix(in srgb,var(--accent) 5%,transparent)">
+            <span class="text-lg">${m.avatar || '👤'}</span>
+            <span class="flex-1 font-bold">${esc(m.username)}${isMe ? ' (toi)' : ''}${group?.created_by === m.id ? ' 👑' : ''}</span>
+            ${canRemove ? `<button class="remove-member-btn text-xs text-red-400 font-bold px-2 py-1 rounded-lg"
+              style="background:rgba(239,68,68,0.1)" data-user-id="${m.id}" data-username="${esc(m.username)}">
+              ✕ Retirer</button>` : ''}
+          </div>`;
+      }).join('');
+
+      // Clics sur les boutons "Retirer"
+      listEl.querySelectorAll('.remove-member-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const username = btn.dataset.username;
+          if (!confirm(`Retirer ${username} du groupe ?`)) return;
+          btn.disabled = true;
+          try {
+            await window.SupabaseClient.removeMember(groupId, btn.dataset.userId);
+            await renderMembersManagement(groupId);
+            await renderGroupContent(groupId);
+          } catch(e) { alert('Erreur : ' + e.message); btn.disabled = false; }
+        });
+      });
+
+    } catch(e) {
+      listEl.innerHTML = `<div class="text-xs text-red-500">${e.message}</div>`;
+    }
+  }
+
+  // ============================================================
   //  MODAL PROFIL
   // ============================================================
   function openProfileModal() {
@@ -369,7 +424,43 @@ const SocialModule = (() => {
     // Changement de groupe
     document.getElementById('group-selector')?.addEventListener('change', async e => {
       _activeGroupId = e.target.value;
+      document.getElementById('group-management')?.classList.add('hidden');
       await renderGroupContent(_activeGroupId);
+    });
+
+    // Ouvrir/fermer le panel de gestion
+    document.getElementById('manage-group-btn')?.addEventListener('click', async () => {
+      const panel = document.getElementById('group-management');
+      if (panel.classList.contains('hidden')) {
+        await renderMembersManagement(_activeGroupId);
+        panel.classList.remove('hidden');
+      } else {
+        panel.classList.add('hidden');
+      }
+    });
+    document.getElementById('close-management-btn')?.addEventListener('click', () => {
+      document.getElementById('group-management')?.classList.add('hidden');
+    });
+
+    // Quitter le groupe
+    document.getElementById('leave-group-btn')?.addEventListener('click', async () => {
+      if (!confirm('Quitter ce groupe ?')) return;
+      try {
+        await window.SupabaseClient.leaveGroup(_activeGroupId);
+        document.getElementById('group-management').classList.add('hidden');
+        await renderGroupList();
+      } catch(e) { alert('Erreur : ' + e.message); }
+    });
+
+    // Supprimer le groupe
+    document.getElementById('delete-group-btn')?.addEventListener('click', async () => {
+      if (!confirm('Supprimer définitivement ce groupe et toutes ses données ? Cette action est irréversible.')) return;
+      try {
+        await window.SupabaseClient.deleteGroup(_activeGroupId);
+        document.getElementById('group-management').classList.add('hidden');
+        _activeGroupId = null;
+        await renderGroupList();
+      } catch(e) { alert('Erreur : ' + e.message); }
     });
 
     // Partager le code

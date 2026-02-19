@@ -5,6 +5,21 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.4.0] — 2026-02-19
+
+### Ajouté
+- **Année en review 🎬** : bouton dans l'onglet Stats → modal style Spotify Wrapped avec 7 cards (total, mois le plus actif, texture fav, heure de prédilection, meilleur streak, jour préféré, tonnage total)
+- **Objectif du jour 🎯** : barre de progression dans le Dashboard avec sélecteur +/− (1–10 cacas), objectif sauvé en localStorage, indicateur vert quand atteint
+- **Partage stats 📤** : bouton sous le gros bouton 💩 → génère une image PNG stylisée (canvas) avec stats clés, puis la partage via Web Share API ou téléchargement direct
+- **Compte à rebours ⏱️** : timer live sous la prédiction, se rafraîchit chaque minute, affiche "Maintenant ? 🚨" si dépassé
+- **Gestion des groupes ⚙️** : bouton dans l'onglet Social → panel membre par membre avec retrait individuel (créateur), quitter le groupe (membres), supprimer le groupe (créateur)
+- `supabase-group-management.sql` : policy SQL pour autoriser le créateur à retirer des membres
+
+### Corrigé
+- Label "Chart.js ✅" supprimé du graphique 7 jours
+
+---
+
 ## [2.3.0] — 2026-02-19
 
 ### Ajouté

@@ -183,6 +183,20 @@ async function leaveGroup(groupId) {
     .eq('group_id', groupId).eq('user_id', _currentUser.id);
 }
 
+async function deleteGroup(groupId) {
+  const sb = getSB(); if (!sb || !_currentUser) throw new Error('Non connecté');
+  const { error } = await sb.from('groups').delete()
+    .eq('id', groupId).eq('created_by', _currentUser.id);
+  if (error) throw new Error(error.message);
+}
+
+async function removeMember(groupId, userId) {
+  const sb = getSB(); if (!sb || !_currentUser) throw new Error('Non connecté');
+  const { error } = await sb.from('group_members').delete()
+    .eq('group_id', groupId).eq('user_id', userId);
+  if (error) throw new Error(error.message);
+}
+
 async function getMyGroups() {
   const sb = getSB(); if (!sb || !_currentUser) return [];
   const { data } = await sb.from('group_members')
@@ -383,5 +397,7 @@ window.SupabaseClient = {
   getOrCreateWeeklyChallenge,
   getChallengeProgress,
   toggleReaction,
+  deleteGroup,
+  removeMember,
   initAuthListener
 };
