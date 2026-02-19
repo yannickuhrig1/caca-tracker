@@ -256,16 +256,56 @@ async function getGroupFeed(groupId, limit = 20) {
   const profileMap = Object.fromEntries(members.map(m => [m.id, m]));
 
   const { data } = await sb.from('poops')
-    .select('user_id, date, texture, color')
+    .select('id, user_id, date, texture, color')
     .in('user_id', memberIds)
     .order('date', { ascending: false })
     .limit(limit);
 
-  return (data || []).map(p => ({
+  const poops = data || [];
+  if (!poops.length) return [];
+
+  // Charger les réactions pour ces poops
+  const poopIds = poops.map(p => p.id);
+  const { data: reactions } = await sb.from('reactions')
+    .select('poop_id, user_id, emoji')
+    .in('poop_id', poopIds);
+
+  // Grouper réactions par poop_id : { emoji: count }
+  const reactionMap = {};
+  (reactions || []).forEach(r => {
+    if (!reactionMap[r.poop_id]) reactionMap[r.poop_id] = {};
+    reactionMap[r.poop_id][r.emoji] = (reactionMap[r.poop_id][r.emoji] || 0) + 1;
+  });
+  // Réaction de l'user courant par poop
+  const myReactions = {};
+  (reactions || []).filter(r => r.user_id === _currentUser?.id).forEach(r => {
+    myReactions[r.poop_id] = r.emoji;
+  });
+
+  return poops.map(p => ({
     ...p,
-    username: profileMap[p.user_id]?.username || '???',
-    avatar:   profileMap[p.user_id]?.avatar   || '💩'
+    username:   profileMap[p.user_id]?.username || '???',
+    avatar:     profileMap[p.user_id]?.avatar   || '💩',
+    reactions:  reactionMap[p.id]  || {},
+    myReaction: myReactions[p.id]  || null
   }));
+}
+
+async function toggleReaction(poopId, emoji) {
+  const sb = getSB(); if (!sb || !_currentUser) throw new Error('Non connecté');
+  const { data: existing } = await sb.from('reactions')
+    .select('id, emoji').eq('poop_id', poopId).eq('user_id', _currentUser.id).maybeSingle();
+
+  if (existing && existing.emoji === emoji) {
+    await sb.from('reactions').delete().eq('id', existing.id);
+    return null;
+  } else if (existing) {
+    await sb.from('reactions').update({ emoji }).eq('id', existing.id);
+    return emoji;
+  } else {
+    await sb.from('reactions').insert({ poop_id: poopId, user_id: _currentUser.id, emoji });
+    return emoji;
+  }
 }
 
 async function getOrCreateWeeklyChallenge(groupId) {
@@ -342,5 +382,6 @@ window.SupabaseClient = {
   getGroupFeed,
   getOrCreateWeeklyChallenge,
   getChallengeProgress,
+  toggleReaction,
   initAuthListener
 };

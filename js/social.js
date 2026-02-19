@@ -188,6 +188,8 @@ const SocialModule = (() => {
   // ============================================================
   //  FEED D'ACTIVITÉ 📣
   // ============================================================
+  const REACTION_EMOJIS = ['💩','🔥','👑','🤣','❤️'];
+
   async function renderFeed(groupId) {
     const el = document.getElementById('activity-feed');
     if (!el) return;
@@ -199,16 +201,47 @@ const SocialModule = (() => {
         el.innerHTML = '<div class="text-sm opacity-60 text-center py-2">Aucune activité récente</div>';
         return;
       }
-      el.innerHTML = feed.map(item => `
-        <div class="flex items-center gap-2 p-2 rounded-[1rem] text-sm"
-             style="background:color-mix(in srgb,var(--text-secondary) 6%,transparent)">
-          <span class="text-xl flex-shrink-0">${item.avatar}</span>
-          <div class="flex-1 min-w-0">
-            <span class="font-bold">${esc(item.username)}</span>
-            <span class="opacity-70"> a fait un caca ${textureEmoji(item.texture)} ${esc(item.texture)}</span>
-          </div>
-          <span class="text-xs opacity-50 flex-shrink-0">${timeAgo(item.date)}</span>
-        </div>`).join('');
+
+      el.innerHTML = feed.map(item => {
+        // Barre de réactions existantes
+        const reactionBtns = REACTION_EMOJIS.map(emoji => {
+          const count = item.reactions[emoji] || 0;
+          const isMine = item.myReaction === emoji;
+          return `<button class="reaction-btn${isMine ? ' mine' : ''}"
+                    data-poop-id="${esc(item.id)}" data-emoji="${emoji}"
+                    title="${isMine ? 'Retirer ma réaction' : 'Réagir'}">
+                    ${emoji}${count > 0 ? ` <span>${count}</span>` : ''}
+                  </button>`;
+        }).join('');
+
+        return `
+          <div class="p-2 rounded-[1rem] text-sm"
+               style="background:color-mix(in srgb,var(--text-secondary) 6%,transparent)">
+            <div class="flex items-center gap-2">
+              <span class="text-xl flex-shrink-0">${item.avatar}</span>
+              <div class="flex-1 min-w-0">
+                <span class="font-bold">${esc(item.username)}</span>
+                <span class="opacity-70"> a fait un caca ${textureEmoji(item.texture)} ${esc(item.texture)}</span>
+              </div>
+              <span class="text-xs opacity-50 flex-shrink-0">${timeAgo(item.date)}</span>
+            </div>
+            <div class="reaction-bar">${reactionBtns}</div>
+          </div>`;
+      }).join('');
+
+      // Déléguer les clics sur les boutons de réaction
+      el.querySelectorAll('.reaction-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const poopId = btn.dataset.poopId;
+          const emoji  = btn.dataset.emoji;
+          if (!window.SupabaseClient?.isLoggedIn()) return;
+          btn.disabled = true;
+          try {
+            await window.SupabaseClient.toggleReaction(poopId, emoji);
+            await renderFeed(groupId); // Rafraîchir
+          } catch(e) { console.warn('reaction err', e); btn.disabled = false; }
+        });
+      });
 
     } catch(e) {
       el.innerHTML = `<div class="text-xs text-red-500">${e.message}</div>`;

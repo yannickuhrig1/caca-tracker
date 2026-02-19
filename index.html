@@ -430,6 +430,9 @@
         </div>
       </div>
 
+      <!-- Heatmap calendrier (injectée par charts.js) -->
+      <div id="heatmap-container" class="mb-4"></div>
+
       <!-- Graphiques avancés (injectés par charts.js) -->
       <div id="advanced-charts-container" class="mb-4"></div>
 
@@ -555,9 +558,37 @@
         <div class="font-bold mb-3 text-sm">🔊 Réglages sons</div>
         <div id="sound-settings"></div>
       </div>
+
+      <!-- Notifications -->
+      <div class="mt-5 card p-4 rounded-[1.5rem]">
+        <div class="font-bold mb-3 text-sm">🔔 Notifications</div>
+        <div class="flex items-center justify-between mb-3 text-sm">
+          <span>Activer les rappels</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="notif-toggle" class="sr-only peer" />
+            <div class="w-10 h-5 rounded-full bg-gray-200 peer-checked:bg-amber-400 transition-colors"></div>
+            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+          </label>
+        </div>
+        <div class="flex items-center justify-between mb-3 text-sm">
+          <span>Rappel si pas de caca depuis</span>
+          <select id="notif-threshold" class="border rounded-lg px-2 py-1 text-sm" style="background:var(--card-bg);color:var(--text-primary);border-color:rgba(0,0,0,0.15)">
+            <option value="12">12h</option>
+            <option value="24" selected>24h</option>
+            <option value="36">36h</option>
+            <option value="48">48h</option>
+          </select>
+        </div>
+        <button id="notif-permission-btn" class="w-full py-2 text-sm rounded-[1rem] font-bold mb-2"
+          style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);border:1.5px solid var(--accent)">
+          🔔 Autoriser les notifications navigateur
+        </button>
+        <div id="notif-status" class="text-xs opacity-60 text-center"></div>
+      </div>
+
       <div class="mt-4 card p-4 rounded-[1.5rem] text-xs text-center opacity-50 space-y-1">
         <div>💩 Les cacas de Clémence</div>
-        <div>Version 2.2.2 — Février 2026</div>
+        <div>Version 2.3.0 — Février 2026</div>
         <div>Fait avec ❤️ par Papa</div>
       </div>
     </section>
@@ -857,6 +888,9 @@
       soundSettingsEl.innerHTML = createSoundControl();
     }
 
+    // Vérifier si une notification de rappel doit être affichée
+    checkPoopNotification();
+
     // Supabase : écouter l'événement de récupération de mot de passe
     // (doit être enregistré AVANT initAuthListener pour ne pas rater l'événement)
     window.addEventListener('supabase-password-recovery', () => {
@@ -1109,6 +1143,83 @@
         setTimeout(() => { $id('sync-cloud-btn').textContent = '☁️ Synchroniser mes données'; }, 2000);
       }
     });
+
+    // Notifications settings
+    setupNotifications();
+  }
+
+  // ===================================================
+  //  NOTIFICATIONS
+  // ===================================================
+  function setupNotifications() {
+    const toggle    = $id('notif-toggle');
+    const threshold = $id('notif-threshold');
+    const permBtn   = $id('notif-permission-btn');
+    const statusEl  = $id('notif-status');
+    if (!toggle) return;
+
+    // Charger état sauvé
+    toggle.checked       = localStorage.getItem('notifEnabled') === 'true';
+    threshold.value      = localStorage.getItem('notifThreshold') || '24';
+
+    function updatePermStatus() {
+      if (!('Notification' in window)) {
+        if (statusEl) statusEl.textContent = '⚠️ Notifications non supportées par ce navigateur';
+        if (permBtn) permBtn.classList.add('hidden');
+        return;
+      }
+      const p = Notification.permission;
+      if (p === 'granted') {
+        if (permBtn) permBtn.classList.add('hidden');
+        if (statusEl) statusEl.textContent = '✅ Notifications autorisées';
+      } else if (p === 'denied') {
+        if (permBtn) permBtn.classList.add('hidden');
+        if (statusEl) statusEl.textContent = '🚫 Notifications bloquées — à autoriser dans les réglages du navigateur';
+      } else {
+        if (permBtn) permBtn.classList.remove('hidden');
+        if (statusEl) statusEl.textContent = 'En attente d\'autorisation';
+      }
+    }
+    updatePermStatus();
+
+    toggle.addEventListener('change', () => {
+      localStorage.setItem('notifEnabled', toggle.checked);
+    });
+    threshold.addEventListener('change', () => {
+      localStorage.setItem('notifThreshold', threshold.value);
+    });
+    permBtn?.addEventListener('click', async () => {
+      if (!('Notification' in window)) return;
+      const result = await Notification.requestPermission();
+      updatePermStatus();
+      if (result === 'granted' && toggle.checked) checkPoopNotification();
+    });
+  }
+
+  function checkPoopNotification() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+    if (localStorage.getItem('notifEnabled') !== 'true') return;
+
+    const lastPoop   = parseInt(localStorage.getItem('notifLastPoopTime') || '0');
+    if (!lastPoop) return; // Jamais eu de caca enregistré
+    const threshold  = parseInt(localStorage.getItem('notifThreshold') || '24');
+    const thresholdMs = threshold * 60 * 60 * 1000;
+    // Ne pas répéter la notif plus d'une fois toutes les 4h
+    const lastNotif  = parseInt(localStorage.getItem('notifLastSent') || '0');
+    if (Date.now() - lastNotif < 4 * 60 * 60 * 1000) return;
+
+    if (Date.now() - lastPoop > thresholdMs) {
+      const username = window.SupabaseClient?.getCurrentProfile()?.username || '';
+      const greeting = username ? `, tout va bien ${username}` : ', tout va bien';
+      new Notification('💩 Caca-Tracker', {
+        body: `Ça fait ${threshold}h sans caca${greeting} ? 💩`,
+        icon: './favicon.svg',
+        badge: './favicon.svg',
+        tag: 'caca-reminder'
+      });
+      localStorage.setItem('notifLastSent', Date.now());
+    }
   }
 
   // Auth modal helpers
@@ -1282,6 +1393,9 @@
       window.SupabaseClient.savePoopCloud(poop).catch(e => $debug('cloud save err: ' + e.message));
     }
 
+    // Notifications : mettre à jour l'heure du dernier caca
+    if (!isRetro) localStorage.setItem('notifLastPoopTime', Date.now());
+
     $debug('➕ ' + poop.texture + '/' + poop.color + (isRetro ? ' [rétro ' + new Date(timestamp).toLocaleString('fr') + ']' : ''));
   }
 
@@ -1445,6 +1559,11 @@
       </div>`;
     }).join('');
 
+    // Heatmap calendrier (charts.js)
+    if (typeof createHeatmap === 'function') {
+      const hmEl = $id('heatmap-container');
+      if (hmEl) hmEl.innerHTML = state.logs.length > 0 ? createHeatmap(state.logs) : '';
+    }
     // Graphiques avancés (charts.js)
     if (typeof createAllCharts === 'function' && state.logs.length > 0) {
       const chartsEl = $id('advanced-charts-container');

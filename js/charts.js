@@ -200,6 +200,104 @@ function createMonthlyTrendChart(poops) {
     return html;
 }
 
+// ============================================================
+// 📅 Heatmap calendrier (12 derniers mois, style GitHub)
+// ============================================================
+function createHeatmap(poops) {
+    if (!poops || poops.length === 0) return '';
+
+    // Construire un dictionnaire { 'YYYY-MM-DD': count }
+    const counts = {};
+    poops.forEach(p => {
+        const d = new Date(p.date);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        counts[key] = (counts[key] || 0) + 1;
+    });
+
+    // Plage : 365 jours en arrière depuis aujourd'hui
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const startDay = new Date(today);
+    startDay.setDate(today.getDate() - 364);
+    // Reculer au lundi précédent
+    const dow = startDay.getDay(); // 0=Sun
+    startDay.setDate(startDay.getDate() - (dow === 0 ? 6 : dow - 1));
+
+    // Générer les semaines (colonnes) × 7 jours (lignes)
+    const weeks = [];
+    let cursor = new Date(startDay);
+    while (cursor <= today) {
+        const week = [];
+        for (let d = 0; d < 7; d++) {
+            if (cursor <= today) {
+                const key = `${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}-${String(cursor.getDate()).padStart(2,'0')}`;
+                week.push({ date: new Date(cursor), count: counts[key] || 0, key });
+            } else {
+                week.push(null);
+            }
+            cursor.setDate(cursor.getDate() + 1);
+        }
+        weeks.push(week);
+    }
+
+    // Labels des mois (au-dessus des colonnes)
+    const monthNames = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+    let monthLabels = '<div class="hm-months">';
+    let lastMonth = -1;
+    weeks.forEach((week, wi) => {
+        const firstDay = week.find(Boolean);
+        if (!firstDay) return;
+        const m = firstDay.date.getMonth();
+        if (m !== lastMonth) {
+            monthLabels += `<span style="grid-column:${wi+1}">${monthNames[m]}</span>`;
+            lastMonth = m;
+        }
+    });
+    monthLabels += '</div>';
+
+    // Grille de cellules
+    let cells = '';
+    const maxCount = Math.max(...Object.values(counts), 1);
+    weeks.forEach(week => {
+        cells += '<div class="hm-col">';
+        week.forEach(day => {
+            if (!day) { cells += '<div class="hm-cell hm-empty"></div>'; return; }
+            const intensity = day.count === 0 ? 0
+                : day.count === 1 ? 1
+                : day.count <= 2 ? 2
+                : day.count <= 3 ? 3 : 4;
+            const label = `${day.key} : ${day.count} caca${day.count > 1 ? 's' : ''}`;
+            cells += `<div class="hm-cell hm-c${intensity}" title="${label}"></div>`;
+        });
+        cells += '</div>';
+    });
+
+    const total = poops.length;
+    const activeDays = Object.keys(counts).length;
+
+    return `
+      <div class="card p-4 rounded-[1.5rem] mb-4">
+        <div class="font-bold mb-1">📅 Calendrier des cacas</div>
+        <div class="text-xs opacity-60 mb-3">${total} cacas sur ${activeDays} jours actifs</div>
+        <div class="hm-wrap">
+          ${monthLabels}
+          <div class="hm-days-label">
+            <span>Lun</span><span></span><span>Mer</span><span></span><span>Ven</span><span></span><span>Dim</span>
+          </div>
+          <div class="hm-grid">${cells}</div>
+        </div>
+        <div class="hm-legend">
+          <span class="text-xs opacity-60">Moins</span>
+          <div class="hm-cell hm-c0"></div>
+          <div class="hm-cell hm-c1"></div>
+          <div class="hm-cell hm-c2"></div>
+          <div class="hm-cell hm-c3"></div>
+          <div class="hm-cell hm-c4"></div>
+          <span class="text-xs opacity-60">Plus</span>
+        </div>
+      </div>`;
+}
+
 // Crée tous les graphiques
 function createAllCharts(poops) {
     let html = '<div class="charts-section">';

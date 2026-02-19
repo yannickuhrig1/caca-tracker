@@ -5,6 +5,16 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.3.0] — 2026-02-19
+
+### Ajouté
+- **Heatmap calendrier 📅** : grille des 365 derniers jours dans l'onglet Stats, colorée selon le nombre de cacas par jour (style GitHub contributions)
+- **Notifications push 🔔** : rappel configurable si aucun caca depuis X heures (12/24/36/48h) — réglages dans l'onglet Historique ; le message utilise le pseudo de l'user connecté
+- **Réactions sur le feed 💬** : réagir aux cacas des membres du groupe avec 💩🔥👑🤣❤️ — une réaction par user par caca, toggle, compteurs affichés en temps réel
+- `supabase-reactions.sql` : migration SQL à exécuter dans Supabase pour activer les réactions
+
+---
+
 ## [2.2.2] — 2026-02-19
 
 ### Corrigé
