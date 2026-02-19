@@ -1,10 +1,11 @@
-# 💩 Caca-Tracker 3000 Deluxe
+# 💩 Les cacas de Clémence — Caca-Tracker 3000 Deluxe
 
 > Application mobile-first de suivi des selles — 100% fun, pour Clémence 💖
 
 [![PWA](https://img.shields.io/badge/PWA-compatible-brightgreen)](#)
 [![Vanilla JS](https://img.shields.io/badge/Vanilla%20JS-no%20framework-yellow)](#)
-[![Version](https://img.shields.io/badge/version-2.0-orange)](#)
+[![Version](https://img.shields.io/badge/version-2.2.0-orange)](#)
+[![Supabase](https://img.shields.io/badge/Backend-Supabase-3ECF8E)](#)
 
 ---
 
@@ -15,18 +16,21 @@
 - Tonnage estimé (150 g/caca)
 - Bouton 💩 pour enregistrer un caca
 - Graphique des 7 derniers jours (Chart.js)
-- Confettis à l'ajout 🎉
+- Blague de merde du jour 🤣
+- Prédiction du prochain caca 🔮
 
 ### Saisie d'un caca
 - **6 textures** : Normal, Dur, Mou, Spray, Liquide, Explosif
 - **6 couleurs** : Marron, Jaune, Vert, Noir, Arc-en-ciel, Rouge
 - **Note** libre (optionnel)
 - **Mode rétro** : saisir une date/heure passée
+- **Son personnalisé** par texture 🔊
 
 ### Stats
 - Comparaison Clémence / France / Monde
 - Transit intestinal moyen
-- Répartition des textures
+- Répartition des textures et couleurs
+- Graphiques avancés : horaire, par jour, tendance mensuelle
 - Fun facts médicaux
 
 ### Badges 🏆
@@ -40,20 +44,30 @@
 | 🇫🇷 À la Française | ≥ 1.1/j sur 7 jours |
 | 💯 Centenaire | 100 cacas |
 | 🌙 Caca de nuit | Caca entre minuit et 5h |
+| + 10 achievements | Régularité, Streak, Hibou, Lève-tôt… |
 
-### Modules v2.0
-- **🤣 Blagues** : 30+ blagues rotatives basées sur la date
-- **🔮 Prédictions** : estimation du prochain caca + heure moyenne + tendances
-- **📊 Graphiques avancés** : répartition horaire, par jour, couleurs, textures, tendance mensuelle
-- **🏆 Achievements** : 10 achievements déblocables (premier caca, streak, régularité…)
-- **🔊 Sons** : 6 sons selon les actions
-- **✨ Animations** : caca dansant, confettis arc-en-ciel, fireworks, streak
+### Social ☁️ (Supabase)
+- **Compte utilisateur** : inscription email/password + avatar emoji
+- **Sync cloud** : données synchronisées automatiquement à la connexion
+- **Groupes** : créer un groupe et inviter ses amies avec un code
+- **Podium 🏆** : classement mensuel des membres
+- **Comparatif 📊** : barres côte à côte (cacas/7j)
+- **Feed 📣** : 20 dernières activités du groupe
+- **Défi hebdomadaire 🎯** : qui fera le plus cette semaine ?
+- **Mot de passe oublié** : réinitialisation par email
+
+### Historique & Paramètres
+- Historique avec suppression individuelle
+- Export JSON 📤
+- Import JSON 📥 (fusion sans doublons)
+- Réglages sons par texture 🔊
+- Version de l'app
 
 ### UX
-- **3 thèmes** : Chaud 🟠 / Dark 🌙 / Médical 🩺
+- **6 thèmes** : Chaud 🟠 / Dark 🌙 / Médical 🩺 / Kawaii 🌸 / Forêt 🌿 / Océan 🌊
 - **Streak** 🔥 affiché dans le header
-- **Historique** avec suppression individuelle + export JSON
 - **PWA** installable sur iPhone (mode standalone)
+- **Offline** : fonctionne sans connexion (localStorage)
 
 ---
 
@@ -64,31 +78,22 @@
 | HTML5 / CSS3 | Structure & styles |
 | Vanilla JS | Logique applicative |
 | Tailwind CSS (CDN) | Classes utilitaires |
-| Chart.js 4.4 (CDN) | Graphique 7 jours |
+| Chart.js 4.4 (CDN) | Graphiques |
 | Font Awesome 6.4 | Icônes |
 | Fredoka / Space Mono | Polices Google Fonts |
-| localStorage | Persistance des données |
+| localStorage | Persistance locale |
+| Supabase | Auth + DB cloud + Social |
 | Service Worker | Offline / PWA |
-
-Aucune dépendance npm — tout fonctionne en ouvrant `Index.Html` dans un navigateur.
 
 ---
 
 ## 🚀 Lancer l'application
 
-### Option 1 — Serveur local (recommandé pour PWA)
+### Serveur local (recommandé pour PWA)
 ```bash
-# Python
-python -m http.server 8080
-
-# Node
 npx serve .
 ```
-Puis ouvrir [http://localhost:8080](http://localhost:8080)
-
-### Option 2 — Ouverture directe
-Ouvrir `Index.Html` directement dans Chrome/Safari.
-> ⚠️ Le Service Worker et certaines fonctionnalités PWA nécessitent un serveur HTTP.
+Puis ouvrir [http://localhost:3000](http://localhost:3000)
 
 ### Installation iPhone
 1. Ouvrir dans Safari
@@ -97,32 +102,50 @@ Ouvrir `Index.Html` directement dans Chrome/Safari.
 
 ---
 
+## ⚙️ Configuration Supabase
+
+1. Créer un projet sur [supabase.com](https://supabase.com)
+2. Aller dans **SQL Editor** → coller et exécuter `supabase-schema.sql`
+3. En cas de problème de groupes → exécuter `supabase-rls-fix.sql`
+4. Dans `js/supabase-client.js`, remplacer :
+```js
+const SUPABASE_URL      = 'https://VOTRE_ID.supabase.co';
+const SUPABASE_ANON_KEY = 'VOTRE_ANON_KEY';
+```
+
+---
+
 ## 📁 Structure des fichiers
 
 ```
 Caca-Tracker/
-├── Index.Html          ← App principale (structure + logique core)
-├── manifest.json       ← Manifest PWA
-├── sw.js               ← Service Worker (cache offline)
+├── index.html              ← App principale (structure + logique core)
+├── manifest.json           ← Manifest PWA
+├── sw.js                   ← Service Worker (cache offline)
+├── favicon.svg             ← Favicon emoji 💩
+├── supabase-schema.sql     ← Schéma SQL Supabase (setup initial)
+├── supabase-rls-fix.sql    ← Patch RLS (si problème de groupes)
 ├── css/
-│   └── styles.css      ← Styles des modules v2.0
+│   └── styles.css          ← Styles des modules v2.0
 └── js/
-    ├── sounds.js        ← Gestionnaire de sons
-    ├── jokes.js         ← 30+ blagues rotatives
-    ├── achievements.js  ← Système d'achievements
-    ├── predictions.js   ← Moteur de prédiction
-    ├── charts.js        ← Graphiques avancés
-    └── animations.js    ← Effets visuels
+    ├── supabase-client.js  ← Client Supabase (auth + DB)
+    ├── social.js           ← Module social (groupes, podium, feed)
+    ├── sounds.js           ← Sons par texture + contrôle volume
+    ├── jokes.js            ← 30+ blagues rotatives
+    ├── achievements.js     ← Système d'achievements
+    ├── predictions.js      ← Moteur de prédiction
+    ├── charts.js           ← Graphiques avancés
+    └── animations.js       ← Effets visuels
 ```
 
 ---
 
 ## 💾 Données
 
-- Stockage : `localStorage` (clé `cacaTracker.v2`)
-- Max : 2 000 entrées (FIFO)
-- Export : bouton JSON dans l'onglet Historique
-- Aucun backend, aucun compte, 100% privé
+- **Local** : `localStorage` (clé `cacaTracker.v2`), max 2 000 entrées
+- **Cloud** : Supabase PostgreSQL (sync automatique à la connexion)
+- **Export** : bouton JSON dans l'onglet Historique
+- **Import** : fusion intelligente (pas de doublons)
 
 ---
 

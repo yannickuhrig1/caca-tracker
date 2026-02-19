@@ -5,29 +5,64 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.2.0] — 2026-02-19
+
+### Ajouté
+- **Sons par texture** : chaque texture (Normal, Dur, Mou, Spray, Liquide, Explosif) a son propre son configurable
+- **Réglages sons** dans l'onglet Historique : sélecteur + bouton prévisualisation ▶️ par texture, préférences sauvées en localStorage
+- **Import JSON** : bouton 📥 dans l'onglet Historique — fusion intelligente sans doublons
+- **Mot de passe oublié** : lien dans la modal de connexion → email de réinitialisation via Supabase
+
+### Corrigé
+- **SW.js v3** : le Service Worker ne détourne plus les requêtes CDN cross-origin (Chart.js, Tailwind, Supabase…) — corrige le crash au lancement depuis l'écran d'accueil
+- **RLS Supabase** : patch `supabase-rls-fix.sql` — fonctions `SECURITY DEFINER` pour briser la récursion infinie dans les policies `group_members` (corrige la création de groupes)
+- **`index.html`** renommé en minuscules (était `Index.Html`) — compatibilité serveurs Linux / Vercel / GitHub Pages
+
+---
+
+## [2.1.0] — 2026-02-18
+
+### Ajouté
+- **Supabase** : authentification email/password, synchronisation cloud des données
+- **Module social** (`js/social.js`) : groupes avec codes d'invitation, podium mensuel, comparatif 7 jours, feed d'activité, défi hebdomadaire automatique
+- **3 nouveaux thèmes** : Kawaii 🌸 / Forêt 🌿 / Océan 🌊 (portant le total à 6)
+- **Badge utilisateur** dans le header : avatar + pseudo, clic pour se connecter / voir le profil
+- **Modal auth** : connexion + création de compte avec picker d'avatar
+- **Modal profil** : stats, synchronisation manuelle, déconnexion
+- **Wiring modules v2.0** : blagues, prédiction, graphiques avancés, achievements et animations désormais connectés à l'app
+- `supabase-schema.sql` : schéma complet (5 tables, RLS, index, trigger auto-profil)
+- `js/supabase-client.js` : client Supabase complet (auth + sync + groupes + stats sociales)
+- `favicon.svg` : favicon emoji 💩 (supprime le 404)
+
+### Corrigé
+- **`sw.js`** : fichier caché `index.html` (casse correcte), bump version cache → invalide l'ancien cache
+- **Volume slider** : le label de pourcentage se met à jour en temps réel pendant le glissement
+
+---
+
 ## [2.0.1] — 2026-02-18
 
 ### Corrigé
-- **`animations.js`** — Conflit de nom : `showConfetti()` dans `animations.js` écrasait la version inline du HTML. Renommé en `showRainbowConfetti()` pour préserver les deux comportements.
-- **`achievements.js`** — Achievement "Artiste 🌈" ne se débloquait jamais : les couleurs étaient comparées en anglais (`brown`, `red`, `green`…) alors que l'app stocke en français (`marron`, `rouge`, `vert`…).
-- **`achievements.js`** — Achievement "Régularité Parfaite ⭐" analysait les 7 cacas les plus **anciens** au lieu des 7 plus **récents** (`slice(-7)` → `slice(0, 7)`).
-- **`charts.js`** — Graphique couleurs : mêmes noms anglais → emojis et labels toujours incorrects. Corrigé en français + ajout de `arc-en-ciel`.
-- **`charts.js`** — Graphique texture/consistance : utilisait `p.consistency` (champ inexistant) au lieu de `p.texture` → graphique toujours vide. Les labels ont également été mis à jour avec les vraies valeurs (`normal`, `dur`, `mou`, `spray`, `liquide`, `explosif`).
-- **`predictions.js`** — `state.logs` est trié du plus récent au plus ancien. Le moteur de prédiction calculait des intervalles négatifs et prenait le plus vieux caca comme "dernier caca". Ajout d'un tri croissant dans le constructeur de `PredictionEngine`.
-- **`Index.Html`** — Suppression de 3 balises `<meta>` PWA dupliquées (`apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `apple-mobile-web-app-title`).
+- **`animations.js`** — Conflit de nom : `showConfetti()` écrasait la version inline du HTML. Renommé en `showRainbowConfetti()`.
+- **`achievements.js`** — Achievement "Artiste 🌈" : couleurs comparées en anglais (`brown`, `red`…) alors que l'app stocke en français (`marron`, `rouge`…).
+- **`achievements.js`** — Achievement "Régularité Parfaite ⭐" : `slice(-7)` analysait les 7 cacas les plus anciens → corrigé en `slice(0, 7)`.
+- **`charts.js`** — Graphique couleurs : noms anglais → labels toujours incorrects. Corrigé en français + ajout de `arc-en-ciel`.
+- **`charts.js`** — Graphique texture : utilisait `p.consistency` (inexistant) au lieu de `p.texture`.
+- **`predictions.js`** — Calcul d'intervalles négatifs à cause d'un tri décroissant. Ajout d'un tri croissant dans le constructeur.
+- **`Index.Html`** — Suppression de 3 balises `<meta>` PWA dupliquées.
 
 ---
 
 ## [2.0.0] — 2026-02-18
 
 ### Ajouté
-- **Blagues de merde du jour** (`js/jokes.js`) : 30+ blagues rotatives basées sur la date, bouton "autre blague"
-- **Moteur de prédiction** (`js/predictions.js`) : prochain caca estimé, heure moyenne, période préférée, tendances hebdomadaires
-- **Graphiques avancés** (`js/charts.js`) : répartition horaire (24h), par jour de semaine, couleurs, textures, tendance mensuelle
-- **Achievements** (`js/achievements.js`) : 10 achievements — Premier Caca, Décade, Centenaire, Régularité, Lève-Tôt, Hibou, Artiste, Streak 7j, Streak 30j, Record du Mois
-- **Sons** (`js/sounds.js`) : 6 sons (plop, splash, wow, tada, achievement, confetti) avec contrôle du volume
-- **Animations** (`js/animations.js`) : caca dansant, confettis arc-en-ciel, animation streak, fireworks pour les milestones
-- **Styles modules** (`css/styles.css`) : CSS dédié pour tous les nouveaux composants
+- **Blagues de merde du jour** (`js/jokes.js`) : 30+ blagues rotatives, bouton "autre blague"
+- **Moteur de prédiction** (`js/predictions.js`) : prochain caca estimé, heure moyenne, tendances
+- **Graphiques avancés** (`js/charts.js`) : répartition horaire, par jour, couleurs, textures, tendance mensuelle
+- **Achievements** (`js/achievements.js`) : 10 achievements déblocables
+- **Sons** (`js/sounds.js`) : 6 sons avec contrôle du volume
+- **Animations** (`js/animations.js`) : caca dansant, confettis arc-en-ciel, fireworks, streak
+- **Styles modules** (`css/styles.css`)
 
 ---
 
@@ -35,7 +70,7 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ### Corrigé
 - Poids par caca : 400 g → 150 g (valeur médicale correcte)
-- Fix installation PWA sur iOS (balises meta manquantes)
+- Fix installation PWA sur iOS
 
 ### Ajouté
 - Balises `<meta>` Apple PWA complètes
@@ -47,15 +82,9 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ### Ajouté
 - Tracker de cacas avec bouton 💩
-- **6 textures** : Normal, Dur, Mou, Spray, Liquide, Explosif
-- **6 couleurs** : Marron, Jaune, Vert, Noir, Arc-en-ciel, Rouge
-- **3 thèmes** : Chaud / Dark / Médical
+- 6 textures, 6 couleurs, 3 thèmes
 - Graphique des 7 derniers jours (Chart.js)
-- Streak 🔥 dans le header
-- 8 badges déblocables
-- Historique avec suppression individuelle et export JSON
+- Streak 🔥, 8 badges, historique, export JSON
 - Mode "caca en retard" (saisie rétroactive)
 - Comparaison stats France / Monde
-- Confettis 🎉 à l'ajout d'un caca
-- PWA : Service Worker + manifest + installation iPhone
-- Persistance via `localStorage`
+- Confettis 🎉, PWA, localStorage
