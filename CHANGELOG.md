@@ -5,6 +5,16 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.2.2] — 2026-02-19
+
+### Corrigé
+- **Reset mot de passe** : correction de l'erreur "Auth session missing!" lors du clic sur le lien de récupération par email
+- Cause : `history.replaceState()` supprimait le token de l'URL avant que le SDK Supabase puisse l'utiliser
+- Fix : utilisation de `onAuthStateChange` avec l'événement `PASSWORD_RECOVERY` au lieu de la détection manuelle du hash
+- `initAuthListener()` ajouté dans `supabase-client.js` et appelé en premier dans `DOMContentLoaded`
+
+---
+
 ## [2.2.1] — 2026-02-19
 
 ### Corrigé

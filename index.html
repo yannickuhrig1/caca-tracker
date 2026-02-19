@@ -557,7 +557,7 @@
       </div>
       <div class="mt-4 card p-4 rounded-[1.5rem] text-xs text-center opacity-50 space-y-1">
         <div>💩 Les cacas de Clémence</div>
-        <div>Version 2.2.1 — Février 2026</div>
+        <div>Version 2.2.2 — Février 2026</div>
         <div>Fait avec ❤️ par Papa</div>
       </div>
     </section>
@@ -857,15 +857,19 @@
       soundSettingsEl.innerHTML = createSoundControl();
     }
 
-    // Supabase : détecter un retour de reset de mot de passe
-    if (window.SupabaseClient && window.location.hash.includes('type=recovery')) {
-      history.replaceState(null, '', window.location.pathname); // nettoyer l'URL
-      window.SupabaseClient.getSession().then(() => {
-        $id('new-password-modal').classList.remove('hidden');
-      }).catch(() => {});
+    // Supabase : écouter l'événement de récupération de mot de passe
+    // (doit être enregistré AVANT initAuthListener pour ne pas rater l'événement)
+    window.addEventListener('supabase-password-recovery', () => {
+      $id('new-password-modal').classList.remove('hidden');
+    });
+
+    // Supabase : démarrer le listener auth EN PREMIER pour capturer PASSWORD_RECOVERY
+    if (window.SupabaseClient) {
+      window.SupabaseClient.initAuthListener();
     }
+
     // Supabase : restaurer session si déjà connecté
-    else if (window.SupabaseClient) {
+    if (window.SupabaseClient) {
       window.SupabaseClient.getSession().then(profile => {
         if (profile) {
           updateUserBadge(profile);

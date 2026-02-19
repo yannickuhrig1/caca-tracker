@@ -77,6 +77,20 @@ async function updatePassword(newPassword) {
   if (error) throw new Error(error.message);
 }
 
+// Écoute les changements d'état Supabase (recovery, sign-in, sign-out…)
+// Doit être appelé AU PLUS TÔT après le chargement pour ne pas rater
+// l'événement PASSWORD_RECOVERY déclenché par le token dans l'URL
+function initAuthListener() {
+  const sb = getSB(); if (!sb) return;
+  sb.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      // La session est active — on peut appeler updateUser()
+      history.replaceState(null, '', window.location.pathname);
+      window.dispatchEvent(new CustomEvent('supabase-password-recovery'));
+    }
+  });
+}
+
 async function getSession() {
   const sb = getSB(); if (!sb) return null;
   const { data } = await sb.auth.getSession();
@@ -327,5 +341,6 @@ window.SupabaseClient = {
   getGroupStats,
   getGroupFeed,
   getOrCreateWeeklyChallenge,
-  getChallengeProgress
+  getChallengeProgress,
+  initAuthListener
 };
