@@ -670,7 +670,7 @@
 
       <div class="mt-4 card p-4 rounded-[1.5rem] text-xs text-center opacity-50 space-y-1">
         <div>💩 Les cacas de Clémence</div>
-        <div>Version 2.5.0 — Février 2026</div>
+        <div>Version 2.5.1 — Février 2026</div>
         <div>Fait avec ❤️ par Papa</div>
       </div>
     </section>
@@ -781,6 +781,11 @@
           style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">
           ☁️ Synchroniser mes données
         </button>
+        <a id="admin-link" href="admin.html"
+           class="hidden w-full py-3 rounded-[1.25rem] font-bold text-sm text-center block"
+           style="background:color-mix(in srgb,#7c3aed 12%,transparent);color:#7c3aed">
+          ⚙️ Administration
+        </a>
         <button id="signout-btn" class="w-full py-3 rounded-[1.25rem] font-bold text-sm bg-red-50 text-red-500">
           🚪 Se déconnecter
         </button>
@@ -1907,6 +1912,9 @@
       if (avatar) avatar.textContent = '👤';
       if (name) name.textContent = 'Connexion';
     }
+    // Lien admin visible uniquement pour les admins
+    const adminLink = $id('admin-link');
+    if (adminLink) adminLink.classList.toggle('hidden', !profile?.is_admin);
   }
   window.updateUserBadge = updateUserBadge;
 

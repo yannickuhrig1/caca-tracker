@@ -5,6 +5,29 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.5.1] — 2026-02-19
+
+### Ajouté
+- **Page Admin ⚙️** (`admin.html`) : tableau de bord d'administration protégé par rôle `is_admin`
+  - Liste de tous les comptes (avatar, pseudo, email, date d'inscription, dernière connexion, rôle)
+  - Promouvoir / rétrograder n'importe quel utilisateur en admin en un clic
+  - Changer le mot de passe : envoi d'un email de reset **ou** changement direct via la clé service role
+  - Statistiques rapides (total, admins, actifs 7 j, connectés aujourd'hui)
+  - Recherche et actualisation en temps réel
+- **Lien Administration** dans le profil utilisateur (visible uniquement pour les admins)
+
+### Corrigé
+- **Synchroniser mes données** : correction de l'erreur systématique lors de la sync
+  - Cause 1 : contrainte `UNIQUE (user_id, local_id)` manquante → `upsert onConflict` échouait toujours
+  - Cause 2 : champ `mood` (v2.5.0) absent de la table `poops` → l'upsert rejetait les données
+  - Fix SQL dans `supabase-admin.sql` + `onConflict: 'user_id,local_id'` dans le client
+- **Dernière connexion** : `last_login` mis à jour dans `profiles` à chaque connexion
+
+### SQL à exécuter dans Supabase
+- `supabase-admin.sql` : colonnes `is_admin` + `email` + `last_login` + `mood` + contrainte unique + promotion Yannick
+
+---
+
 ## [2.5.0] — 2026-02-19
 
 ### Ajouté

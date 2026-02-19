@@ -52,6 +52,8 @@ async function signIn(email, password) {
   if (error) throw new Error(error.message);
   _currentUser = data.user;
   _currentProfile = await fetchProfile(_currentUser.id);
+  // Enregistrer la date de dernière connexion
+  sb.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', _currentUser.id).then(() => {});
   return _currentProfile;
 }
 
@@ -97,6 +99,8 @@ async function getSession() {
   if (!data?.session?.user) return null;
   _currentUser = data.session.user;
   _currentProfile = await fetchProfile(_currentUser.id);
+  // Mettre à jour last_login à chaque restauration de session
+  sb.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', _currentUser.id).then(() => {});
   return _currentProfile;
 }
 
@@ -122,8 +126,9 @@ async function savePoopCloud(poop) {
     texture:   poop.texture,
     color:     poop.color,
     comment:   poop.comment || '',
-    is_retro:  poop.isRetro || false
-  }, { onConflict: 'local_id' });
+    is_retro:  poop.isRetro || false,
+    mood:      poop.mood || null
+  }, { onConflict: 'user_id,local_id' });
   if (error) throw new Error(error.message);
 }
 
@@ -141,12 +146,14 @@ async function syncLocalToCloud(logs) {
     texture:   p.texture,
     color:     p.color,
     comment:   p.comment || '',
-    is_retro:  p.isRetro || false
+    is_retro:  p.isRetro || false,
+    mood:      p.mood || null
   }));
   // Upsert par batch de 100
+  // onConflict 'user_id,local_id' correspond à la contrainte UNIQUE composite
   for (let i = 0; i < rows.length; i += 100) {
     const batch = rows.slice(i, i + 100);
-    const { error } = await sb.from('poops').upsert(batch, { onConflict: 'local_id' });
+    const { error } = await sb.from('poops').upsert(batch, { onConflict: 'user_id,local_id' });
     if (error) throw new Error(error.message);
   }
 }
@@ -373,6 +380,27 @@ async function getChallengeProgress(groupId, challenge) {
 }
 
 // ============================================================
+//  ADMIN
+// ============================================================
+
+async function getAllProfiles() {
+  const sb = getSB(); if (!sb) return [];
+  const { data, error } = await sb.from('profiles')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+async function setUserAdmin(userId, isAdmin) {
+  const sb = getSB(); if (!sb || !_currentUser) throw new Error('Non connecté');
+  const { error } = await sb.from('profiles')
+    .update({ is_admin: isAdmin })
+    .eq('id', userId);
+  if (error) throw new Error(error.message);
+}
+
+// ============================================================
 //  EXPORT GLOBAL
 // ============================================================
 window.SupabaseClient = {
@@ -399,5 +427,7 @@ window.SupabaseClient = {
   toggleReaction,
   deleteGroup,
   removeMember,
-  initAuthListener
+  initAuthListener,
+  getAllProfiles,
+  setUserAdmin
 };

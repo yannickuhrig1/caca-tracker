@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>⚙️ Admin — Caca-Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <style>
+    body { background:#0f172a; color:#e2e8f0; font-family:system-ui,sans-serif; }
+    .card { background:#1e293b; border:1px solid #334155; }
+    .btn-primary  { background:#7c3aed; color:#fff; transition:background .15s; }
+    .btn-primary:hover  { background:#6d28d9; }
+    .btn-danger   { background:#dc2626; color:#fff; transition:background .15s; }
+    .btn-danger:hover   { background:#b91c1c; }
+    .btn-success  { background:#16a34a; color:#fff; transition:background .15s; }
+    .btn-success:hover  { background:#15803d; }
+    .btn-ghost    { background:#334155; color:#e2e8f0; transition:background .15s; }
+    .btn-ghost:hover    { background:#475569; }
+    input[type="text"],input[type="email"],input[type="password"],input[type="search"],select {
+      background:#0f172a; border:1px solid #334155; color:#e2e8f0;
+    }
+    input:focus,select:focus { outline:none; border-color:#7c3aed; }
+    table thead th { background:#0f172a; color:#94a3b8; font-weight:500; }
+    table tbody tr { border-bottom:1px solid #1e293b; transition:background .1s; }
+    table tbody tr:hover { background:#1e293b; }
+    .badge-admin { background:#7c3aed33; color:#a78bfa; border:1px solid #7c3aed66; }
+    .badge-user  { background:#1e293b; color:#64748b; border:1px solid #334155; }
+    details summary::-webkit-details-marker { display:none; }
+    details summary { list-style:none; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- ── HEADER ── -->
+  <header class="card border-b border-slate-700 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+    <div class="flex items-center gap-3">
+      <span class="text-3xl">💩</span>
+      <div>
+        <h1 class="font-bold text-lg leading-tight">Caca-Tracker Admin</h1>
+        <p class="text-xs text-slate-500">Panneau d'administration</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span id="admin-name" class="text-sm text-slate-400 hidden sm:block"></span>
+      <a href="index.html" class="btn-ghost px-3 py-1.5 rounded-lg text-sm font-medium">← App</a>
+      <button id="signout-btn" class="btn-danger px-3 py-1.5 rounded-lg text-sm font-medium">🚪</button>
+    </div>
+  </header>
+
+  <!-- ── MAIN ── -->
+  <main class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+
+    <!-- Loading -->
+    <div id="loading-state" class="text-center py-24">
+      <div class="text-5xl mb-4 animate-bounce">⏳</div>
+      <p class="text-slate-400">Vérification des droits…</p>
+    </div>
+
+    <!-- Access denied -->
+    <div id="access-denied" class="hidden text-center py-24">
+      <div class="text-6xl mb-4">🚫</div>
+      <h2 class="text-2xl font-bold text-red-400">Accès refusé</h2>
+      <p class="text-slate-400 mt-2">Ton compte n'a pas les droits administrateur.</p>
+      <a href="index.html" class="inline-block mt-6 btn-primary px-6 py-3 rounded-xl font-bold">← Retour à l'app</a>
+    </div>
+
+    <!-- Admin content -->
+    <div id="admin-content" class="hidden space-y-6">
+
+      <!-- ── Stats ── -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="card rounded-2xl p-4">
+          <div class="text-3xl font-bold" id="stat-total">—</div>
+          <div class="text-xs text-slate-400 mt-1">Utilisateurs</div>
+        </div>
+        <div class="card rounded-2xl p-4">
+          <div class="text-3xl font-bold text-purple-400" id="stat-admins">—</div>
+          <div class="text-xs text-slate-400 mt-1">Admins</div>
+        </div>
+        <div class="card rounded-2xl p-4">
+          <div class="text-3xl font-bold text-green-400" id="stat-active">—</div>
+          <div class="text-xs text-slate-400 mt-1">Actifs (7 j)</div>
+        </div>
+        <div class="card rounded-2xl p-4">
+          <div class="text-3xl font-bold text-blue-400" id="stat-today">—</div>
+          <div class="text-xs text-slate-400 mt-1">Aujourd'hui</div>
+        </div>
+      </div>
+
+      <!-- ── Service Role Key (pour changer les MDP directement) ── -->
+      <details class="card rounded-2xl overflow-hidden">
+        <summary class="px-5 py-4 cursor-pointer font-medium flex items-center gap-2 select-none hover:bg-white/5 transition">
+          <span>🔑 Clé service role</span>
+          <span class="text-xs text-slate-500 ml-1">— pour changer les mots de passe sans email</span>
+          <span class="ml-auto text-xs px-2 py-0.5 rounded-full" id="srk-status-badge"
+                style="background:#1e293b;color:#64748b">Non configurée</span>
+        </summary>
+        <div class="px-5 pb-5 pt-3 space-y-3 border-t border-slate-700">
+          <div class="text-xs text-amber-400 bg-amber-900/20 border border-amber-700/30 rounded-xl p-3 flex gap-2">
+            <span class="shrink-0">⚠️</span>
+            <span>La clé service role donne un accès <strong>total</strong> à ta base de données.
+              Ne la partage jamais. Elle est stockée <strong>uniquement en mémoire de session</strong>
+              et effacée à la fermeture de l'onglet.</span>
+          </div>
+          <p class="text-xs text-slate-400">
+            Supabase → Settings → API → <strong class="text-slate-300">service_role</strong> (Secret)
+          </p>
+          <div class="flex gap-2">
+            <input type="password" id="srk-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6…"
+                   class="flex-1 px-3 py-2 rounded-xl text-sm" />
+            <button id="srk-save-btn" class="btn-primary px-4 py-2 rounded-xl text-sm font-bold shrink-0">Enregistrer</button>
+            <button id="srk-clear-btn" class="btn-ghost px-3 py-2 rounded-xl text-sm shrink-0" title="Effacer">✕</button>
+          </div>
+        </div>
+      </details>
+
+      <!-- ── Table utilisateurs ── -->
+      <div class="card rounded-2xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-700 flex flex-wrap items-center gap-3">
+          <h2 class="font-bold text-lg">👥 Utilisateurs</h2>
+          <div class="flex-1 min-w-[160px]">
+            <input type="search" id="search-input" placeholder="🔍 Rechercher…"
+                   class="w-full px-3 py-1.5 rounded-xl text-sm" />
+          </div>
+          <button id="refresh-btn" class="btn-ghost px-3 py-1.5 rounded-xl text-sm shrink-0">🔄 Actualiser</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-xs uppercase tracking-wide">
+                <th class="px-4 py-3 text-left">Utilisateur</th>
+                <th class="px-4 py-3 text-left">Email</th>
+                <th class="px-4 py-3 text-left">Inscription</th>
+                <th class="px-4 py-3 text-left">Dernière connexion</th>
+                <th class="px-4 py-3 text-left">Rôle</th>
+                <th class="px-4 py-3 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody">
+              <tr><td colspan="6" class="px-4 py-10 text-center text-slate-500">Chargement…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /admin-content -->
+  </main>
+
+  <!-- ── MODAL CHANGEMENT DE MOT DE PASSE ── -->
+  <div id="pwd-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4"
+       style="background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);display:none">
+    <div class="card rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-lg">🔑 Mot de passe</h3>
+        <button id="close-pwd-modal" class="text-slate-400 hover:text-white text-2xl leading-none">✕</button>
+      </div>
+
+      <!-- Target user info -->
+      <div class="flex items-center gap-3 p-3 rounded-xl" style="background:#0f172a">
+        <span id="pwd-avatar" class="text-3xl">💩</span>
+        <div>
+          <div id="pwd-username" class="font-bold"></div>
+          <div id="pwd-email" class="text-xs text-slate-400"></div>
+        </div>
+      </div>
+
+      <!-- Mode selector -->
+      <div class="flex gap-2 text-sm">
+        <button class="mode-btn flex-1 py-2 rounded-xl font-medium transition" data-mode="email">
+          📧 Lien par email
+        </button>
+        <button class="mode-btn flex-1 py-2 rounded-xl font-medium transition" data-mode="direct">
+          🔑 Définir directement
+        </button>
+      </div>
+
+      <!-- Email mode -->
+      <div id="pwd-email-section" class="space-y-3">
+        <p class="text-xs text-slate-400">
+          Un email de réinitialisation sera envoyé à l'utilisateur.
+          Il pourra choisir un nouveau mot de passe via le lien reçu.
+        </p>
+        <button id="send-reset-btn" class="w-full btn-primary py-3 rounded-xl font-bold text-sm">
+          📧 Envoyer l'email de réinitialisation
+        </button>
+      </div>
+
+      <!-- Direct mode -->
+      <div id="pwd-direct-section" class="hidden space-y-3">
+        <div id="srk-required-notice" class="hidden text-xs text-amber-400 bg-amber-900/20 border border-amber-700/30 rounded-xl p-3">
+          ⚠️ Configure d'abord la <strong>clé service role</strong> (section en haut de page) pour activer cette option.
+        </div>
+        <input type="password" id="new-pwd-input" placeholder="Nouveau mot de passe (min. 6 caractères)"
+               class="w-full px-4 py-3 rounded-xl text-sm" />
+        <button id="set-pwd-btn" class="w-full btn-success py-3 rounded-xl font-bold text-sm">
+          ✅ Appliquer le nouveau mot de passe
+        </button>
+      </div>
+
+      <!-- Feedback -->
+      <div id="pwd-feedback" class="hidden text-sm text-center py-2.5 px-4 rounded-xl"></div>
+
+    </div>
+  </div>
+
+  <script>
+  // ============================================================
+  //  Admin Panel — state
+  // ============================================================
+  let _profiles    = [];
+  let _profilesById = {};
+  let _targetUser  = null;
+  let _meId        = null;
+
+  // ── Service Role Key (sessionStorage) ────────────────────────
+  function getSRK()    { return sessionStorage.getItem('_srk') || ''; }
+  function setSRK(k)   { sessionStorage.setItem('_srk', k); refreshSRKUI(); }
+  function clearSRK()  { sessionStorage.removeItem('_srk'); refreshSRKUI(); }
+
+  function refreshSRKUI() {
+    const el  = document.getElementById('srk-status-badge');
+    const has = !!getSRK();
+    if (!el) return;
+    el.textContent  = has ? '✅ Configurée' : 'Non configurée';
+    el.style.background = has ? '#16a34a33' : '#1e293b';
+    el.style.color      = has ? '#4ade80'   : '#64748b';
+  }
+
+  function getAdminSB() {
+    const k = getSRK();
+    if (!k || typeof supabase === 'undefined') return null;
+    return supabase.createClient(SUPABASE_URL, k, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
+  }
+
+  // ── Date helpers ─────────────────────────────────────────────
+  function fmtAgo(ts) {
+    if (!ts) return '<span class="text-slate-600">—</span>';
+    const d    = new Date(ts);
+    const diff = Date.now() - d.getTime();
+    const m    = Math.floor(diff / 60000);
+    const h    = Math.floor(diff / 3600000);
+    const j    = Math.floor(diff / 86400000);
+    if (m  <  2) return '<span class="text-green-400 font-semibold">À l\'instant</span>';
+    if (m  < 60) return `<span class="text-green-300">${m} min</span>`;
+    if (h  < 24) return `<span class="text-blue-300">${h} h</span>`;
+    if (j  <  7) return `<span class="text-slate-300">${j} j</span>`;
+    return `<span class="text-slate-500">${d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'})}</span>`;
+  }
+
+  function fmtDate(ts) {
+    if (!ts) return '—';
+    return new Date(ts).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' });
+  }
+
+  // ── XSS escape ───────────────────────────────────────────────
+  function esc(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Render table ─────────────────────────────────────────────
+  function renderTable() {
+    const q    = (document.getElementById('search-input')?.value || '').toLowerCase();
+    const list = q
+      ? _profiles.filter(p =>
+          (p.username || '').toLowerCase().includes(q) ||
+          (p.email    || '').toLowerCase().includes(q))
+      : _profiles;
+
+    const tbody = document.getElementById('users-tbody');
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-10 text-center text-slate-500">Aucun résultat</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = list.map(p => {
+      const isMe   = p.id === _meId;
+      const badge  = p.is_admin
+        ? '<span class="badge-admin px-2 py-0.5 rounded-full text-xs font-bold">⭐ Admin</span>'
+        : '<span class="badge-user px-2 py-0.5 rounded-full text-xs">Utilisateur</span>';
+
+      const toggleBtn = isMe
+        ? '<span class="text-xs text-slate-600">(vous)</span>'
+        : `<button onclick="toggleAdmin('${p.id}')"
+             class="btn-ghost px-2 py-1 rounded-lg text-xs whitespace-nowrap"
+             title="${p.is_admin ? 'Retirer admin' : 'Promouvoir admin'}">
+             ${p.is_admin ? '☆ Retirer' : '⭐ Admin'}
+           </button>`;
+
+      return `
+        <tr>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl shrink-0">${esc(p.avatar || '💩')}</span>
+              <div>
+                <div class="font-medium">${esc(p.username || '—')}</div>
+                <div class="text-xs text-slate-600">…${esc(p.id.slice(-8))}</div>
+              </div>
+            </div>
+          </td>
+          <td class="px-4 py-3 text-slate-300 text-xs">${esc(p.email || '—')}</td>
+          <td class="px-4 py-3 text-slate-500 text-xs">${fmtDate(p.created_at)}</td>
+          <td class="px-4 py-3 text-xs">${fmtAgo(p.last_login)}</td>
+          <td class="px-4 py-3">${badge}</td>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-1 flex-wrap">
+              ${toggleBtn}
+              <button onclick="openPwdModal('${p.id}')"
+                class="btn-ghost px-2 py-1 rounded-lg text-xs">🔑 MDP</button>
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  function updateStats() {
+    const now   = Date.now();
+    const w7    = now - 7 * 86400000;
+    const today = new Date().toDateString();
+    document.getElementById('stat-total').textContent  = _profiles.length;
+    document.getElementById('stat-admins').textContent = _profiles.filter(p => p.is_admin).length;
+    document.getElementById('stat-active').textContent = _profiles.filter(p =>
+      p.last_login && new Date(p.last_login).getTime() > w7).length;
+    document.getElementById('stat-today').textContent  = _profiles.filter(p =>
+      p.last_login && new Date(p.last_login).toDateString() === today).length;
+  }
+
+  // ── Load users ───────────────────────────────────────────────
+  async function loadUsers() {
+    const tbody = document.getElementById('users-tbody');
+    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-10 text-center text-slate-500">Chargement…</td></tr>';
+    try {
+      _profiles = await window.SupabaseClient.getAllProfiles();
+      // Admins d'abord, puis tri alphab.
+      _profiles.sort((a, b) => {
+        if (a.is_admin !== b.is_admin) return (b.is_admin ? 1 : 0) - (a.is_admin ? 1 : 0);
+        return (a.username || '').localeCompare(b.username || '');
+      });
+      _profilesById = Object.fromEntries(_profiles.map(p => [p.id, p]));
+      updateStats();
+      renderTable();
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-10 text-center text-red-400">❌ ${esc(e.message)}</td></tr>`;
+    }
+  }
+
+  // ── Toggle admin ─────────────────────────────────────────────
+  async function toggleAdmin(userId) {
+    const p      = _profilesById[userId];
+    if (!p) return;
+    const action = p.is_admin ? `retirer les droits admin de ${p.username}` : `promouvoir ${p.username} en admin`;
+    if (!confirm(`Confirmer : ${action} ?`)) return;
+    try {
+      await window.SupabaseClient.setUserAdmin(userId, !p.is_admin);
+      await loadUsers();
+    } catch (e) {
+      alert('Erreur : ' + e.message);
+    }
+  }
+
+  // ── Password modal ────────────────────────────────────────────
+  function openPwdModal(userId) {
+    _targetUser = _profilesById[userId];
+    if (!_targetUser) return;
+
+    document.getElementById('pwd-avatar').textContent   = _targetUser.avatar || '💩';
+    document.getElementById('pwd-username').textContent = _targetUser.username || '—';
+    document.getElementById('pwd-email').textContent    = _targetUser.email || '(email inconnu)';
+    document.getElementById('new-pwd-input').value      = '';
+    document.getElementById('pwd-feedback').classList.add('hidden');
+
+    switchPwdMode('email');
+    document.getElementById('pwd-modal').style.display = 'flex';
+  }
+
+  function closePwdModal() {
+    document.getElementById('pwd-modal').style.display = 'none';
+    _targetUser = null;
+  }
+
+  function switchPwdMode(mode) {
+    const emailSec  = document.getElementById('pwd-email-section');
+    const directSec = document.getElementById('pwd-direct-section');
+    emailSec.classList.toggle('hidden',  mode !== 'email');
+    directSec.classList.toggle('hidden', mode !== 'direct');
+
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      const active = btn.dataset.mode === mode;
+      btn.className = `mode-btn flex-1 py-2 rounded-xl font-medium transition ${
+        active ? 'btn-primary' : 'btn-ghost'}`;
+    });
+
+    // Dans le mode direct, vérifier si la clé service est configurée
+    if (mode === 'direct') {
+      const notice = document.getElementById('srk-required-notice');
+      const setBtn = document.getElementById('set-pwd-btn');
+      const hasSRK = !!getSRK();
+      notice.classList.toggle('hidden', hasSRK);
+      setBtn.disabled = !hasSRK;
+      setBtn.style.opacity = hasSRK ? '1' : '0.5';
+    }
+  }
+
+  function setPwdFeedback(msg, ok = true) {
+    const el = document.getElementById('pwd-feedback');
+    el.textContent = msg;
+    el.className   = `text-sm text-center py-2.5 px-4 rounded-xl ${
+      ok ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`;
+    el.classList.remove('hidden');
+  }
+
+  // ── Init ─────────────────────────────────────────────────────
+  async function init() {
+    refreshSRKUI();
+
+    const profile = await window.SupabaseClient.getSession();
+    document.getElementById('loading-state').classList.add('hidden');
+
+    if (!profile) {
+      // Non connecté → retour à l'app
+      window.location.href = 'index.html';
+      return;
+    }
+
+    if (!profile.is_admin) {
+      document.getElementById('access-denied').classList.remove('hidden');
+      return;
+    }
+
+    _meId = profile.id;
+    document.getElementById('admin-name').textContent =
+      `${profile.avatar || '💩'} ${profile.username}`;
+
+    document.getElementById('admin-content').classList.remove('hidden');
+    await loadUsers();
+  }
+
+  // ── Events ───────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+
+    init();
+
+    // SRK
+    document.getElementById('srk-save-btn')?.addEventListener('click', () => {
+      const v = document.getElementById('srk-input').value.trim();
+      if (!v) { alert('Clé vide'); return; }
+      setSRK(v);
+      document.getElementById('srk-input').value = '';
+      alert('Clé service role enregistrée pour cette session.');
+    });
+    document.getElementById('srk-clear-btn')?.addEventListener('click', () => {
+      clearSRK();
+      document.getElementById('srk-input').value = '';
+    });
+
+    // Table
+    document.getElementById('search-input')?.addEventListener('input', renderTable);
+    document.getElementById('refresh-btn')?.addEventListener('click', loadUsers);
+
+    // Signout
+    document.getElementById('signout-btn')?.addEventListener('click', async () => {
+      await window.SupabaseClient.signOut();
+      window.location.href = 'index.html';
+    });
+
+    // Password modal — close
+    document.getElementById('close-pwd-modal')?.addEventListener('click', closePwdModal);
+    document.getElementById('pwd-modal')?.addEventListener('click', e => {
+      if (e.target === document.getElementById('pwd-modal')) closePwdModal();
+    });
+
+    // Password modal — mode switch
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchPwdMode(btn.dataset.mode));
+    });
+
+    // Send reset email
+    document.getElementById('send-reset-btn')?.addEventListener('click', async () => {
+      const email = _targetUser?.email;
+      if (!email) { alert('Email inconnu pour cet utilisateur.'); return; }
+      const btn = document.getElementById('send-reset-btn');
+      btn.textContent = '⏳ Envoi…';
+      btn.disabled    = true;
+      try {
+        await window.SupabaseClient.resetPassword(email);
+        setPwdFeedback('✅ Email envoyé à ' + email);
+      } catch (e) {
+        setPwdFeedback('❌ ' + e.message, false);
+      } finally {
+        btn.textContent = '📧 Envoyer l\'email de réinitialisation';
+        btn.disabled    = false;
+      }
+    });
+
+    // Set password directly (requires service role key)
+    document.getElementById('set-pwd-btn')?.addEventListener('click', async () => {
+      const pwd    = document.getElementById('new-pwd-input').value;
+      if (pwd.length < 6) { alert('Minimum 6 caractères'); return; }
+      const adminSB = getAdminSB();
+      if (!adminSB) { alert('Configure la clé service role d\'abord.'); return; }
+
+      const btn = document.getElementById('set-pwd-btn');
+      btn.textContent = '⏳ Modification…';
+      btn.disabled    = true;
+      try {
+        const { error } = await adminSB.auth.admin.updateUserById(
+          _targetUser.id, { password: pwd });
+        if (error) throw new Error(error.message);
+        setPwdFeedback(`✅ Mot de passe modifié pour ${_targetUser.username}`);
+        document.getElementById('new-pwd-input').value = '';
+      } catch (e) {
+        setPwdFeedback('❌ ' + e.message, false);
+      } finally {
+        btn.textContent = '✅ Appliquer le nouveau mot de passe';
+        btn.disabled    = false;
+      }
+    });
+
+  });
+  </script>
+</body>
+</html>
