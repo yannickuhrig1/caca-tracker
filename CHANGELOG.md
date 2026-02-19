@@ -5,6 +5,20 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.5.0] — 2026-02-19
+
+### Ajouté
+- **Humeur sur les entrées 😊** (A) : 4 boutons humeur dans le drawer (Normal / Douloureux / Urgent / Difficile) — humeur enregistrée avec chaque caca et affichée dans l'historique
+- **Détail du jour — clic heatmap 📅** (B) : cliquer sur un jour coloré de la heatmap ouvre une modal listant tous les cacas de ce jour (heure, texture, couleur, commentaire, humeur)
+- **Comparaison mensuelle 📊** (C) : card dans l'onglet Stats comparant ce mois-ci vs le mois précédent (nombre de cacas, évolution en %, jours actifs)
+- **Streak d'objectifs 🔥** (D) : sous la barre d'objectif du Dashboard, affichage du nombre de jours consécutifs où l'objectif a été atteint
+- **Score santé intestinale 🏥** (E) : card dans l'onglet Stats avec note A/B/C/D basée sur la régularité des intervalles, le coefficient de variation et le streak
+- **Mode Timer ⏱️** (F) : bouton chrono dans le header — démarre une séance, affiche un overlay flottant avec durée en temps réel, arrêter ouvre le drawer avec la durée pré-remplie dans le commentaire
+- **Swipe entre onglets 👆** (H) : navigation par glissement gauche/droite sur mobile (seuil 60px), désactivé quand le drawer ou une modal est ouverte
+- **Sons personnalisés 📁** (I) : dans les réglages sons, bouton d'import de fichier audio par texture — le son est encodé en base64 et sauvegardé en localStorage, bouton ✕ pour le supprimer
+
+---
+
 ## [2.4.1] — 2026-02-19
 
 ### Corrigé

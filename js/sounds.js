@@ -58,8 +58,31 @@ class SoundManager {
         audio.play().catch(e => console.log('Sound play failed:', e));
     }
 
+    playDataUrl(dataUrl) {
+        if (this.volume === 0) return;
+        const audio = new Audio(dataUrl);
+        audio.volume = this.volume;
+        audio.play().catch(e => console.log('Custom sound play failed:', e));
+    }
+
+    getCustomSound(texture) {
+        try { return localStorage.getItem('customSound_' + texture) || null; }
+        catch(e) { return null; }
+    }
+
+    setCustomSound(texture, dataUrl) {
+        try { localStorage.setItem('customSound_' + texture, dataUrl); }
+        catch(e) { alert('Son trop volumineux pour être sauvegardé (max ~2MB)'); }
+    }
+
+    clearCustomSound(texture) {
+        localStorage.removeItem('customSound_' + texture);
+    }
+
     // Joue le son correspondant à la texture du caca
     playPoopAdded(texture) {
+        const custom = this.getCustomSound(texture || 'normal');
+        if (custom) { this.playDataUrl(custom); return; }
         this.play(this.getTextureSound(texture || 'normal'));
     }
 
@@ -111,6 +134,12 @@ function createSoundControl() {
           </select>
           <button onclick="soundManager.play(soundManager.getTextureSound('${tex}'))"
                   class="text-lg" title="Écouter">▶️</button>
+        <label class="text-lg cursor-pointer" title="Son personnalisé" style="position:relative">
+          📁
+          <input type="file" accept="audio/*" class="hidden"
+            onchange="(function(f,t){if(!f)return;const r=new FileReader();r.onload=e=>{soundManager.setCustomSound(t,e.target.result);alert('Son personnalisé sauvegardé !')};r.readAsDataURL(f)})(this.files[0],'${tex}')">
+        </label>
+        ${soundManager.getCustomSound(tex) ? `<button onclick="soundManager.clearCustomSound('${tex}');alert('Son personnalisé supprimé')" class="text-xs text-red-400" title="Supprimer son custom">✕</button>` : ''}
         </div>`;
     }).join('');
 

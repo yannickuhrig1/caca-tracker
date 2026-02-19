@@ -267,7 +267,8 @@ function createHeatmap(poops) {
                 : day.count <= 2 ? 2
                 : day.count <= 3 ? 3 : 4;
             const label = `${day.key} : ${day.count} caca${day.count > 1 ? 's' : ''}`;
-            cells += `<div class="hm-cell hm-c${intensity}" title="${label}"></div>`;
+            const clickable = day.count > 0 ? `data-date="${day.key}" style="cursor:pointer"` : '';
+            cells += `<div class="hm-cell hm-c${intensity}" title="${label}" ${clickable}></div>`;
         });
         cells += '</div>';
     });

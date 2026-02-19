@@ -285,6 +285,9 @@
       </div>
       <div class="flex flex-col items-end gap-2">
         <div class="flex items-center gap-2">
+          <button id="timer-btn" class="bg-white/20 px-3 py-1 rounded-full text-sm font-bold hover:bg-white/30 transition" title="Chrono de séance">
+            ⏱️ <span id="timer-display" class="hidden font-mono">00:00</span>
+          </button>
           <div id="streak-badge" class="hidden bg-red-500 px-3 py-1 rounded-full flex items-center gap-1 text-sm font-bold">
             <i class="fas fa-fire"></i><span id="streak-val">0</span> j 🔥
           </div>
@@ -354,6 +357,7 @@
           <div id="goal-bar" class="h-full rounded-full transition-all duration-500" style="width:0%;background:var(--accent)"></div>
         </div>
         <div id="goal-label" class="text-xs text-center opacity-60">0 / 1 caca aujourd'hui</div>
+        <div id="goal-streak" class="hidden text-xs text-center font-bold mt-1" style="color:var(--accent)"></div>
       </div>
 
       <div class="flex justify-center mb-4">
@@ -472,6 +476,11 @@
           ✅ Idéal médical : 75–85% Normal, &lt;5% Liquide/Explosif
         </div>
       </div>
+
+      <!-- Comparaison mensuelle -->
+      <div id="month-compare-container" class="mb-4"></div>
+      <!-- Score santé -->
+      <div id="health-score-container" class="mb-4"></div>
 
       <!-- Heatmap calendrier (injectée par charts.js) -->
       <div id="heatmap-container" class="mb-4"></div>
@@ -661,7 +670,7 @@
 
       <div class="mt-4 card p-4 rounded-[1.5rem] text-xs text-center opacity-50 space-y-1">
         <div>💩 Les cacas de Clémence</div>
-        <div>Version 2.4.1 — Février 2026</div>
+        <div>Version 2.5.0 — Février 2026</div>
         <div>Fait avec ❤️ par Papa</div>
       </div>
     </section>
@@ -780,6 +789,32 @@
     </div>
   </div>
 
+  <!-- TIMER OVERLAY (flottant) -->
+  <div id="timer-overlay" class="hidden fixed bottom-24 left-1/2 z-[60]" style="transform:translateX(-50%)">
+    <div class="flex items-center gap-3 px-5 py-3 rounded-[2rem] shadow-2xl text-white font-bold"
+         style="background:linear-gradient(135deg,#7c3aed,#ec4899)">
+      <span class="text-2xl">⏱️</span>
+      <div>
+        <div class="text-xs opacity-80">Séance en cours</div>
+        <div id="timer-overlay-display" class="text-2xl font-mono">00:00</div>
+      </div>
+      <button id="timer-stop-btn" class="ml-2 bg-white/20 px-3 py-2 rounded-[1rem] text-sm">
+        ✅ Terminé
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL DÉTAIL DU JOUR (clic heatmap) -->
+  <div id="day-detail-modal" class="fixed inset-0 z-[75] hidden" style="background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);">
+    <div class="flex flex-col h-full p-4 max-w-sm mx-auto">
+      <div class="flex items-center justify-between mb-4 pt-2">
+        <h2 id="day-detail-title" class="font-bold text-xl text-white">📅</h2>
+        <button id="close-day-detail-btn" class="text-white opacity-60 text-2xl">✕</button>
+      </div>
+      <div id="day-detail-content" class="flex-1 overflow-y-auto space-y-2 pb-4"></div>
+    </div>
+  </div>
+
   <!-- MODAL ANNÉE EN REVIEW 🎬 -->
   <div id="wrapped-modal" class="fixed inset-0 z-[70] hidden" style="background:rgba(0,0,0,0.9);backdrop-filter:blur(8px);">
     <div class="flex flex-col h-full p-4 max-w-sm mx-auto">
@@ -882,6 +917,17 @@
             <textarea id="comment" class="w-full p-3 border border-gray-200 rounded-[1.25rem] resize-none text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400" rows="2" placeholder="Ex: Record perso !"></textarea>
           </div>
 
+          <!-- Humeur (optionnel) -->
+          <div>
+            <div class="text-sm font-bold mb-2 text-slate-800">Humeur (optionnel)</div>
+            <div class="grid grid-cols-4 gap-2">
+              <button class="mood-btn p-2 rounded-[1rem] border-2 border-gray-200 text-center text-slate-800" data-mood="normal">😊<div class="text-xs mt-0.5">Normal</div></button>
+              <button class="mood-btn p-2 rounded-[1rem] border-2 border-gray-200 text-center text-slate-800" data-mood="douloureux">😫<div class="text-xs mt-0.5">Douloureux</div></button>
+              <button class="mood-btn p-2 rounded-[1rem] border-2 border-gray-200 text-center text-slate-800" data-mood="urgent">⚡<div class="text-xs mt-0.5">Urgent</div></button>
+              <button class="mood-btn p-2 rounded-[1rem] border-2 border-gray-200 text-center text-slate-800" data-mood="difficile">😴<div class="text-xs mt-0.5">Difficile</div></button>
+            </div>
+          </div>
+
           <!-- Boutons -->
           <div class="flex gap-3 pb-2">
             <button id="cancel-drawer" class="flex-1 bg-gray-100 text-slate-700 py-4 rounded-[1.25rem] font-bold">Annuler</button>
@@ -936,7 +982,8 @@
   // ===================================================
   let state = { logs: [], theme: 'default' };
   let selectedTexture = null;
-  let selectedColor = null;
+  let selectedColor   = null;
+  let selectedMood    = null;
   let weekChart = null;
 
   // ===================================================
@@ -1002,8 +1049,10 @@
     // Initialiser les features supplémentaires
     setupGoal();
     startCountdown();
+    setupTimer();
     $id('wrapped-btn')?.addEventListener('click', openWrapped);
     $id('close-wrapped-btn')?.addEventListener('click', () => $id('wrapped-modal').classList.add('hidden'));
+    $id('close-day-detail-btn')?.addEventListener('click', () => $id('day-detail-modal').classList.add('hidden'));
     $id('share-stats-btn')?.addEventListener('click', shareStats);
 
     $debug('✅ ready. logs=' + state.logs.length);
@@ -1046,6 +1095,27 @@
         ? `🎉 Objectif atteint ! ${todayCount} / ${goalVal} caca${goalVal > 1 ? 's' : ''}`
         : `${todayCount} / ${goalVal} caca${goalVal > 1 ? 's' : ''} aujourd'hui`;
     }
+    // Streak d'objectifs
+    const goalStreakEl = $id('goal-streak');
+    if (goalStreakEl) {
+      const gs = calculateGoalStreak(goalVal);
+      goalStreakEl.textContent = gs > 0 ? `🔥 ${gs}j d'affilée` : '';
+      goalStreakEl.classList.toggle('hidden', gs === 0);
+    }
+  }
+
+  function calculateGoalStreak(goal) {
+    let streak = 0;
+    const today = new Date();
+    for (let i = 0; i < 90; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const ds = d.toDateString();
+      const count = state.logs.filter(l => new Date(l.date).toDateString() === ds).length;
+      if (count >= goal) streak++;
+      else break;
+    }
+    return streak;
   }
 
   // ===================================================
@@ -1246,6 +1316,192 @@
   }
 
   // ===================================================
+  //  DÉTAIL DU JOUR 📅
+  // ===================================================
+  function showDayDetail(dateKey) {
+    const modal   = $id('day-detail-modal');
+    const title   = $id('day-detail-title');
+    const content = $id('day-detail-content');
+    if (!modal) return;
+
+    const [year, month, day] = dateKey.split('-').map(Number);
+    const d = new Date(year, month - 1, day);
+    const label = d.toLocaleDateString('fr', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    if (title) title.textContent = '📅 ' + label;
+
+    const dayLogs = state.logs.filter(l => {
+      const ld = new Date(l.date);
+      return ld.getFullYear() === year && ld.getMonth() === month - 1 && ld.getDate() === day;
+    }).sort((a,b) => a.date - b.date);
+
+    const textureEmoji = { normal:'💩',dur:'🗿',mou:'🍮',spray:'💦',liquide:'🌊',explosif:'💥' };
+    const moodEmoji    = { normal:'😊',douloureux:'😫',urgent:'⚡',difficile:'😴' };
+
+    content.innerHTML = dayLogs.length === 0
+      ? '<div class="text-white opacity-60 text-center py-8">Aucun caca ce jour-là</div>'
+      : dayLogs.map(l => {
+          const t = new Date(l.date).toLocaleTimeString('fr', { hour:'2-digit', minute:'2-digit' });
+          return `
+            <div class="rounded-[1.25rem] p-3 text-white" style="background:rgba(255,255,255,0.12)">
+              <div class="flex items-center gap-2">
+                <span class="text-2xl">${textureEmoji[l.texture] || '💩'}</span>
+                <div class="flex-1">
+                  <div class="font-bold">${l.texture} <span class="opacity-70 text-sm">à ${t}</span></div>
+                  <div class="text-xs opacity-70">${l.color}${l.mood ? ' · ' + (moodEmoji[l.mood] || '') + ' ' + l.mood : ''}${l.comment ? ' · ' + l.comment : ''}</div>
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+
+    modal.classList.remove('hidden');
+  }
+
+  // ===================================================
+  //  SCORE SANTÉ 🏥
+  // ===================================================
+  function renderHealthScore() {
+    const el = $id('health-score-container');
+    if (!el || state.logs.length < 5) { if (el) el.innerHTML = ''; return; }
+
+    const sorted = [...state.logs].sort((a,b) => a.date - b.date);
+    const intervals = [];
+    for (let i = 1; i < sorted.length; i++) {
+      intervals.push((sorted[i].date - sorted[i-1].date) / 3600000);
+    }
+    const avg = intervals.reduce((a,b) => a+b, 0) / intervals.length;
+    const stdDev = Math.sqrt(intervals.map(x => Math.pow(x - avg, 2)).reduce((a,b) => a+b, 0) / intervals.length);
+    const cv = avg > 0 ? stdDev / avg : 1;
+    const streak = calculateStreak();
+
+    // Grille de score
+    let score = 100;
+    // Intervalle idéal : 12-36h
+    if (avg < 8 || avg > 72) score -= 30;
+    else if (avg < 12 || avg > 48) score -= 15;
+    // Régularité (coefficient de variation)
+    if (cv > 0.8)      score -= 30;
+    else if (cv > 0.5) score -= 15;
+    else if (cv > 0.3) score -= 5;
+    // Streak
+    if (streak >= 7)  score += 10;
+    else if (streak < 2) score -= 10;
+    score = Math.max(0, Math.min(100, score));
+
+    const grade = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : 'D';
+    const gradeColor = { A:'#10b981', B:'#f59e0b', C:'#f97316', D:'#ef4444' }[grade];
+    const gradeMsg   = { A:'Excellent — intestins en or !', B:'Bien — régularité correcte', C:'Moyen — pense à t\'hydrater', D:'À améliorer — consulte un médecin ?' }[grade];
+    const avgH = Math.round(avg);
+    const cvPct = Math.round(cv * 100);
+
+    el.innerHTML = `
+      <div class="card p-4 rounded-[1.5rem]">
+        <div class="font-bold mb-3 text-sm">🏥 Score de régularité intestinale</div>
+        <div class="flex items-center gap-4">
+          <div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white flex-shrink-0"
+               style="background:${gradeColor}">${grade}</div>
+          <div class="flex-1">
+            <div class="font-bold" style="color:${gradeColor}">${gradeMsg}</div>
+            <div class="text-xs opacity-60 mt-1">Intervalle moyen : ${avgH}h · Variabilité : ${cvPct}% · Streak : ${streak}j</div>
+            <div class="w-full rounded-full overflow-hidden mt-2" style="height:6px;background:rgba(0,0,0,0.08)">
+              <div style="width:${score}%;height:100%;border-radius:99px;background:${gradeColor};transition:width .6s"></div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ===================================================
+  //  COMPARAISON MENSUELLE 📆
+  // ===================================================
+  function renderMonthCompare() {
+    const el = $id('month-compare-container');
+    if (!el) return;
+    const now = new Date();
+    const thisStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const lastStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+    const thisCount = state.logs.filter(l => l.date >= thisStart).length;
+    const lastCount = state.logs.filter(l => l.date >= lastStart && l.date < thisStart).length;
+    const delta = thisCount - lastCount;
+    const pct   = lastCount > 0 ? Math.round(Math.abs(delta / lastCount) * 100) : null;
+    const arrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '=';
+    const color = delta > 0 ? '#10b981' : delta < 0 ? '#ef4444' : '#94a3b8';
+    const monthNames = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+    const thisMonth = monthNames[now.getMonth()];
+    const lastMonth = monthNames[(now.getMonth() + 11) % 12];
+    el.innerHTML = `
+      <div class="card p-4 rounded-[1.5rem]">
+        <div class="font-bold mb-3 text-sm">📆 Ce mois vs le précédent</div>
+        <div class="flex items-center gap-4">
+          <div class="flex-1 text-center">
+            <div class="text-xs opacity-60">${lastMonth}</div>
+            <div class="text-2xl font-bold">${lastCount}</div>
+          </div>
+          <div class="text-3xl font-bold" style="color:${color}">${arrow}</div>
+          <div class="flex-1 text-center">
+            <div class="text-xs opacity-60">${thisMonth}</div>
+            <div class="text-2xl font-bold" style="color:var(--accent)">${thisCount}</div>
+          </div>
+          ${pct !== null ? `<div class="text-sm font-bold" style="color:${color}">${delta > 0 ? '+' : ''}${pct}%</div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  // ===================================================
+  //  TIMER DE SÉANCE ⏱️
+  // ===================================================
+  let _timerStart   = null;
+  let _timerInterval = null;
+
+  function setupTimer() {
+    $id('timer-btn')?.addEventListener('click', () => {
+      if (_timerStart) {
+        stopTimer(true); // annuler
+      } else {
+        startTimer();
+      }
+    });
+    $id('timer-stop-btn')?.addEventListener('click', () => stopTimer(false));
+  }
+
+  function startTimer() {
+    _timerStart = Date.now();
+    $id('timer-overlay')?.classList.remove('hidden');
+    const display = $id('timer-display');
+    if (display) display.classList.remove('hidden');
+    _timerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - _timerStart) / 1000);
+      const m = String(Math.floor(elapsed / 60)).padStart(2,'0');
+      const s = String(elapsed % 60).padStart(2,'0');
+      const txt = `${m}:${s}`;
+      if ($id('timer-display'))         $id('timer-display').textContent = txt;
+      if ($id('timer-overlay-display')) $id('timer-overlay-display').textContent = txt;
+    }, 1000);
+  }
+
+  function stopTimer(cancel = false) {
+    if (!_timerStart) return;
+    const elapsed = Math.floor((Date.now() - _timerStart) / 1000);
+    clearInterval(_timerInterval);
+    _timerInterval = null;
+    _timerStart = null;
+    $id('timer-overlay')?.classList.add('hidden');
+    const display = $id('timer-display');
+    if (display) { display.textContent = '00:00'; display.classList.add('hidden'); }
+
+    if (!cancel && elapsed > 10) {
+      const m = Math.floor(elapsed / 60);
+      const s = elapsed % 60;
+      const durationStr = m > 0 ? `${m}min ${s}s` : `${s}s`;
+      // Pré-remplir le commentaire et ouvrir le drawer
+      openDrawer();
+      setTimeout(() => {
+        const commentEl = $id('comment');
+        if (commentEl) commentEl.value = `⏱️ Durée : ${durationStr}`;
+      }, 100);
+    }
+  }
+
+  // ===================================================
   //  SERVICE WORKER
   // ===================================================
   function registerSW() {
@@ -1367,6 +1623,23 @@
       if (LS_OK) localStorage.setItem('install-dismissed', '1');
     });
 
+    // Swipe horizontal entre onglets (mobile)
+    const _tabOrder = ['dashboard','stats','badges','admin','social'];
+    let _swipeStartX = 0;
+    document.querySelector('main')?.addEventListener('touchstart', e => {
+      _swipeStartX = e.touches[0].clientX;
+    }, { passive: true });
+    document.querySelector('main')?.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - _swipeStartX;
+      if (Math.abs(dx) < 60) return;
+      // Ne pas swiper si le drawer est ouvert
+      if (!$id('drawer')?.classList.contains('hidden')) return;
+      const current = document.querySelector('.tab-content.active')?.id?.replace('-tab','');
+      const idx = _tabOrder.indexOf(current);
+      if (dx < -60 && idx < _tabOrder.length - 1) switchTab(_tabOrder[idx + 1]);
+      if (dx >  60 && idx > 0)                    switchTab(_tabOrder[idx - 1]);
+    }, { passive: true });
+
     // Blague aléatoire
     $id('random-joke-btn')?.addEventListener('click', () => window.JokesModule?.showRandomJoke());
 
@@ -1478,6 +1751,22 @@
         $id('signup-submit').textContent = 'Créer mon compte';
         $id('signup-submit').disabled = false;
       }
+    });
+
+    // Mood picker
+    document.querySelectorAll('.mood-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mood = btn.dataset.mood;
+        if (selectedMood === mood) {
+          // Désélectionner si on reclique
+          selectedMood = null;
+          document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('border-amber-400','bg-amber-50'));
+        } else {
+          selectedMood = mood;
+          document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('border-amber-400','bg-amber-50'));
+          btn.classList.add('border-amber-400','bg-amber-50');
+        }
+      });
     });
 
     // Avatar picker
@@ -1678,7 +1967,9 @@
     // Reset
     $id('comment').value = '';
     selectedTexture = null;
-    selectedColor = null;
+    selectedColor   = null;
+    selectedMood    = null;
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('border-amber-400','bg-amber-50'));
     $id('retro-chk').checked = false;
     $id('retro-date-wrap').classList.add('hidden');
     document.querySelectorAll('.texture-btn').forEach(b => b.classList.remove('border-amber-500', 'bg-amber-100', 'selected'));
@@ -1725,7 +2016,8 @@
       texture: selectedTexture,
       color: selectedColor,
       comment: $id('comment').value.trim(),
-      isRetro: isRetro
+      isRetro: isRetro,
+      mood: selectedMood || null
     };
 
     state.logs.push(poop);
@@ -1821,7 +2113,7 @@
       const dt = new Date(log.date).toLocaleString('fr-FR', {weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
       const icon = textureEmoji(log.texture);
       const retroTag = log.isRetro ? `<span class="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full ml-1 font-bold">⏪ retard</span>` : '';
-      const note = log.comment ? `<div class="text-xs mt-1 bg-amber-100 text-amber-800 px-2 py-1 rounded-xl">${esc(log.comment)}</div>` : '';
+      const note = (log.mood ? `<span class="text-xs px-2 py-0.5 rounded-full mr-1" style="background:color-mix(in srgb,var(--accent) 12%,transparent)">${{normal:'😊',douloureux:'😫',urgent:'⚡',difficile:'😴'}[log.mood] || ''} ${log.mood}</span>` : '') + (log.comment ? `<div class="text-xs mt-1 bg-amber-100 text-amber-800 px-2 py-1 rounded-xl">${esc(log.comment)}</div>` : '');
       return `<div class="card flex items-center gap-3 p-4 rounded-[1.5rem] shadow">
         <div class="w-12 h-12 rounded-[1rem] flex items-center justify-center text-2xl flex-shrink-0"
           style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">${icon}</div>
@@ -1925,10 +2217,22 @@
       </div>`;
     }).join('');
 
+    // Comparaison mensuelle
+    renderMonthCompare();
+    // Score santé intestinale
+    renderHealthScore();
+
     // Heatmap calendrier (charts.js)
     if (typeof createHeatmap === 'function') {
       const hmEl = $id('heatmap-container');
-      if (hmEl) hmEl.innerHTML = state.logs.length > 0 ? createHeatmap(state.logs) : '';
+      if (hmEl) {
+        hmEl.innerHTML = state.logs.length > 0 ? createHeatmap(state.logs) : '';
+        // Clic sur un jour
+        hmEl.addEventListener('click', e => {
+          const cell = e.target.closest('[data-date]');
+          if (cell) showDayDetail(cell.dataset.date);
+        });
+      }
     }
     // Graphiques avancés (charts.js)
     if (typeof createAllCharts === 'function' && state.logs.length > 0) {
