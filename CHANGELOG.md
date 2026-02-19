@@ -5,6 +5,15 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.2.1] — 2026-02-19
+
+### Corrigé
+- **Reset mot de passe** : lien de reset pointe désormais vers `caca-tracker.vercel.app` (plus vers localhost)
+- **Reset mot de passe** : formulaire "Nouveau mot de passe" s'affiche automatiquement dans l'app quand on clique le lien depuis l'email (détection du token `type=recovery` dans l'URL)
+- `updatePassword()` ajouté dans `supabase-client.js`
+
+---
+
 ## [2.2.0] — 2026-02-19
 
 ### Ajouté

@@ -7,6 +7,9 @@
 const SUPABASE_URL      = 'https://fnljhknjmmteawwomehb.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZubGpoa25qbW10ZWF3d29tZWhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MzQ2MDYsImV4cCI6MjA4NzAxMDYwNn0.aWlwsLdpH9u4BZjbpx5BNxWF5tiZ0c6sI0U1J7gjBfo';
 
+// URL de production (pour les liens de reset de mot de passe)
+const SITE_URL = 'https://caca-tracker.vercel.app/index.html';
+
 // ---- Init client ----
 let _sb = null;
 function getSB() {
@@ -61,9 +64,16 @@ async function signOut() {
 
 async function resetPassword(email) {
   const sb = getSB(); if (!sb) throw new Error('Supabase non disponible');
-  const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + window.location.pathname
-  });
+  // Toujours pointer vers la prod pour que le lien fonctionne sur mobile/email
+  const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+  const redirectTo = isLocal ? window.location.origin + '/index.html' : SITE_URL;
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) throw new Error(error.message);
+}
+
+async function updatePassword(newPassword) {
+  const sb = getSB(); if (!sb) throw new Error('Supabase non disponible');
+  const { error } = await sb.auth.updateUser({ password: newPassword });
   if (error) throw new Error(error.message);
 }
 
@@ -305,6 +315,7 @@ window.SupabaseClient = {
   signIn,
   signOut,
   resetPassword,
+  updatePassword,
   savePoopCloud,
   deletePoopCloud,
   syncLocalToCloud,

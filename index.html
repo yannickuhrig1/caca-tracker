@@ -557,7 +557,7 @@
       </div>
       <div class="mt-4 card p-4 rounded-[1.5rem] text-xs text-center opacity-50 space-y-1">
         <div>💩 Les cacas de Clémence</div>
-        <div>Version 2.2.0 — Février 2026</div>
+        <div>Version 2.2.1 — Février 2026</div>
         <div>Fait avec ❤️ par Papa</div>
       </div>
     </section>
@@ -672,6 +672,28 @@
           🚪 Se déconnecter
         </button>
         <button id="close-profile-modal" class="w-full py-2 text-sm opacity-50">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOUVEAU MOT DE PASSE MODAL (retour du lien de reset) -->
+  <div id="new-password-modal" class="fixed inset-0 z-[70] hidden" style="background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);">
+    <div class="flex items-center justify-center h-full p-4">
+      <div class="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-6 space-y-4">
+        <div class="text-center">
+          <div class="text-5xl mb-2">🔐</div>
+          <h2 class="font-bold text-xl">Nouveau mot de passe</h2>
+          <p class="text-xs opacity-60 mt-1">Choisis ton nouveau mot de passe</p>
+        </div>
+        <input id="new-password-input" type="password" placeholder="Nouveau mot de passe (min. 6 caractères)"
+          class="w-full p-3 border border-gray-200 rounded-[1rem] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+        <input id="new-password-confirm" type="password" placeholder="Confirmer le mot de passe"
+          class="w-full p-3 border border-gray-200 rounded-[1rem] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+        <div id="new-password-error" class="hidden text-xs text-red-500 font-bold px-1"></div>
+        <button id="new-password-submit" class="w-full py-4 rounded-[1.25rem] font-bold text-white"
+          style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">
+          Enregistrer le mot de passe
+        </button>
       </div>
     </div>
   </div>
@@ -835,8 +857,15 @@
       soundSettingsEl.innerHTML = createSoundControl();
     }
 
+    // Supabase : détecter un retour de reset de mot de passe
+    if (window.SupabaseClient && window.location.hash.includes('type=recovery')) {
+      history.replaceState(null, '', window.location.pathname); // nettoyer l'URL
+      window.SupabaseClient.getSession().then(() => {
+        $id('new-password-modal').classList.remove('hidden');
+      }).catch(() => {});
+    }
     // Supabase : restaurer session si déjà connecté
-    if (window.SupabaseClient) {
+    else if (window.SupabaseClient) {
       window.SupabaseClient.getSession().then(profile => {
         if (profile) {
           updateUserBadge(profile);
@@ -994,6 +1023,34 @@
       } finally {
         btn.textContent = 'Mot de passe oublié ?';
         btn.disabled = false;
+      }
+    });
+
+    // Nouveau mot de passe (retour du lien de reset)
+    $id('new-password-submit')?.addEventListener('click', async () => {
+      const pwd     = $id('new-password-input').value;
+      const confirm = $id('new-password-confirm').value;
+      const errEl   = $id('new-password-error');
+      errEl.classList.add('hidden');
+      if (pwd.length < 6) {
+        errEl.textContent = 'Mot de passe trop court (min. 6 caractères)';
+        errEl.classList.remove('hidden'); return;
+      }
+      if (pwd !== confirm) {
+        errEl.textContent = 'Les mots de passe ne correspondent pas';
+        errEl.classList.remove('hidden'); return;
+      }
+      const btn = $id('new-password-submit');
+      btn.textContent = '⏳ Enregistrement…'; btn.disabled = true;
+      try {
+        await window.SupabaseClient.updatePassword(pwd);
+        $id('new-password-modal').classList.add('hidden');
+        alert('✅ Mot de passe modifié avec succès !');
+      } catch(e) {
+        errEl.textContent = 'Erreur : ' + e.message;
+        errEl.classList.remove('hidden');
+      } finally {
+        btn.textContent = 'Enregistrer le mot de passe'; btn.disabled = false;
       }
     });
 
