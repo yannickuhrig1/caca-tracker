@@ -5,6 +5,16 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.4.1] — 2026-02-19
+
+### Corrigé
+- **Mise à jour mobile** : le téléphone restait bloqué sur l'ancienne version PWA même après déploiement
+- **SW v4 — network-first pour HTML** : `index.html` est toujours récupéré depuis le réseau (plus jamais servi depuis le cache) → les mises à jour sont immédiatement visibles
+- **`updateViaCache: 'none'`** : le navigateur ne met plus `sw.js` en cache HTTP, il détecte donc chaque nouvelle version du SW
+- **Bannière "Mise à jour disponible"** : s'affiche en haut de l'écran quand une nouvelle version est prête → un tap recharge et applique la mise à jour
+
+---
+
 ## [2.4.0] — 2026-02-19
 
 ### Ajouté

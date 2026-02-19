@@ -1,4 +1,4 @@
-const CACHE = 'caca-v3';
+const CACHE = 'caca-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -15,12 +15,14 @@ const ASSETS = [
   './js/social.js'
 ];
 
+// ---- Install : pré-cache tous les assets, activation immédiate ----
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
   );
 });
 
+// ---- Activate : purge les anciens caches, prend le contrôle ----
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
@@ -29,30 +31,46 @@ self.addEventListener('activate', e => {
   );
 });
 
+// ---- Message : page demande au SW de s'activer tout de suite ----
+self.addEventListener('message', e => {
+  if (e.data === 'SKIP_WAITING') self.skipWaiting();
+});
+
+// ---- Fetch ----
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Ne pas intercepter les requêtes cross-origin (CDN, Supabase API, etc.)
-  // Sinon un fichier HTML serait renvoyé à la place des scripts CDN → crash
+  // Ne pas intercepter les requêtes cross-origin (CDN, Supabase, etc.)
   if (url.origin !== self.location.origin) return;
 
+  // NETWORK-FIRST pour les navigations HTML
+  // → le téléphone reçoit toujours la dernière version de index.html
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request)
+        .then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE).then(c => c.put(e.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
+
+  // CACHE-FIRST pour les autres ressources same-origin (JS, CSS, images…)
   e.respondWith(
     caches.match(e.request).then(r => {
       if (r) return r;
       return fetch(e.request).then(response => {
-        // Mettre en cache les nouvelles ressources same-origin
         if (response.ok) {
           const clone = response.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));
         }
         return response;
-      }).catch(() => {
-        // Offline fallback : renvoyer index.html uniquement pour les navigations HTML
-        if (e.request.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
-        return new Response('', { status: 503 });
-      });
+      }).catch(() => new Response('', { status: 503 }));
     })
   );
 });

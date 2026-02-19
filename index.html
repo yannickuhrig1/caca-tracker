@@ -255,6 +255,12 @@
 
 <body>
 
+  <!-- Bannière mise à jour SW -->
+  <div id="update-banner" class="hidden fixed top-0 left-0 right-0 z-[100] py-3 text-center text-sm font-bold text-white cursor-pointer"
+       style="background:linear-gradient(90deg,#10b981,#059669);box-shadow:0 2px 12px rgba(0,0,0,0.2)">
+    🆕 Mise à jour disponible — Appuie pour actualiser
+  </div>
+
   <!-- PWA Install Banner (iOS) -->
   <div id="install-banner" class="hidden">
     <span class="text-3xl">💩</span>
@@ -655,7 +661,7 @@
 
       <div class="mt-4 card p-4 rounded-[1.5rem] text-xs text-center opacity-50 space-y-1">
         <div>💩 Les cacas de Clémence</div>
-        <div>Version 2.4.0 — Février 2026</div>
+        <div>Version 2.4.1 — Février 2026</div>
         <div>Fait avec ❤️ par Papa</div>
       </div>
     </section>
@@ -1244,9 +1250,44 @@
   // ===================================================
   function registerSW() {
     if (!('serviceWorker' in navigator)) return;
-    navigator.serviceWorker.register('./sw.js').then(r => {
+
+    // updateViaCache:'none' → le navigateur ne met JAMAIS sw.js en cache HTTP
+    // → il détecte toujours les nouvelles versions du SW
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(reg => {
       $debug('SW registered');
+
+      // Vérifier une mise à jour immédiatement au chargement
+      reg.update();
+
+      // Si un nouveau SW attend déjà (rechargement après update)
+      if (reg.waiting) showUpdateBanner(reg.waiting);
+
+      // Nouveau SW trouvé → attendre qu'il soit installé
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // Nouveau SW installé et en attente → montrer la bannière
+            showUpdateBanner(newWorker);
+          }
+        });
+      });
     }).catch(e => $debug('SW err: ' + e.message));
+
+    // Quand le SW actif change (après SKIP_WAITING) → recharger la page
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
+  }
+
+  function showUpdateBanner(worker) {
+    const banner = $id('update-banner');
+    if (!banner) return;
+    banner.classList.remove('hidden');
+    banner.addEventListener('click', () => {
+      banner.textContent = '⏳ Mise à jour en cours…';
+      worker.postMessage('SKIP_WAITING');
+    }, { once: true });
   }
 
   function showInstallBanner() {
