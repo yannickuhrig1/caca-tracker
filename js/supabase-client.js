@@ -163,23 +163,37 @@ async function syncLocalToCloud(logs) {
 // ============================================================
 
 async function createGroup(name) {
-  const sb = getSB(); if (!sb || !_currentUser) throw new Error('Non connecté');
+  const sb = getSB(); if (!sb) throw new Error('Supabase non disponible');
+  // Forcer un refresh de session pour s'assurer que le JWT est valide
+  const { data: sess } = await sb.auth.getSession();
+  if (!sess?.session?.user) throw new Error('Non connecté — reconnecte-toi');
+  _currentUser = sess.session.user;
+  const uid = _currentUser.id;
+
   const { data, error } = await sb.from('groups')
-    .insert({ name, created_by: _currentUser.id })
+    .insert({ name, created_by: uid })
     .select().single();
   if (error) throw new Error(error.message);
   // Rejoindre automatiquement le groupe créé
-  await sb.from('group_members').insert({ group_id: data.id, user_id: _currentUser.id });
+  const { error: err2 } = await sb.from('group_members')
+    .insert({ group_id: data.id, user_id: uid });
+  if (err2 && err2.code !== '23505') throw new Error(err2.message);
   return data;
 }
 
 async function joinGroup(inviteCode) {
-  const sb = getSB(); if (!sb || !_currentUser) throw new Error('Non connecté');
+  const sb = getSB(); if (!sb) throw new Error('Supabase non disponible');
+  // Forcer un refresh de session pour s'assurer que le JWT est valide
+  const { data: sess } = await sb.auth.getSession();
+  if (!sess?.session?.user) throw new Error('Non connecté — reconnecte-toi');
+  _currentUser = sess.session.user;
+  const uid = _currentUser.id;
+
   const { data: group, error: gErr } = await sb.from('groups')
     .select('id, name').eq('invite_code', inviteCode.toUpperCase()).single();
   if (gErr || !group) throw new Error('Code invalide ou groupe introuvable');
   const { error } = await sb.from('group_members')
-    .insert({ group_id: group.id, user_id: _currentUser.id });
+    .insert({ group_id: group.id, user_id: uid });
   if (error && error.code !== '23505') throw new Error(error.message);
   return group;
 }
