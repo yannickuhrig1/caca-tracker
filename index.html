@@ -551,7 +551,11 @@
         </label>
         <button id="clear-btn" class="w-full bg-red-500 text-white py-3 rounded-[1.25rem] font-bold text-sm">🗑️ Tout supprimer</button>
       </div>
-      <div class="mt-5 card p-4 rounded-[1.5rem] text-xs text-center opacity-50 space-y-1">
+      <div class="mt-5 card p-4 rounded-[1.5rem]">
+        <div class="font-bold mb-3 text-sm">🔊 Réglages sons</div>
+        <div id="sound-settings"></div>
+      </div>
+      <div class="mt-4 card p-4 rounded-[1.5rem] text-xs text-center opacity-50 space-y-1">
         <div>💩 Les cacas de Clémence</div>
         <div>Version 2.0.1 — Février 2026</div>
         <div>Fait avec ❤️ par Papa</div>
@@ -824,6 +828,12 @@
 
     // Modules v2.0 init
     window.JokesModule?.displayDailyJoke();
+
+    // Sons : injecter le contrôleur dans l'onglet Historique
+    const soundSettingsEl = $id('sound-settings');
+    if (soundSettingsEl && typeof createSoundControl === 'function') {
+      soundSettingsEl.innerHTML = createSoundControl();
+    }
 
     // Supabase : restaurer session si déjà connecté
     if (window.SupabaseClient) {
@@ -1188,6 +1198,11 @@
 
     closeDrawer();
     renderAll();
+
+    // Son selon la texture
+    if (!isRetro && typeof soundManager !== 'undefined') {
+      soundManager.playPoopAdded(poop.texture);
+    }
 
     // Modules v2.0
     if (!isRetro) {
