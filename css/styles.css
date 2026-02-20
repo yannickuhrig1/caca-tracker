@@ -89,23 +89,25 @@
 
 /* === GRAPHIQUES === */
 .charts-section {
-    padding: 20px;
-    background: var(--bg-secondary);
-    border-radius: 15px;
-    margin: 20px 0;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    margin: 0;
 }
 
 .chart-container {
-    background: white;
-    border-radius: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 1.5rem;
     padding: 20px;
-    margin: 15px 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin: 12px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .chart-container h3 {
-    margin: 0 0 20px 0;
-    color: var(--primary-color);
+    margin: 0 0 16px 0;
+    color: var(--accent);
+    font-size: 1rem;
 }
 
 .bar-chart {
@@ -127,7 +129,7 @@
 
 .bar {
     width: 100%;
-    background: linear-gradient(to top, var(--primary-color), var(--secondary-color));
+    background: linear-gradient(to top, color-mix(in srgb, var(--accent) 65%, #1f2937), var(--accent));
     border-radius: 8px 8px 0 0;
     transition: all 0.3s ease;
     position: relative;
@@ -162,59 +164,65 @@
 .pie-chart-legend {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
 .legend-item {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
+    gap: 4px 8px;
 }
 
 .legend-color {
-    font-size: 20px;
+    font-size: 18px;
+    flex-shrink: 0;
 }
 
 .legend-text {
     flex: 1;
     font-weight: 500;
+    min-width: 60px;
 }
 
 .legend-value {
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: 13px;
+    flex-shrink: 0;
 }
 
 .progress-bar {
     width: 100%;
+    flex-basis: 100%;
     height: 8px;
-    background: #f0f0f0;
+    background: color-mix(in srgb, var(--accent) 12%, rgba(0,0,0,0.08));
     border-radius: 10px;
     overflow: hidden;
-    margin-top: 5px;
+    margin-top: 2px;
 }
 
 .progress-fill {
     height: 100%;
-    background: var(--primary-color);
+    background: var(--accent);
     border-radius: 10px;
     transition: width 0.5s ease;
 }
 
 /* === PREDICTIONS === */
 .predictions-section {
-    padding: 20px;
-    background: var(--bg-secondary);
-    border-radius: 15px;
-    margin: 20px 0;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    margin: 0;
 }
 
 .prediction-card {
-    background: white;
-    border-radius: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 1.5rem;
     padding: 20px;
-    margin: 15px 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin: 12px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .main-prediction {
@@ -259,7 +267,7 @@
 .stat-value {
     font-size: 32px;
     font-weight: bold;
-    color: var(--primary-color);
+    color: var(--accent);
     margin: 10px 0;
 }
 
@@ -270,10 +278,10 @@
 
 /* === ACHIEVEMENTS === */
 .achievements-section {
-    padding: 20px;
-    background: var(--bg-secondary);
-    border-radius: 15px;
-    margin: 20px 0;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    margin: 0;
 }
 
 .achievements-grid {
@@ -288,14 +296,15 @@
     align-items: center;
     gap: 15px;
     padding: 15px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     transition: transform 0.3s ease;
 }
 
 .achievement-card.unlocked {
-    border: 2px solid var(--primary-color);
+    border: 2px solid var(--accent);
 }
 
 .achievement-card.locked {

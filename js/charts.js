@@ -39,7 +39,7 @@ function createHourlyChart(poops) {
 // Graphique des couleurs
 function createColorChart(poops) {
     if (poops.length === 0) return '';
-    
+
     const colorCounts = {};
     const colorNames = {
         marron: 'Marron',
@@ -58,29 +58,40 @@ function createColorChart(poops) {
         rouge: '🔴',
         'arc-en-ciel': '🌈'
     };
-    
+
+    // CSS color values mapped from French color names
+    const cssColors = {
+        marron: '#92400e',
+        vert: '#16a34a',
+        jaune: '#d97706',
+        noir: '#374151',
+        rouge: '#dc2626',
+        'arc-en-ciel': 'linear-gradient(90deg,#f59e0b,#ec4899,#8b5cf6)'
+    };
+
     poops.forEach(p => {
         colorCounts[p.color] = (colorCounts[p.color] || 0) + 1;
     });
-    
+
     let html = '<div class="chart-container">';
     html += '<h3>🎨 Répartition des Couleurs</h3>';
     html += '<div class="pie-chart-legend">';
-    
+
     for (const [color, count] of Object.entries(colorCounts)) {
         const percentage = Math.round((count / poops.length) * 100);
+        const fillStyle = cssColors[color] || '#92400e';
         html += `
             <div class="legend-item">
                 <span class="legend-color">${colorEmojis[color] || '🟤'}</span>
                 <span class="legend-text">${colorNames[color] || color}</span>
                 <span class="legend-value">${count} (${percentage}%)</span>
                 <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${percentage}%; background-color: ${color};"></div>
+                    <div class="progress-fill" style="width: ${percentage}%; background: ${fillStyle};"></div>
                 </div>
             </div>
         `;
     }
-    
+
     html += '</div></div>';
     return html;
 }

@@ -221,9 +221,16 @@ async function removeMember(groupId, userId) {
 async function getMyGroups() {
   const sb = getSB(); if (!sb || !_currentUser) return [];
   const { data } = await sb.from('group_members')
-    .select('group_id, groups(id, name, invite_code, created_by)')
+    .select('group_id, groups(id, name, invite_code, created_by, allow_member_invite)')
     .eq('user_id', _currentUser.id);
   return (data || []).map(r => r.groups).filter(Boolean);
+}
+
+async function updateGroupSettings(groupId, settings) {
+  const sb = getSB(); if (!sb || !_currentUser) throw new Error('Non connecté');
+  const { error } = await sb.from('groups').update(settings)
+    .eq('id', groupId).eq('created_by', _currentUser.id);
+  if (error) throw new Error(error.message);
 }
 
 // ============================================================
@@ -441,6 +448,7 @@ window.SupabaseClient = {
   joinGroup,
   leaveGroup,
   getMyGroups,
+  updateGroupSettings,
   getGroupMembers,
   getGroupStats,
   getGroupFeed,

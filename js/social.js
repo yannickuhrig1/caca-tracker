@@ -16,6 +16,8 @@ const SocialModule = (() => {
 
   // ---- Groupes sélectionné ----
   let _activeGroupId = null;
+  let _feedPeriod    = 'today';
+  let _feedMemberId  = '';
 
   // ============================================================
   //  RENDU PRINCIPAL
@@ -90,12 +92,40 @@ const SocialModule = (() => {
   async function renderGroupContent(groupId) {
     if (!groupId) return;
     _activeGroupId = groupId;
+    // Reset feed state when switching group
+    _feedPeriod   = 'today';
+    _feedMemberId = '';
+
+    // Update share button visibility based on allow_member_invite
+    const groups    = await window.SupabaseClient.getMyGroups();
+    const group     = groups.find(g => g.id === groupId);
+    const myProfile = window.SupabaseClient.getCurrentProfile();
+    const isCreator = group?.created_by === myProfile?.id;
+    const canShare  = isCreator || group?.allow_member_invite !== false;
+    const shareBtn  = document.getElementById('share-group-btn');
+    if (shareBtn) shareBtn.classList.toggle('hidden', !canShare);
+
     await Promise.all([
       renderPodium(groupId),
       renderCompareChart(groupId),
       renderFeed(groupId),
-      renderChallenge(groupId)
+      renderChallenge(groupId),
+      renderMemberFilter(groupId)
     ]);
+  }
+
+  // ============================================================
+  //  FILTRE MEMBRES DU FEED
+  // ============================================================
+  async function renderMemberFilter(groupId) {
+    const sel = document.getElementById('feed-member-filter');
+    if (!sel) return;
+    try {
+      const members = await window.SupabaseClient.getGroupMembers(groupId);
+      sel.innerHTML = '<option value="">Tous</option>' +
+        members.map(m => `<option value="${m.id}">${m.avatar || '💩'} ${esc(m.username)}</option>`).join('');
+      sel.value = _feedMemberId;
+    } catch(e) { /* silently fail */ }
   }
 
   // ============================================================
@@ -190,19 +220,47 @@ const SocialModule = (() => {
   // ============================================================
   const REACTION_EMOJIS = ['💩','🔥','👑','🤣','❤️'];
 
-  async function renderFeed(groupId) {
+  async function renderFeed(groupId, period, memberId) {
+    // Update stored state
+    if (period   !== undefined) _feedPeriod   = period;
+    if (memberId !== undefined) _feedMemberId = memberId;
+
+    // Update tab active styles
+    document.querySelectorAll('.feed-tab-btn').forEach(btn => {
+      const active = btn.dataset.period === _feedPeriod;
+      btn.style.background = active
+        ? 'var(--accent)'
+        : 'color-mix(in srgb,var(--accent) 12%,transparent)';
+      btn.style.color = active ? 'white' : 'var(--accent)';
+    });
+
     const el = document.getElementById('activity-feed');
     if (!el) return;
     el.innerHTML = '<div class="text-xs opacity-60 text-center">⏳</div>';
 
     try {
-      const feed = await window.SupabaseClient.getGroupFeed(groupId, 20);
-      if (!feed.length) {
-        el.innerHTML = '<div class="text-sm opacity-60 text-center py-2">Aucune activité récente</div>';
+      const feed = await window.SupabaseClient.getGroupFeed(groupId, 200);
+
+      // Date cutoff for period filter
+      const now    = Date.now();
+      const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+      const cutoffs = {
+        today: today0.getTime(),
+        week:  now - 7 * 86400000,
+        month: new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime(),
+        year:  new Date(new Date().getFullYear(), 0, 1).getTime()
+      };
+      const cutoff = cutoffs[_feedPeriod] ?? cutoffs.today;
+
+      let filtered = feed.filter(item => item.date >= cutoff);
+      if (_feedMemberId) filtered = filtered.filter(item => item.user_id === _feedMemberId);
+
+      if (!filtered.length) {
+        el.innerHTML = '<div class="text-sm opacity-60 text-center py-4">Aucune activité sur cette période</div>';
         return;
       }
 
-      el.innerHTML = feed.map(item => {
+      el.innerHTML = filtered.map(item => {
         // Barre de réactions existantes
         const reactionBtns = REACTION_EMOJIS.map(emoji => {
           const count = item.reactions[emoji] || 0;
@@ -322,6 +380,35 @@ const SocialModule = (() => {
       // Afficher/masquer les boutons selon le rôle
       if (deleteBtn) deleteBtn.classList.toggle('hidden', !isCreator);
       if (leaveBtn)  leaveBtn.classList.toggle('hidden', isCreator);
+
+      // Toggle invite permission (creator only)
+      const inviteToggleId = 'invite-permission-toggle';
+      let inviteRow = document.getElementById('invite-permission-row');
+      if (!inviteRow) {
+        inviteRow = document.createElement('div');
+        inviteRow.id = 'invite-permission-row';
+        inviteRow.className = 'flex items-center justify-between text-sm mb-3 px-1';
+        listEl.parentElement.insertBefore(inviteRow, listEl);
+      }
+      if (isCreator) {
+        const allowed = group?.allow_member_invite !== false;
+        inviteRow.innerHTML = `
+          <span class="text-xs font-bold opacity-70">🔗 Membres peuvent partager le code</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="${inviteToggleId}" class="sr-only peer" ${allowed ? 'checked' : ''} />
+            <div class="w-9 h-5 rounded-full bg-gray-300 peer-checked:bg-[var(--accent)] transition-colors duration-200"></div>
+            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 peer-checked:translate-x-4"></div>
+          </label>`;
+        inviteRow.classList.remove('hidden');
+        document.getElementById(inviteToggleId)?.addEventListener('change', async e => {
+          try {
+            await window.SupabaseClient.updateGroupSettings(groupId, { allow_member_invite: e.target.checked });
+            await renderGroupContent(groupId);
+          } catch(err) { alert('Erreur : ' + err.message); }
+        });
+      } else {
+        inviteRow.classList.add('hidden');
+      }
 
       listEl.innerHTML = members.map(m => {
         const isMe      = m.id === myProfile?.id;
@@ -493,6 +580,19 @@ const SocialModule = (() => {
       const group  = groups.find(g => g.id === _activeGroupId);
       if (!group) return;
       showGroupQR(group);
+    });
+
+    // Feed period tabs (event delegation)
+    document.addEventListener('click', e => {
+      const tab = e.target.closest('.feed-tab-btn');
+      if (!tab || !_activeGroupId) return;
+      renderFeed(_activeGroupId, tab.dataset.period, _feedMemberId);
+    });
+
+    // Feed member filter
+    document.getElementById('feed-member-filter')?.addEventListener('change', e => {
+      if (!_activeGroupId) return;
+      renderFeed(_activeGroupId, _feedPeriod, e.target.value);
     });
   });
 

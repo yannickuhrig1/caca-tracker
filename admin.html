@@ -292,6 +292,14 @@
              ${p.is_admin ? '☆ Retirer' : '⭐ Admin'}
            </button>`;
 
+      const deleteBtn = isMe ? ''
+        : `<button onclick="deleteUser('${p.id}')"
+             class="px-2 py-1 rounded-lg text-xs whitespace-nowrap font-bold"
+             style="color:#f87171;background:rgba(248,113,113,0.1)"
+             title="Supprimer ce membre définitivement">
+             🗑️ Suppr.
+           </button>`;
+
       return `
         <tr>
           <td class="px-4 py-3">
@@ -312,6 +320,7 @@
               ${toggleBtn}
               <button onclick="openPwdModal('${p.id}')"
                 class="btn-ghost px-2 py-1 rounded-lg text-xs">🔑 MDP</button>
+              ${deleteBtn}
             </div>
           </td>
         </tr>`;
@@ -359,6 +368,29 @@
       await window.SupabaseClient.setUserAdmin(userId, !p.is_admin);
       await loadUsers();
     } catch (e) {
+      alert('Erreur : ' + e.message);
+    }
+  }
+
+  // ── Delete user ───────────────────────────────────────────────
+  async function deleteUser(userId) {
+    const p = _profilesById[userId];
+    if (!p) return;
+    if (!confirm(`⚠️ Supprimer définitivement ${p.username} (${p.email || userId}) ?\n\nCette action est IRRÉVERSIBLE : compte supprimé, cacas supprimés, données perdues.`)) return;
+
+    const adminSB = getAdminSB();
+    if (!adminSB) {
+      alert('❌ La clé service role est requise pour supprimer un utilisateur.\nConfigure-la dans le panneau "Clé service role" ci-dessus.');
+      return;
+    }
+
+    try {
+      // Delete auth user (cascades to profiles + poops via FK or RLS)
+      const { error } = await adminSB.auth.admin.deleteUser(userId);
+      if (error) throw new Error(error.message);
+      await loadUsers();
+      alert(`✅ ${p.username} supprimé.`);
+    } catch(e) {
       alert('Erreur : ' + e.message);
     }
   }
