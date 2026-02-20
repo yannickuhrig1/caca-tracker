@@ -489,13 +489,17 @@ const SocialModule = (() => {
     const profile = window.SupabaseClient.getCurrentProfile();
     if (!profile) return;
     window.updateUserBadge?.(profile);
-    // Sync auto des données locales
+
+    // 1. Pull cloud data into local state (handles new device / fresh browser)
+    await window.syncCloudData?.();
+
+    // 2. Push any remaining local-only data to cloud
     const saved = localStorage.getItem('cacaTracker.v2');
     if (saved) {
       try {
-        const state = JSON.parse(saved);
-        if (state?.logs?.length) {
-          await window.SupabaseClient.syncLocalToCloud(state.logs);
+        const st = JSON.parse(saved);
+        if (st?.logs?.length) {
+          await window.SupabaseClient.syncLocalToCloud(st.logs);
         }
       } catch(e) { console.warn('Sync auto échouée', e); }
     }

@@ -4,7 +4,7 @@
 
 [![PWA](https://img.shields.io/badge/PWA-compatible-brightgreen)](#)
 [![Vanilla JS](https://img.shields.io/badge/Vanilla%20JS-no%20framework-yellow)](#)
-[![Version](https://img.shields.io/badge/version-2.5.1-orange)](#)
+[![Version](https://img.shields.io/badge/version-2.6.0-orange)](#)
 [![Supabase](https://img.shields.io/badge/Backend-Supabase-3ECF8E)](#)
 
 ---
@@ -47,13 +47,15 @@
 | + 10 achievements | Régularité, Streak, Hibou, Lève-tôt… |
 
 ### Social ☁️ (Supabase)
-- **Compte utilisateur** : inscription email/password + avatar emoji
-- **Sync cloud** : données synchronisées automatiquement à la connexion
-- **Groupes** : créer un groupe et inviter ses amies avec un code
+- **Compte utilisateur** : inscription email/password + avatar emoji (30 choix)
+- **Sync cloud bidirectionnelle** : données poussées ET récupérées depuis le cloud (fonctionne sur nouveau navigateur)
+- **Groupes** : créer un groupe et inviter ses amies avec un code ou un QR code 📷
+- **Permissions d'invitation** : le créateur peut autoriser/restreindre le partage du code
 - **Podium 🏆** : classement mensuel des membres
 - **Comparatif 📊** : barres côte à côte (cacas/7j)
-- **Feed 📣** : 20 dernières activités du groupe
+- **Feed 📣** : activité du groupe avec onglets (Aujourd'hui / Semaine / Mois / Année) + filtre par membre
 - **Défi hebdomadaire 🎯** : qui fera le plus cette semaine ?
+- **Réactions emoji** : 💩🔥👑🤣❤️ sur les entrées du feed
 - **Mot de passe oublié** : réinitialisation par email
 
 ### Historique & Paramètres
@@ -64,8 +66,11 @@
 - Version de l'app
 
 ### UX
-- **6 thèmes** : Chaud 🟠 / Dark 🌙 / Médical 🩺 / Kawaii 🌸 / Forêt 🌿 / Océan 🌊
+- **16 thèmes** : Chaud / Dark / Médical / Kawaii / Forêt / Océan / Sunset / Galaxy / Sakura / Mint / Lavande / Rose-Gold / Tropicale / Nordique / Automne / Neon
+- **Sélecteur de thème et d'avatar** dans le profil utilisateur
 - **Streak** 🔥 affiché dans le header
+- **Icône Superman 🦸** dans le header pour les admins
+- **Export JSON** 📤 visible directement dans l'onglet Stats
 - **PWA** installable sur iPhone (mode standalone)
 - **Offline** : fonctionne sans connexion (localStorage)
 

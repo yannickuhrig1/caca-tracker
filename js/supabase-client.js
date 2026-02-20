@@ -137,6 +137,24 @@ async function deletePoopCloud(localId) {
   await sb.from('poops').delete().eq('local_id', String(localId)).eq('user_id', _currentUser.id);
 }
 
+// Fetch all of the current user's poops from Supabase (for cloud→local sync)
+async function getMyPoops() {
+  const sb = getSB(); if (!sb || !_currentUser) return [];
+  const { data } = await sb.from('poops')
+    .select('id, local_id, date, texture, color, comment, is_retro, mood')
+    .eq('user_id', _currentUser.id)
+    .order('date', { ascending: false });
+  return (data || []).map(p => ({
+    id:      p.local_id || p.id,   // prefer the original local UUID
+    date:    p.date,
+    texture: p.texture || 'normal',
+    color:   p.color   || 'marron',
+    comment: p.comment || '',
+    isRetro: p.is_retro || false,
+    mood:    p.mood    || ''
+  }));
+}
+
 async function syncLocalToCloud(logs) {
   const sb = getSB(); if (!sb || !_currentUser) throw new Error('Non connecté');
   const rows = logs.map(p => ({
@@ -443,6 +461,7 @@ window.SupabaseClient = {
   updatePassword,
   savePoopCloud,
   deletePoopCloud,
+  getMyPoops,
   syncLocalToCloud,
   createGroup,
   joinGroup,
