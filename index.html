@@ -628,15 +628,7 @@
     <section id="admin-tab" class="tab-content">
       <h3 class="font-bold text-xl mb-4">📜 Historique</h3>
       <div id="history-list" class="space-y-3 mb-6" style="max-height:60vh;overflow-y:auto;"></div>
-      <div class="space-y-3">
-        <button id="export-btn" class="w-full bg-blue-500 text-white py-3 rounded-[1.25rem] font-bold text-sm">📤 Exporter JSON</button>
-        <label class="w-full bg-green-500 text-white py-3 rounded-[1.25rem] font-bold text-sm cursor-pointer flex items-center justify-center gap-2">
-          📥 Importer JSON
-          <input type="file" id="import-input" accept=".json" class="hidden" />
-        </label>
-        <button id="clear-btn" class="w-full bg-red-500 text-white py-3 rounded-[1.25rem] font-bold text-sm">🗑️ Tout supprimer</button>
-      </div>
-      <div class="mt-5 card p-4 rounded-[1.5rem]">
+      <div class="mt-2 card p-4 rounded-[1.5rem]">
         <div class="font-bold mb-3 text-sm">🔊 Réglages sons</div>
         <div id="sound-settings"></div>
       </div>
@@ -768,7 +760,7 @@
   <!-- PROFILE MODAL -->
   <div id="profile-modal" class="fixed inset-0 z-[60] hidden" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);">
     <div class="flex items-center justify-center h-full p-4">
-      <div class="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-6 space-y-4">
+      <div class="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-6 space-y-4 overflow-y-auto" style="max-height:90vh">
         <div class="text-center">
           <div id="profile-avatar-display" class="text-5xl mb-2">💩</div>
           <div id="profile-username-display" class="font-bold text-xl"></div>
@@ -777,10 +769,25 @@
         <div class="p-3 rounded-2xl text-sm text-center" style="background:color-mix(in srgb,var(--accent) 10%,transparent)">
           <span id="profile-stats-display"></span>
         </div>
+
+        <!-- Sync cloud -->
         <button id="sync-cloud-btn" class="w-full py-3 rounded-[1.25rem] font-bold text-sm"
           style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">
           ☁️ Synchroniser mes données
         </button>
+        <div id="sync-error-msg" class="hidden text-xs text-red-500 text-center -mt-2 px-2"></div>
+
+        <!-- Gestion des données -->
+        <div class="rounded-[1.5rem] p-4 space-y-3" style="background:color-mix(in srgb,var(--accent) 5%,transparent);border:1.5px solid color-mix(in srgb,var(--accent) 15%,transparent)">
+          <div class="font-bold text-sm opacity-70">🗂️ Gestion des données</div>
+          <button id="export-btn" class="w-full bg-blue-500 text-white py-2.5 rounded-[1rem] font-bold text-sm">📤 Exporter JSON</button>
+          <label class="w-full bg-green-500 text-white py-2.5 rounded-[1rem] font-bold text-sm cursor-pointer flex items-center justify-center gap-2">
+            📥 Importer JSON
+            <input type="file" id="import-input" accept=".json" class="hidden" />
+          </label>
+          <button id="clear-btn" class="w-full bg-red-500 text-white py-2.5 rounded-[1rem] font-bold text-sm">🗑️ Tout supprimer</button>
+        </div>
+
         <a id="admin-link" href="admin.html"
            class="hidden w-full py-3 rounded-[1.25rem] font-bold text-sm text-center block"
            style="background:color-mix(in srgb,#7c3aed 12%,transparent);color:#7c3aed">
@@ -1792,14 +1799,18 @@
       $debug('🚪 signed out');
     });
     $id('sync-cloud-btn')?.addEventListener('click', async () => {
-      $id('sync-cloud-btn').textContent = '⏳ Synchronisation…';
+      const btn = $id('sync-cloud-btn');
+      const errDiv = $id('sync-error-msg');
+      btn.textContent = '⏳ Synchronisation…';
+      if (errDiv) errDiv.classList.add('hidden');
       try {
         await window.SupabaseClient.syncLocalToCloud(state.logs);
-        $id('sync-cloud-btn').textContent = '✅ Synchronisé !';
-        setTimeout(() => { $id('sync-cloud-btn').textContent = '☁️ Synchroniser mes données'; }, 2000);
+        btn.textContent = '✅ Synchronisé !';
+        setTimeout(() => { btn.textContent = '☁️ Synchroniser mes données'; }, 3000);
       } catch(e) {
-        $id('sync-cloud-btn').textContent = '❌ Erreur — réessaie';
-        setTimeout(() => { $id('sync-cloud-btn').textContent = '☁️ Synchroniser mes données'; }, 2000);
+        btn.textContent = '❌ Erreur sync';
+        if (errDiv) { errDiv.textContent = e.message || 'Erreur inconnue'; errDiv.classList.remove('hidden'); }
+        setTimeout(() => { btn.textContent = '☁️ Synchroniser mes données'; if (errDiv) errDiv.classList.add('hidden'); }, 6000);
       }
     });
 
