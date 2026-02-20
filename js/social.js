@@ -360,14 +360,38 @@ const SocialModule = (() => {
   //  MODAL PROFIL
   // ============================================================
   function openProfileModal() {
-    const profile = window.SupabaseClient.getCurrentProfile();
-    if (!profile) return;
+    const profile = window.SupabaseClient?.getCurrentProfile();
     const modal = document.getElementById('profile-modal');
     if (!modal) return;
-    document.getElementById('profile-avatar-display').textContent  = profile.avatar || '💩';
-    document.getElementById('profile-username-display').textContent = profile.username;
-    const sb = window.SupabaseClient.isLoggedIn ? '' : '';
-    document.getElementById('profile-stats-display').textContent   = '☁️ Données synchronisées avec Supabase';
+
+    const loggedIn = !!profile;
+    // Auth-dependent elements
+    const syncBtn    = document.getElementById('sync-cloud-btn');
+    const syncErr    = document.getElementById('sync-error-msg');
+    const signoutBtn = document.getElementById('signout-btn');
+    const loginBtn   = document.getElementById('profile-login-btn');
+    const adminLink  = document.getElementById('admin-link');
+    if (syncBtn)    syncBtn.classList.toggle('hidden', !loggedIn);
+    if (syncErr)    syncErr.classList.add('hidden');
+    if (signoutBtn) signoutBtn.classList.toggle('hidden', !loggedIn);
+    if (loginBtn)   loginBtn.classList.toggle('hidden', loggedIn);
+    if (adminLink)  adminLink.classList.toggle('hidden', !profile?.is_admin);
+
+    if (profile) {
+      document.getElementById('profile-avatar-display').textContent  = profile.avatar || '💩';
+      document.getElementById('profile-username-display').textContent = profile.username || '';
+      document.getElementById('profile-email-display').textContent    = profile.email || '';
+      document.getElementById('profile-stats-display').textContent   = '☁️ Données synchronisées avec Supabase';
+      // Highlight current avatar in picker
+      document.querySelectorAll('.profile-avatar-opt').forEach(b => {
+        b.style.outline = b.dataset.av === (profile.avatar||'💩') ? '2px solid var(--accent)' : 'none';
+      });
+    } else {
+      document.getElementById('profile-avatar-display').textContent  = '👤';
+      document.getElementById('profile-username-display').textContent = 'Invité';
+      document.getElementById('profile-email-display').textContent    = 'Non connecté';
+      document.getElementById('profile-stats-display').textContent   = '⚡ Thème et données locaux uniquement';
+    }
     modal.classList.remove('hidden');
   }
 
@@ -463,19 +487,41 @@ const SocialModule = (() => {
       } catch(e) { alert('Erreur : ' + e.message); }
     });
 
-    // Partager le code
+    // Partager le code — ouvre le QR modal
     document.getElementById('share-group-btn')?.addEventListener('click', async () => {
       const groups = await window.SupabaseClient.getMyGroups();
       const group  = groups.find(g => g.id === _activeGroupId);
       if (!group) return;
-      const msg = `Rejoins mon groupe Caca-Tracker ! 💩\nCode : ${group.invite_code}`;
-      if (navigator.share) {
-        navigator.share({ title: 'Caca-Tracker', text: msg }).catch(() => {});
-      } else {
-        navigator.clipboard.writeText(group.invite_code).then(() => alert('Code copié : ' + group.invite_code));
-      }
+      showGroupQR(group);
     });
   });
+
+  // ============================================================
+  //  QR CODE MODAL
+  // ============================================================
+  function showGroupQR(group) {
+    const modal = document.getElementById('qr-modal');
+    if (!modal) return;
+
+    const joinUrl = `${window.location.origin}${window.location.pathname}?join=${group.invite_code}`;
+    document.getElementById('qr-group-name').textContent = `Groupe : ${group.name}`;
+    document.getElementById('qr-code-text').textContent  = group.invite_code;
+
+    const canvas = document.getElementById('qr-canvas');
+    if (canvas && typeof QRCode !== 'undefined') {
+      QRCode.toCanvas(canvas, joinUrl, { width: 200, margin: 2, color: { dark: '#0f172a', light: '#ffffff' } },
+        err => { if (err) console.warn('QR error', err); });
+    } else if (canvas) {
+      // Fallback: use free API
+      const img = document.createElement('img');
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(joinUrl)}`;
+      img.style.cssText = 'width:200px;height:200px;border-radius:12px';
+      canvas.replaceWith(img);
+    }
+
+    modal.classList.remove('hidden');
+  }
+  window.showGroupQR = showGroupQR;
 
   // ---- Helper XSS ----
   function esc(s) {

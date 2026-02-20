@@ -406,6 +406,14 @@ async function getAllProfiles() {
   return data || [];
 }
 
+async function updateProfile(updates) {
+  const sb = getSB(); if (!sb || !_currentUser) throw new Error('Non connecté');
+  const { error } = await sb.from('profiles').update(updates).eq('id', _currentUser.id);
+  if (error) throw new Error(error.message);
+  _currentProfile = { ..._currentProfile, ...updates };
+  return _currentProfile;
+}
+
 async function setUserAdmin(userId, isAdmin) {
   const sb = getSB(); if (!sb || !_currentUser) throw new Error('Non connecté');
   const { error } = await sb.from('profiles')
@@ -443,5 +451,6 @@ window.SupabaseClient = {
   removeMember,
   initAuthListener,
   getAllProfiles,
-  setUserAdmin
+  setUserAdmin,
+  updateProfile
 };

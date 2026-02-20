@@ -21,6 +21,7 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
   <style>
@@ -238,6 +239,117 @@
     [data-theme="ocean"] .poop-btn { box-shadow: 0 14px 0 0 #01579b; }
     [data-theme="ocean"] .texture-btn.selected { border-color: #0288d1 !important; background: #e0f7fa !important; }
 
+    /* ===================== THÈMES ADDITIONNELS ===================== */
+    [data-theme="sunset"] {
+      --bg-from:#ffd6a5; --bg-via:#ffafcc; --bg-to:#bde0fe;
+      --header-from:#ff6b6b; --header-to:#c77dff;
+      --card-bg:rgba(255,255,255,0.78); --card-border:rgba(255,107,107,0.2);
+      --text-primary:#3d0066; --text-secondary:#7b2d8b;
+      --nav-bg:rgba(255,214,165,0.97); --btn-shadow:#c77dff; --accent:#ff6b6b;
+      --font:'Fredoka',system-ui,sans-serif;
+    }
+    [data-theme="sunset"] .poop-btn { box-shadow:0 14px 0 0 #c77dff; }
+    [data-theme="sunset"] .texture-btn.selected { border-color:#ff6b6b!important; background:#ffd6a5!important; }
+
+    [data-theme="galaxy"] {
+      --bg-from:#0d0221; --bg-via:#1a0533; --bg-to:#0a0e27;
+      --header-from:#6a0572; --header-to:#3a0ca3;
+      --card-bg:rgba(26,5,51,0.85); --card-border:rgba(167,89,255,0.3);
+      --text-primary:#e8d5ff; --text-secondary:#b39ddb;
+      --nav-bg:rgba(13,2,33,0.97); --btn-shadow:#6a0572; --accent:#c77dff;
+      --font:'Fredoka',system-ui,sans-serif;
+    }
+    [data-theme="galaxy"] .poop-btn { box-shadow:0 14px 0 0 #6a0572; }
+    [data-theme="galaxy"] .texture-btn.selected { border-color:#c77dff!important; background:#1a0533!important; }
+
+    [data-theme="sakura"] {
+      --bg-from:#ffb7c5; --bg-via:#ffd1dc; --bg-to:#ffe8ee;
+      --header-from:#e91e8c; --header-to:#ff6b9d;
+      --card-bg:rgba(255,255,255,0.82); --card-border:rgba(233,30,140,0.15);
+      --text-primary:#2d0012; --text-secondary:#880e4f;
+      --nav-bg:rgba(255,183,197,0.97); --btn-shadow:#e91e8c; --accent:#e91e8c;
+      --font:'Fredoka',system-ui,sans-serif;
+    }
+    [data-theme="sakura"] .poop-btn { box-shadow:0 14px 0 0 #e91e8c; }
+    [data-theme="sakura"] .texture-btn.selected { border-color:#e91e8c!important; background:#ffd1dc!important; }
+
+    [data-theme="mint"] {
+      --bg-from:#c8f7c5; --bg-via:#b7f5d8; --bg-to:#a8edea;
+      --header-from:#00b894; --header-to:#00cec9;
+      --card-bg:rgba(255,255,255,0.82); --card-border:rgba(0,184,148,0.2);
+      --text-primary:#003d33; --text-secondary:#00695c;
+      --nav-bg:rgba(200,247,197,0.97); --btn-shadow:#007a5e; --accent:#00b894;
+      --font:'Fredoka',system-ui,sans-serif;
+    }
+    [data-theme="mint"] .poop-btn { box-shadow:0 14px 0 0 #007a5e; }
+    [data-theme="mint"] .texture-btn.selected { border-color:#00b894!important; background:#b7f5d8!important; }
+
+    [data-theme="lavande"] {
+      --bg-from:#e6d9f7; --bg-via:#d4bef0; --bg-to:#ede0ff;
+      --header-from:#7c3aed; --header-to:#9d4edd;
+      --card-bg:rgba(255,255,255,0.82); --card-border:rgba(124,58,237,0.2);
+      --text-primary:#1a0040; --text-secondary:#5b21b6;
+      --nav-bg:rgba(230,217,247,0.97); --btn-shadow:#5b21b6; --accent:#7c3aed;
+      --font:'Fredoka',system-ui,sans-serif;
+    }
+    [data-theme="lavande"] .poop-btn { box-shadow:0 14px 0 0 #5b21b6; }
+    [data-theme="lavande"] .texture-btn.selected { border-color:#7c3aed!important; background:#e6d9f7!important; }
+
+    [data-theme="rose-gold"] {
+      --bg-from:#f9e4e8; --bg-via:#fcd5b5; --bg-to:#f8e4d1;
+      --header-from:#c97b6a; --header-to:#e0a87c;
+      --card-bg:rgba(255,255,255,0.82); --card-border:rgba(201,123,106,0.2);
+      --text-primary:#3d1c14; --text-secondary:#874d37;
+      --nav-bg:rgba(249,228,232,0.97); --btn-shadow:#a0523e; --accent:#c97b6a;
+      --font:'Fredoka',system-ui,sans-serif;
+    }
+    [data-theme="rose-gold"] .poop-btn { box-shadow:0 14px 0 0 #a0523e; }
+    [data-theme="rose-gold"] .texture-btn.selected { border-color:#c97b6a!important; background:#f9e4e8!important; }
+
+    [data-theme="tropicale"] {
+      --bg-from:#b3ffec; --bg-via:#a8edea; --bg-to:#b3e5fc;
+      --header-from:#00b8a9; --header-to:#0097a7;
+      --card-bg:rgba(255,255,255,0.82); --card-border:rgba(0,184,169,0.2);
+      --text-primary:#00231e; --text-secondary:#00695c;
+      --nav-bg:rgba(179,255,236,0.97); --btn-shadow:#007c6e; --accent:#00b8a9;
+      --font:'Fredoka',system-ui,sans-serif;
+    }
+    [data-theme="tropicale"] .poop-btn { box-shadow:0 14px 0 0 #007c6e; }
+    [data-theme="tropicale"] .texture-btn.selected { border-color:#00b8a9!important; background:#b3ffec!important; }
+
+    [data-theme="nordique"] {
+      --bg-from:#dce8f5; --bg-via:#e8eef4; --bg-to:#d6e4f0;
+      --header-from:#2c5f8a; --header-to:#3a7bd5;
+      --card-bg:rgba(255,255,255,0.85); --card-border:rgba(58,123,213,0.2);
+      --text-primary:#0a1628; --text-secondary:#2c5f8a;
+      --nav-bg:rgba(220,232,245,0.97); --btn-shadow:#1a3a5c; --accent:#3a7bd5;
+      --font:'Space Mono',monospace;
+    }
+    [data-theme="nordique"] .poop-btn { box-shadow:0 14px 0 0 #1a3a5c; }
+    [data-theme="nordique"] .texture-btn.selected { border-color:#3a7bd5!important; background:#dce8f5!important; }
+
+    [data-theme="automne"] {
+      --bg-from:#fde8c8; --bg-via:#fad4a0; --bg-to:#f8c47a;
+      --header-from:#b45309; --header-to:#c2410c;
+      --card-bg:rgba(255,255,255,0.82); --card-border:rgba(180,83,9,0.2);
+      --text-primary:#1c0700; --text-secondary:#7c2d12;
+      --nav-bg:rgba(253,232,200,0.97); --btn-shadow:#92400e; --accent:#b45309;
+      --font:'Fredoka',system-ui,sans-serif;
+    }
+    [data-theme="automne"] .poop-btn { box-shadow:0 14px 0 0 #92400e; }
+    [data-theme="automne"] .texture-btn.selected { border-color:#b45309!important; background:#fde8c8!important; }
+
+    [data-theme="neon"] {
+      --bg-from:#000000; --bg-via:#0a001a; --bg-to:#001a0a;
+      --header-from:#00ff88; --header-to:#00e5cc;
+      --card-bg:rgba(0,0,0,0.75); --card-border:rgba(0,255,136,0.3);
+      --text-primary:#00ff88; --text-secondary:#39ff14;
+      --nav-bg:rgba(0,0,0,0.97); --btn-shadow:#007a40; --accent:#00ff88;
+      --font:'Space Mono',monospace;
+    }
+    [data-theme="neon"] .poop-btn { box-shadow:0 14px 0 0 #007a40; }
+    [data-theme="neon"] .texture-btn.selected { border-color:#00ff88!important; background:#001a0a!important; }
+
     /* ===================== INSTALL BANNER ===================== */
     #install-banner {
       position: fixed; bottom: max(80px, env(safe-area-inset-bottom,0px) + 80px);
@@ -296,19 +408,8 @@
             <span id="user-name" class="text-xs max-w-[70px] truncate">Connexion</span>
           </button>
         </div>
-        <!-- Theme picker -->
-        <div class="flex flex-col gap-1 items-end">
-          <div class="flex gap-2 items-center">
-            <button class="theme-dot selected" data-theme-btn="default" style="background:linear-gradient(135deg,#d97706,#ea580c)" title="Chaud 🟠"></button>
-            <button class="theme-dot" data-theme-btn="dark" style="background:linear-gradient(135deg,#1e1b4b,#312e81)" title="Dark 🌙"></button>
-            <button class="theme-dot" data-theme-btn="medical" style="background:linear-gradient(135deg,#059669,#0284c7)" title="Médical 🩺"></button>
-          </div>
-          <div class="flex gap-2 items-center">
-            <button class="theme-dot" data-theme-btn="kawaii" style="background:linear-gradient(135deg,#e91e8c,#9c27b0)" title="Kawaii 🌸"></button>
-            <button class="theme-dot" data-theme-btn="foret" style="background:linear-gradient(135deg,#2e7d32,#558b2f)" title="Forêt 🌿"></button>
-            <button class="theme-dot" data-theme-btn="ocean" style="background:linear-gradient(135deg,#0277bd,#00838f)" title="Océan 🌊"></button>
-          </div>
-        </div>
+        <!-- Theme shortcut (full picker in profile) -->
+        <button id="theme-quick-btn" class="bg-white/20 px-2.5 py-1.5 rounded-full text-sm hover:bg-white/30 transition" title="Changer de thème" onclick="document.getElementById('user-badge').click()">🎨</button>
       </div>
     </div>
   </header>
@@ -770,6 +871,18 @@
           <span id="profile-stats-display"></span>
         </div>
 
+        <!-- Photo de profil -->
+        <div class="rounded-[1.5rem] p-4 space-y-2" style="background:color-mix(in srgb,var(--accent) 5%,transparent);border:1.5px solid color-mix(in srgb,var(--accent) 15%,transparent)">
+          <div class="font-bold text-sm opacity-70">🖼️ Photo de profil</div>
+          <div id="avatar-picker-grid" class="grid grid-cols-6 gap-1.5 text-2xl text-center"></div>
+        </div>
+
+        <!-- Thème -->
+        <div class="rounded-[1.5rem] p-4 space-y-3" style="background:color-mix(in srgb,var(--accent) 5%,transparent);border:1.5px solid color-mix(in srgb,var(--accent) 15%,transparent)">
+          <div class="font-bold text-sm opacity-70">🎨 Thème</div>
+          <div id="profile-theme-grid" class="grid grid-cols-4 gap-2"></div>
+        </div>
+
         <!-- Sync cloud -->
         <button id="sync-cloud-btn" class="w-full py-3 rounded-[1.25rem] font-bold text-sm"
           style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">
@@ -793,10 +906,28 @@
            style="background:color-mix(in srgb,#7c3aed 12%,transparent);color:#7c3aed">
           ⚙️ Administration
         </a>
-        <button id="signout-btn" class="w-full py-3 rounded-[1.25rem] font-bold text-sm bg-red-50 text-red-500">
+        <button id="profile-login-btn" class="hidden w-full py-3 rounded-[1.25rem] font-bold text-sm text-white"
+          style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">
+          👤 Se connecter / Créer un compte
+        </button>
+        <button id="signout-btn" class="hidden w-full py-3 rounded-[1.25rem] font-bold text-sm bg-red-50 text-red-500">
           🚪 Se déconnecter
         </button>
         <button id="close-profile-modal" class="w-full py-2 text-sm opacity-50">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR CODE MODAL -->
+  <div id="qr-modal" class="fixed inset-0 z-[80] hidden" style="background:rgba(0,0,0,0.85);backdrop-filter:blur(8px)">
+    <div class="flex items-center justify-center h-full p-4">
+      <div class="bg-white rounded-[2rem] p-6 w-full max-w-xs text-center space-y-4">
+        <h3 class="font-bold text-xl">📷 QR Code du groupe</h3>
+        <div id="qr-group-name" class="text-sm opacity-60"></div>
+        <canvas id="qr-canvas" class="mx-auto rounded-2xl border-4 border-gray-100"></canvas>
+        <div class="font-mono text-xl font-bold tracking-widest px-4 py-2 rounded-2xl bg-gray-50" id="qr-code-text"></div>
+        <p class="text-xs opacity-50">Tes amies scannent le QR code ou saisissent le code pour rejoindre</p>
+        <button id="close-qr-modal" class="w-full py-3 rounded-[1.25rem] font-bold text-sm" style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">Fermer</button>
       </div>
     </div>
   </div>
@@ -1066,6 +1197,32 @@
     $id('close-wrapped-btn')?.addEventListener('click', () => $id('wrapped-modal').classList.add('hidden'));
     $id('close-day-detail-btn')?.addEventListener('click', () => $id('day-detail-modal').classList.add('hidden'));
     $id('share-stats-btn')?.addEventListener('click', shareStats);
+
+    // Auto-join via ?join=CODE in URL
+    const urlJoinCode = new URLSearchParams(window.location.search).get('join');
+    if (urlJoinCode) {
+      // Remove the param from URL to avoid double-join on refresh
+      history.replaceState({}, '', window.location.pathname);
+      // Wait for session to restore, then try to join
+      setTimeout(async () => {
+        if (!window.SupabaseClient?.isLoggedIn()) {
+          // Not logged in — go to social tab and prefill code
+          switchTab('social');
+          const inp = $id('invite-code-input');
+          if (inp) inp.value = urlJoinCode.toUpperCase();
+          alert('Connecte-toi pour rejoindre le groupe avec le code : ' + urlJoinCode.toUpperCase());
+        } else {
+          try {
+            const g = await window.SupabaseClient.joinGroup(urlJoinCode);
+            alert(`🎉 Tu as rejoint le groupe "${g.name}" !`);
+            switchTab('social');
+            window.SocialModule?.renderSocialTab();
+          } catch(e) {
+            alert('Impossible de rejoindre : ' + e.message);
+          }
+        }
+      }, 1500);
+    }
 
     $debug('✅ ready. logs=' + state.logs.length);
   });
@@ -1617,16 +1774,14 @@
       if (e.target.checked) refreshRetroMax();
     });
 
-    // Theme dots
-    document.querySelectorAll('[data-theme-btn]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const t = btn.dataset.themeBtn;
-        applyTheme(t);
-        state.theme = t;
-        saveState(state);
-        document.querySelectorAll('[data-theme-btn]').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-      });
+    // Theme dots (delegation — works for dynamically-added profile grid buttons too)
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('[data-theme-btn]');
+      if (!btn) return;
+      const t = btn.dataset.themeBtn;
+      applyTheme(t);
+      state.theme = t;
+      saveState(state);
     });
 
     // Install banner dismiss
@@ -1655,14 +1810,8 @@
     // Blague aléatoire
     $id('random-joke-btn')?.addEventListener('click', () => window.JokesModule?.showRandomJoke());
 
-    // User badge → ouvre auth ou profil
-    $id('user-badge')?.addEventListener('click', () => {
-      if (window.SupabaseClient?.isLoggedIn()) {
-        window.SocialModule?.openProfileModal();
-      } else {
-        openAuthModal('login');
-      }
-    });
+    // User badge → toujours ouvrir le profil modal (thème + avatar + login si besoin)
+    $id('user-badge')?.addEventListener('click', () => openProfileModal());
 
     // Social tab login button
     $id('social-login-btn')?.addEventListener('click', () => openAuthModal('login'));
@@ -1798,6 +1947,10 @@
       renderAll();
       $debug('🚪 signed out');
     });
+    $id('profile-login-btn')?.addEventListener('click', () => {
+      closeProfileModal();
+      openAuthModal('login');
+    });
     $id('sync-cloud-btn')?.addEventListener('click', async () => {
       const btn = $id('sync-cloud-btn');
       const errDiv = $id('sync-error-msg');
@@ -1813,6 +1966,60 @@
         setTimeout(() => { btn.textContent = '☁️ Synchroniser mes données'; if (errDiv) errDiv.classList.add('hidden'); }, 6000);
       }
     });
+
+    // ── QR Modal ─────────────────────────────────────────────
+    $id('close-qr-modal')?.addEventListener('click', () => $id('qr-modal').classList.add('hidden'));
+    $id('qr-modal')?.addEventListener('click', e => { if (e.target === $id('qr-modal')) $id('qr-modal').classList.add('hidden'); });
+
+    // ── Avatar picker (profile modal) ────────────────────────
+    const AVATARS = ['💩','🐻','🦊','🐼','🐱','🐶','🐸','🐷','🐮','🦁','🐯','🐻‍❄️','🦄','🐙','🦋','🌸','🌙','⭐','🌈','🎀','👑','🍦','🎸','🧁','🌺','🦩','🐢','🦀','🧸','🎭'];
+    const avatarGrid = $id('avatar-picker-grid');
+    if (avatarGrid) {
+      avatarGrid.innerHTML = AVATARS.map(a => `
+        <button class="profile-avatar-opt w-10 h-10 rounded-[0.75rem] flex items-center justify-center text-xl hover:scale-110 transition-transform"
+          data-av="${a}" style="background:color-mix(in srgb,var(--accent) 8%,transparent)">${a}</button>`
+      ).join('');
+      avatarGrid.querySelectorAll('.profile-avatar-opt').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const av = btn.dataset.av;
+          avatarGrid.querySelectorAll('.profile-avatar-opt').forEach(b =>
+            b.style.outline = b.dataset.av === av ? '2px solid var(--accent)' : 'none');
+          $id('profile-avatar-display').textContent = av;
+          $id('user-avatar').textContent = av;
+          if (window.SupabaseClient?.isLoggedIn()) {
+            try { await window.SupabaseClient.updateProfile({ avatar: av }); } catch(e) {}
+          }
+        });
+      });
+    }
+
+    // ── Theme picker (profile modal) ─────────────────────────
+    const ALL_THEMES = [
+      { id:'default',   label:'Chaud 🟠',       grad:'linear-gradient(135deg,#d97706,#ea580c)' },
+      { id:'dark',      label:'Dark 🌙',         grad:'linear-gradient(135deg,#1e1b4b,#312e81)' },
+      { id:'medical',   label:'Médical 🩺',      grad:'linear-gradient(135deg,#059669,#0284c7)' },
+      { id:'kawaii',    label:'Kawaii 🌸',        grad:'linear-gradient(135deg,#e91e8c,#9c27b0)' },
+      { id:'foret',     label:'Forêt 🌿',         grad:'linear-gradient(135deg,#2e7d32,#558b2f)' },
+      { id:'ocean',     label:'Océan 🌊',         grad:'linear-gradient(135deg,#0277bd,#00838f)' },
+      { id:'sunset',    label:'Sunset 🌅',        grad:'linear-gradient(135deg,#ff6b6b,#c77dff)' },
+      { id:'galaxy',    label:'Galaxy 🌌',        grad:'linear-gradient(135deg,#6a0572,#3a0ca3)' },
+      { id:'sakura',    label:'Sakura 🌸',        grad:'linear-gradient(135deg,#e91e8c,#ff6b9d)' },
+      { id:'mint',      label:'Mint 🌿',          grad:'linear-gradient(135deg,#00b894,#00cec9)' },
+      { id:'lavande',   label:'Lavande 💜',       grad:'linear-gradient(135deg,#7c3aed,#9d4edd)' },
+      { id:'rose-gold', label:'Rose Gold 🌹',     grad:'linear-gradient(135deg,#c97b6a,#e0a87c)' },
+      { id:'tropicale', label:'Tropicale 🌴',     grad:'linear-gradient(135deg,#00b8a9,#0097a7)' },
+      { id:'nordique',  label:'Nordique ❄️',      grad:'linear-gradient(135deg,#2c5f8a,#3a7bd5)' },
+      { id:'automne',   label:'Automne 🍂',       grad:'linear-gradient(135deg,#b45309,#c2410c)' },
+      { id:'neon',      label:'Neon ⚡',           grad:'linear-gradient(135deg,#00ff88,#00e5cc)' },
+    ];
+    const themeGrid = $id('profile-theme-grid');
+    if (themeGrid) {
+      themeGrid.innerHTML = ALL_THEMES.map(t => `
+        <button class="profile-theme-btn rounded-[0.75rem] p-2 text-xs font-bold text-white text-center leading-tight hover:scale-105 transition-transform"
+          data-theme-btn="${t.id}" style="background:${t.grad};min-height:52px;box-shadow:0 2px 8px #0002"
+          title="${t.label}">${t.label}</button>`
+      ).join('');
+    }
 
     // Notifications settings
     setupNotifications();
@@ -1898,7 +2105,13 @@
     switchAuthTab(tab);
   }
   function closeAuthModal() { $id('auth-modal').classList.add('hidden'); }
-  function openProfileModal() { window.SocialModule?.openProfileModal(); }
+  function openProfileModal() {
+    if (window.SocialModule) {
+      window.SocialModule.openProfileModal();
+    } else {
+      $id('profile-modal').classList.remove('hidden');
+    }
+  }
   function closeProfileModal() { $id('profile-modal').classList.add('hidden'); }
 
   function switchAuthTab(tab) {
@@ -1935,8 +2148,11 @@
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme === 'default' ? '' : theme);
     const metaColor = {
-      default: '#d97706', dark: '#1e1b4b', medical: '#059669',
-      kawaii: '#e91e8c', foret: '#2e7d32', ocean: '#0277bd'
+      default:'#d97706', dark:'#1e1b4b', medical:'#059669',
+      kawaii:'#e91e8c', foret:'#2e7d32', ocean:'#0277bd',
+      sunset:'#ff6b6b', galaxy:'#6a0572', sakura:'#e91e8c',
+      mint:'#00b894', lavande:'#7c3aed', 'rose-gold':'#c97b6a',
+      tropicale:'#00b8a9', nordique:'#2c5f8a', automne:'#b45309', neon:'#00ff88'
     };
     $id('theme-color-meta').setAttribute('content', metaColor[theme] || '#d97706');
 
@@ -1947,13 +2163,14 @@
 
     // Drawer bg selon le thème
     const drawerBg = {
-      dark: '#1e1b4b', medical: '#f0fdf4',
-      kawaii: '#fce4ec', foret: '#f1f8e9', ocean: '#e0f7fa'
+      dark:'#1e1b4b', medical:'#f0fdf4', kawaii:'#fce4ec',
+      foret:'#f1f8e9', ocean:'#e0f7fa', sunset:'#ffd6a5',
+      galaxy:'#0d0221', sakura:'#ffb7c5', mint:'#c8f7c5',
+      lavande:'#e6d9f7', 'rose-gold':'#f9e4e8', tropicale:'#b3ffec',
+      nordique:'#dce8f5', automne:'#fde8c8', neon:'#000000'
     };
     const drawerInner = $id('drawer-inner');
-    if (drawerInner) {
-      drawerInner.style.background = drawerBg[theme] || '';
-    }
+    if (drawerInner) drawerInner.style.background = drawerBg[theme] || '';
   }
 
   // ===================================================
@@ -2292,14 +2509,76 @@
   //  BADGES
   // ===================================================
   const BADGE_DEFS = [
-    { id:'first',    icon:'⭐', label:'Première Étoile',  desc:'1er caca enregistré',         color:'#eab308' },
-    { id:'streak3',  icon:'🔥', label:'Flamme x3',         desc:'3 jours d\'affilée',           color:'#ef4444' },
-    { id:'rainbow',  icon:'🌈', label:'Arc‑en‑Ciel',       desc:'Couleur arc-en-ciel utilisée', color:'#8b5cf6' },
-    { id:'veteran',  icon:'🏆', label:'Vétéran',           desc:'10 cacas au total',            color:'#f59e0b' },
-    { id:'retro',    icon:'⏪', label:'Archiviste',        desc:'1 caca en retard saisi',       color:'#7c3aed' },
-    { id:'frenchie', icon:'🇫🇷', label:'À la Française',  desc:'≥ 1.1/j sur 7 jours',         color:'#3b82f6' },
-    { id:'centenaire',icon:'💯',label:'Centenaire',         desc:'100 cacas',                    color:'#059669' },
-    { id:'nightcaca', icon:'🌙', label:'Caca de nuit',     desc:'Caca entre minuit et 5h',      color:'#1e293b' },
+    // ── Originals ──────────────────────────────────────────────
+    { id:'first',        icon:'⭐', label:'Première Étoile',         desc:'1er caca enregistré',               color:'#eab308' },
+    { id:'streak3',      icon:'🔥', label:'Flamme x3',               desc:'3 jours d\'affilée',                color:'#ef4444' },
+    { id:'rainbow',      icon:'🌈', label:'Arc‑en‑Ciel',             desc:'Couleur arc-en-ciel utilisée',      color:'#8b5cf6' },
+    { id:'veteran',      icon:'🏆', label:'Vétéran',                 desc:'10 cacas au total',                 color:'#f59e0b' },
+    { id:'retro',        icon:'⏪', label:'Archiviste',              desc:'1 caca en retard saisi',            color:'#7c3aed' },
+    { id:'frenchie',     icon:'🇫🇷',label:'À la Française',         desc:'≥ 1.1/j sur 7 jours',              color:'#3b82f6' },
+    { id:'centenaire',   icon:'💯', label:'Centenaire',              desc:'100 cacas',                         color:'#059669' },
+    { id:'nightcaca',    icon:'🌙', label:'Caca de nuit',            desc:'Caca entre minuit et 5h',           color:'#1e293b' },
+    // ── Streak badges ─────────────────────────────────────────
+    { id:'streak5',      icon:'🔥', label:'En Feu !',               desc:'5 jours d\'affilée',                color:'#f97316' },
+    { id:'streak7',      icon:'⚡', label:'Semaine Parfaite',        desc:'7 jours d\'affilée',                color:'#eab308' },
+    { id:'streak14',     icon:'🌟', label:'Deux Semaines',           desc:'14 jours d\'affilée',               color:'#a855f7' },
+    { id:'streak30',     icon:'👑', label:'Mois de Feu',             desc:'30 jours d\'affilée',               color:'#ec4899' },
+    // ── Volume ────────────────────────────────────────────────
+    { id:'poops25',      icon:'🥈', label:'Argent',                  desc:'25 cacas',                          color:'#94a3b8' },
+    { id:'poops50',      icon:'🥇', label:'Or Massif',               desc:'50 cacas',                          color:'#d97706' },
+    { id:'poops200',     icon:'💎', label:'Diamant',                  desc:'200 cacas',                         color:'#38bdf8' },
+    { id:'poops365',     icon:'🌟', label:'Légende',                  desc:'365 cacas',                         color:'#f59e0b' },
+    { id:'poops500',     icon:'🚀', label:'Astronaute',              desc:'500 cacas',                         color:'#6366f1' },
+    { id:'poops1000',    icon:'🌌', label:'Galactique',              desc:'1000 cacas',                        color:'#0ea5e9' },
+    // ── Time of day ───────────────────────────────────────────
+    { id:'earlyBird',    icon:'🐦', label:'Lève-Tôt',               desc:'Caca avant 7h du matin',            color:'#fbbf24' },
+    { id:'morningPerson',icon:'☀️', label:'Matinalière',             desc:'10 cacas avant 8h',                 color:'#fb923c' },
+    { id:'afterLunch',   icon:'🌤️', label:'Sieste Digestive',       desc:'5 cacas entre 12h et 14h',          color:'#34d399' },
+    { id:'eveningCaca',  icon:'🌆', label:'Soirée Tranquille',       desc:'5 cacas entre 18h et 21h',          color:'#818cf8' },
+    { id:'nightOwl5',    icon:'🦉', label:'Hibou',                   desc:'5 cacas entre minuit et 5h',        color:'#7c3aed' },
+    { id:'earlyMorning', icon:'🌅', label:'L\'Aube',                 desc:'Caca avant 6h du matin',            color:'#f472b6' },
+    // ── Multi dans la même journée ────────────────────────────
+    { id:'double',       icon:'🎯', label:'Double Dose',             desc:'2 cacas le même jour',              color:'#22d3ee' },
+    { id:'triple',       icon:'🎰', label:'Triple',                  desc:'3 cacas le même jour',              color:'#a3e635' },
+    { id:'quad',         icon:'🎳', label:'Quadruplé',               desc:'4 cacas le même jour',              color:'#fb7185' },
+    { id:'volcano',      icon:'🌋', label:'Volcan',                  desc:'5 cacas le même jour',              color:'#ef4444' },
+    // ── Jours de la semaine ───────────────────────────────────
+    { id:'mondayBlues',  icon:'😫', label:'Le Lundi ça part vite',   desc:'Caca un lundi',                     color:'#6b7280' },
+    { id:'weekendW',     icon:'🎉', label:'Weekend Warrior',         desc:'5 cacas au total le weekend',        color:'#f59e0b' },
+    { id:'fridayFun',    icon:'🕺', label:'TGIF',                    desc:'Caca un vendredi soir (≥ 18h)',      color:'#84cc16' },
+    // ── Textures ──────────────────────────────────────────────
+    { id:'allTextures',  icon:'🎨', label:'Artiste Complète',        desc:'Toutes les textures utilisées',     color:'#c084fc' },
+    { id:'softie',       icon:'💧', label:'Toute Douce',             desc:'10 cacas mous',                     color:'#38bdf8' },
+    { id:'hardRock',     icon:'🪨', label:'Dure à Cuire',            desc:'5 cacas durs',                      color:'#78716c' },
+    { id:'normalNormal', icon:'💪', label:'Bien Réglée',             desc:'20 cacas normaux',                  color:'#10b981' },
+    { id:'explosive',    icon:'💥', label:'Explosive',               desc:'5 cacas explosifs',                 color:'#dc2626' },
+    // ── Couleurs ──────────────────────────────────────────────
+    { id:'colorCollect', icon:'🎨', label:'Chasseuse de Couleurs',   desc:'5 couleurs différentes utilisées',  color:'#ec4899' },
+    { id:'allColors',    icon:'🖌️', label:'Tableau de Maître',       desc:'Toutes les couleurs utilisées',     color:'#8b5cf6' },
+    { id:'brownMaster',  icon:'🟤', label:'Classique',               desc:'20 cacas marrons',                  color:'#92400e' },
+    { id:'greenPower',   icon:'💚', label:'Végétarienne ?',          desc:'5 cacas verts',                     color:'#16a34a' },
+    // ── Vitesse ───────────────────────────────────────────────
+    { id:'speedRunner',  icon:'⚡', label:'Speed Run',               desc:'3 cacas en moins de 12h',           color:'#facc15' },
+    { id:'ultraSpeed',   icon:'🌪️', label:'Tornade',                 desc:'4 cacas en moins de 8h',            color:'#06b6d4' },
+    { id:'sigma',        icon:'😎', label:'Sigma',                   desc:'2 cacas en moins d\'1h',            color:'#1e293b' },
+    // ── Commentaires & humeur ─────────────────────────────────
+    { id:'journaliste',  icon:'📝', label:'Journaliste',             desc:'1er commentaire ajouté',            color:'#0ea5e9' },
+    { id:'philosopher',  icon:'🤔', label:'Philosophe',              desc:'10 commentaires',                   color:'#6366f1' },
+    { id:'novelist',     icon:'📚', label:'Romancière',              desc:'30 commentaires',                   color:'#a855f7' },
+    { id:'moodStart',    icon:'😊', label:'En Mode Mood',            desc:'Première humeur enregistrée',       color:'#f472b6' },
+    { id:'allMoods',     icon:'🎭', label:'Actrice',                 desc:'Toutes les humeurs utilisées',      color:'#c084fc' },
+    // ── Spéciaux ──────────────────────────────────────────────
+    { id:'worldChamp',   icon:'🌍', label:'Championne Mondiale',     desc:'Dépasse la moyenne mondiale (1.4/j)',color:'#059669' },
+    { id:'retroMaster',  icon:'⏰', label:'Archiviste Pro',          desc:'5 cacas en retard saisis',          color:'#7c3aed' },
+    { id:'consistent',   icon:'📅', label:'Comme une Horloge',       desc:'Même heure ±2h pendant 5 jours',   color:'#0284c7' },
+    { id:'comeback',     icon:'🔄', label:'Le Grand Retour',         desc:'Revenir après 7 jours sans caca',   color:'#64748b' },
+    { id:'veteran50',    icon:'🎖️', label:'50 Jours',               desc:'50 jours depuis le 1er caca',       color:'#78716c' },
+    { id:'veteran100',   icon:'🏅', label:'100 Jours',              desc:'100 jours depuis le 1er caca',       color:'#d97706' },
+    { id:'anniversary',  icon:'🎂', label:'Joyeux Anniversaire !',   desc:'1 an depuis le 1er caca',           color:'#ec4899' },
+    { id:'bingo',        icon:'🎱', label:'Bingo 42',                desc:'Le 42ème caca (Easter Egg)',        color:'#1e293b' },
+    { id:'lucky7',       icon:'🎲', label:'Lucky 7',                 desc:'7 cacas un 7 du mois',              color:'#16a34a' },
+    { id:'midnight',     icon:'🕛', label:'Minuit',                  desc:'Caca entre 23h et 1h',              color:'#312e81' },
+    { id:'allWeekDays',  icon:'🗓️', label:'Toute la Semaine',       desc:'Caca chaque jour lun→dim',          color:'#0891b2' },
   ];
 
   function buildBadgesGrid() {
@@ -2317,29 +2596,195 @@
   }
 
   function updateBadges() {
-    const total = state.logs.length;
+    const logs  = state.logs;
+    const total = logs.length;
     const streak = calculateStreak();
-    const hasRainbow = state.logs.some(l => l.color === 'arc-en-ciel');
-    const hasRetro = state.logs.some(l => l.isRetro);
-    const hasNight = state.logs.some(l => { const h = new Date(l.date).getHours(); return h >= 0 && h < 5; });
+    const now   = new Date();
 
-    const now = new Date();
-    let totalLast7 = 0;
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(now); d.setDate(d.getDate() - i);
-      totalLast7 += state.logs.filter(l => new Date(l.date).toDateString() === d.toDateString()).length;
+    // ── Helpers ──────────────────────────────────────────────
+    const countsByDay = {}; // 'YYYY-MM-DD' → count
+    logs.forEach(l => {
+      const key = new Date(l.date).toDateString();
+      countsByDay[key] = (countsByDay[key] || 0) + 1;
+    });
+
+    const last7Logs = (() => {
+      let c = 0;
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(now); d.setDate(d.getDate() - i);
+        c += logs.filter(l => new Date(l.date).toDateString() === d.toDateString()).length;
+      }
+      return c;
+    })();
+    const avg7 = last7Logs / 7;
+
+    const maxPerDay = Math.max(...Object.values(countsByDay), 0);
+
+    // Fast same-day counts
+    const dayGroups = {};
+    logs.forEach(l => {
+      const k = new Date(l.date).toDateString();
+      if (!dayGroups[k]) dayGroups[k] = [];
+      dayGroups[k].push(l);
+    });
+
+    // Streak speed: X cacas in N hours
+    function minHoursForN(n) {
+      if (logs.length < n) return Infinity;
+      const sorted = [...logs].sort((a,b) => a.date - b.date);
+      let min = Infinity;
+      for (let i = 0; i <= sorted.length - n; i++) {
+        const diff = (sorted[i+n-1].date - sorted[i].date) / 3600000;
+        min = Math.min(min, diff);
+      }
+      return min;
     }
-    const avg7 = totalLast7 / 7;
 
+    // First log date
+    const firstDate = logs.length ? new Date(Math.min(...logs.map(l => l.date))) : null;
+    const daysSinceFirst = firstDate ? Math.floor((now - firstDate) / 86400000) : 0;
+
+    // Comments, moods
+    const commentCount = logs.filter(l => l.comment?.trim()).length;
+    const moodsUsed    = new Set(logs.map(l => l.mood).filter(Boolean));
+    const allMoodsList = ['normal','douloureux','urgent','difficile'];
+
+    // Colors & textures
+    const colorsUsed   = new Set(logs.map(l => l.color).filter(Boolean));
+    const texturesUsed = new Set(logs.map(l => l.texture).filter(Boolean));
+    const allTexList   = ['normal','dur','mou','spray','liquide','explosif'];
+
+    // Comeback: last gap > 7 days followed by new logs
+    const hasComeback = (() => {
+      const s = [...logs].sort((a,b) => a.date - b.date);
+      for (let i = 1; i < s.length; i++) {
+        if ((s[i].date - s[i-1].date) / 86400000 > 7) return true;
+      }
+      return false;
+    })();
+
+    // Consistent same hour ±2h over 5 days
+    const isConsistent = (() => {
+      if (logs.length < 5) return false;
+      const sorted = [...logs].sort((a,b) => b.date - a.date);
+      const hours = sorted.slice(0, 5).map(l => new Date(l.date).getHours());
+      const avg = hours.reduce((a,b)=>a+b,0)/5;
+      return hours.every(h => Math.abs(h - avg) <= 2);
+    })();
+
+    // Whole-week coverage (Mon-Sun same calendar week)
+    const allWeekDaysDone = (() => {
+      const weekMap = {};
+      logs.forEach(l => {
+        const d = new Date(l.date);
+        const mon = new Date(d); mon.setDate(d.getDate() - (d.getDay()===0?6:d.getDay()-1)); mon.setHours(0,0,0,0);
+        const wk = mon.getTime();
+        if (!weekMap[wk]) weekMap[wk] = new Set();
+        weekMap[wk].add(d.getDay()===0?7:d.getDay()); // 1=Mon…7=Sun
+      });
+      return Object.values(weekMap).some(s => s.size >= 7);
+    })();
+
+    // Lucky 7: 7 cacas on a 7th of the month
+    const hasLucky7 = (() => {
+      const on7th = logs.filter(l => new Date(l.date).getDate() === 7);
+      const days7 = new Set(on7th.map(l => new Date(l.date).toDateString()));
+      return days7.size >= 1 &&
+        [...days7].some(d => logs.filter(l => new Date(l.date).toDateString() === d).length >= 7);
+    })();
+
+    // ── Badge conditions ─────────────────────────────────────
     const badges = {
-      first:     { pct: total >= 1 ? 100 : 0, done: total >= 1 },
-      streak3:   { pct: Math.min(100, (streak/3)*100), done: streak >= 3 },
-      rainbow:   { pct: hasRainbow ? 100 : 0, done: hasRainbow },
-      veteran:   { pct: Math.min(100, (total/10)*100), done: total >= 10 },
-      retro:     { pct: hasRetro ? 100 : 0, done: hasRetro },
-      frenchie:  { pct: Math.min(100, (avg7/1.1)*100), done: avg7 >= 1.1 },
-      centenaire:{ pct: Math.min(100, (total/100)*100), done: total >= 100 },
-      nightcaca: { pct: hasNight ? 100 : 0, done: hasNight },
+      // Originals
+      first:        { pct: total>=1?100:0,                               done: total>=1 },
+      streak3:      { pct: Math.min(100,(streak/3)*100),                 done: streak>=3 },
+      rainbow:      { pct: colorsUsed.has('arc-en-ciel')?100:0,          done: colorsUsed.has('arc-en-ciel') },
+      veteran:      { pct: Math.min(100,(total/10)*100),                 done: total>=10 },
+      retro:        { pct: logs.some(l=>l.isRetro)?100:0,                done: logs.some(l=>l.isRetro) },
+      frenchie:     { pct: Math.min(100,(avg7/1.1)*100),                 done: avg7>=1.1 },
+      centenaire:   { pct: Math.min(100,(total/100)*100),                done: total>=100 },
+      nightcaca:    { pct: logs.some(l=>{const h=new Date(l.date).getHours();return h<5;})?100:0,
+                      done: logs.some(l=>{const h=new Date(l.date).getHours();return h<5;}) },
+      // Streaks
+      streak5:      { pct: Math.min(100,(streak/5)*100),                 done: streak>=5 },
+      streak7:      { pct: Math.min(100,(streak/7)*100),                 done: streak>=7 },
+      streak14:     { pct: Math.min(100,(streak/14)*100),                done: streak>=14 },
+      streak30:     { pct: Math.min(100,(streak/30)*100),                done: streak>=30 },
+      // Volume
+      poops25:      { pct: Math.min(100,(total/25)*100),                 done: total>=25 },
+      poops50:      { pct: Math.min(100,(total/50)*100),                 done: total>=50 },
+      poops200:     { pct: Math.min(100,(total/200)*100),                done: total>=200 },
+      poops365:     { pct: Math.min(100,(total/365)*100),                done: total>=365 },
+      poops500:     { pct: Math.min(100,(total/500)*100),                done: total>=500 },
+      poops1000:    { pct: Math.min(100,(total/1000)*100),               done: total>=1000 },
+      // Time of day
+      earlyBird:    { pct: logs.some(l=>new Date(l.date).getHours()<7)?100:0,
+                      done: logs.some(l=>new Date(l.date).getHours()<7) },
+      morningPerson:{ pct: Math.min(100,(logs.filter(l=>new Date(l.date).getHours()<8).length/10)*100),
+                      done: logs.filter(l=>new Date(l.date).getHours()<8).length>=10 },
+      afterLunch:   { pct: Math.min(100,(logs.filter(l=>{const h=new Date(l.date).getHours();return h>=12&&h<14;}).length/5)*100),
+                      done: logs.filter(l=>{const h=new Date(l.date).getHours();return h>=12&&h<14;}).length>=5 },
+      eveningCaca:  { pct: Math.min(100,(logs.filter(l=>{const h=new Date(l.date).getHours();return h>=18&&h<21;}).length/5)*100),
+                      done: logs.filter(l=>{const h=new Date(l.date).getHours();return h>=18&&h<21;}).length>=5 },
+      nightOwl5:    { pct: Math.min(100,(logs.filter(l=>new Date(l.date).getHours()<5).length/5)*100),
+                      done: logs.filter(l=>new Date(l.date).getHours()<5).length>=5 },
+      earlyMorning: { pct: logs.some(l=>new Date(l.date).getHours()<6)?100:0,
+                      done: logs.some(l=>new Date(l.date).getHours()<6) },
+      // Multi per day
+      double:       { pct: maxPerDay>=2?100:0,                          done: maxPerDay>=2 },
+      triple:       { pct: maxPerDay>=3?100:0,                          done: maxPerDay>=3 },
+      quad:         { pct: maxPerDay>=4?100:0,                          done: maxPerDay>=4 },
+      volcano:      { pct: maxPerDay>=5?100:0,                          done: maxPerDay>=5 },
+      // Week days
+      mondayBlues:  { pct: logs.some(l=>new Date(l.date).getDay()===1)?100:0,
+                      done: logs.some(l=>new Date(l.date).getDay()===1) },
+      weekendW:     { pct: Math.min(100,(logs.filter(l=>{const d=new Date(l.date).getDay();return d===0||d===6;}).length/5)*100),
+                      done: logs.filter(l=>{const d=new Date(l.date).getDay();return d===0||d===6;}).length>=5 },
+      fridayFun:    { pct: logs.some(l=>new Date(l.date).getDay()===5&&new Date(l.date).getHours()>=18)?100:0,
+                      done: logs.some(l=>new Date(l.date).getDay()===5&&new Date(l.date).getHours()>=18) },
+      // Textures
+      allTextures:  { pct: Math.min(100,(texturesUsed.size/allTexList.length)*100),
+                      done: allTexList.every(t=>texturesUsed.has(t)) },
+      softie:       { pct: Math.min(100,(logs.filter(l=>l.texture==='mou').length/10)*100),
+                      done: logs.filter(l=>l.texture==='mou').length>=10 },
+      hardRock:     { pct: Math.min(100,(logs.filter(l=>l.texture==='dur').length/5)*100),
+                      done: logs.filter(l=>l.texture==='dur').length>=5 },
+      normalNormal: { pct: Math.min(100,(logs.filter(l=>l.texture==='normal').length/20)*100),
+                      done: logs.filter(l=>l.texture==='normal').length>=20 },
+      explosive:    { pct: Math.min(100,(logs.filter(l=>l.texture==='explosif').length/5)*100),
+                      done: logs.filter(l=>l.texture==='explosif').length>=5 },
+      // Colors
+      colorCollect: { pct: Math.min(100,(colorsUsed.size/5)*100),       done: colorsUsed.size>=5 },
+      allColors:    { pct: Math.min(100,(colorsUsed.size/6)*100),        done: colorsUsed.size>=6 },
+      brownMaster:  { pct: Math.min(100,(logs.filter(l=>l.color==='marron').length/20)*100),
+                      done: logs.filter(l=>l.color==='marron').length>=20 },
+      greenPower:   { pct: Math.min(100,(logs.filter(l=>l.color==='vert').length/5)*100),
+                      done: logs.filter(l=>l.color==='vert').length>=5 },
+      // Speed
+      speedRunner:  { pct: minHoursForN(3)<=12?100:0,                   done: minHoursForN(3)<=12 },
+      ultraSpeed:   { pct: minHoursForN(4)<=8?100:0,                    done: minHoursForN(4)<=8 },
+      sigma:        { pct: minHoursForN(2)<=1?100:0,                    done: minHoursForN(2)<=1 },
+      // Comments & mood
+      journaliste:  { pct: commentCount>=1?100:0,                       done: commentCount>=1 },
+      philosopher:  { pct: Math.min(100,(commentCount/10)*100),         done: commentCount>=10 },
+      novelist:     { pct: Math.min(100,(commentCount/30)*100),         done: commentCount>=30 },
+      moodStart:    { pct: moodsUsed.size>=1?100:0,                     done: moodsUsed.size>=1 },
+      allMoods:     { pct: Math.min(100,(moodsUsed.size/allMoodsList.length)*100),
+                      done: allMoodsList.every(m=>moodsUsed.has(m)) },
+      // Special
+      worldChamp:   { pct: Math.min(100,(avg7/1.4)*100),                done: avg7>=1.4 },
+      retroMaster:  { pct: Math.min(100,(logs.filter(l=>l.isRetro).length/5)*100),
+                      done: logs.filter(l=>l.isRetro).length>=5 },
+      consistent:   { pct: isConsistent?100:0,                          done: isConsistent },
+      comeback:     { pct: hasComeback?100:0,                           done: hasComeback },
+      veteran50:    { pct: Math.min(100,(daysSinceFirst/50)*100),       done: daysSinceFirst>=50 },
+      veteran100:   { pct: Math.min(100,(daysSinceFirst/100)*100),      done: daysSinceFirst>=100 },
+      anniversary:  { pct: Math.min(100,(daysSinceFirst/365)*100),      done: daysSinceFirst>=365 },
+      bingo:        { pct: total>=42?100:0,                             done: total===42||total>42 },
+      lucky7:       { pct: hasLucky7?100:0,                             done: hasLucky7 },
+      midnight:     { pct: logs.some(l=>{const h=new Date(l.date).getHours();return h>=23||h<1;})?100:0,
+                      done: logs.some(l=>{const h=new Date(l.date).getHours();return h>=23||h<1;}) },
+      allWeekDays:  { pct: allWeekDaysDone?100:0,                       done: allWeekDaysDone },
     };
 
     Object.entries(badges).forEach(([id, {pct, done}]) => {
