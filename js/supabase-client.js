@@ -120,14 +120,15 @@ async function fetchProfile(userId) {
 async function savePoopCloud(poop) {
   const sb = getSB(); if (!sb || !_currentUser) return;
   const { error } = await sb.from('poops').upsert({
-    local_id:  String(poop.id),
-    user_id:   _currentUser.id,
-    date:      poop.date,
-    texture:   poop.texture,
-    color:     poop.color,
-    comment:   poop.comment || '',
-    is_retro:  poop.isRetro || false,
-    mood:      poop.mood || null
+    local_id:   String(poop.id),
+    user_id:    _currentUser.id,
+    date:       poop.date,
+    texture:    poop.texture,
+    color:      poop.color,
+    comment:    poop.comment || '',
+    is_retro:   poop.isRetro || false,
+    mood:       poop.mood || null,
+    updated_at: poop.updated_at || Date.now()
   }, { onConflict: 'user_id,local_id' });
   if (error) throw new Error(error.message);
 }
@@ -141,17 +142,18 @@ async function deletePoopCloud(localId) {
 async function getMyPoops() {
   const sb = getSB(); if (!sb || !_currentUser) return [];
   const { data } = await sb.from('poops')
-    .select('id, local_id, date, texture, color, comment, is_retro, mood')
+    .select('id, local_id, date, texture, color, comment, is_retro, mood, updated_at')
     .eq('user_id', _currentUser.id)
     .order('date', { ascending: false });
   return (data || []).map(p => ({
-    id:      p.local_id || p.id,   // prefer the original local UUID
-    date:    p.date,
-    texture: p.texture || 'normal',
-    color:   p.color   || 'marron',
-    comment: p.comment || '',
-    isRetro: p.is_retro || false,
-    mood:    p.mood    || ''
+    id:         p.local_id || p.id,   // prefer the original local UUID
+    date:       p.date,
+    texture:    p.texture || 'normal',
+    color:      p.color   || 'marron',
+    comment:    p.comment || '',
+    isRetro:    p.is_retro || false,
+    mood:       p.mood    || '',
+    updated_at: p.updated_at || 0
   }));
 }
 
@@ -419,6 +421,29 @@ async function getChallengeProgress(groupId, challenge) {
 }
 
 // ============================================================
+//  DÉFI PERSONNALISÉ (feature 12)
+// ============================================================
+async function updateWeeklyChallengeTitle(groupId, title) {
+  const sb = getSB(); if (!sb || !_currentUser) throw new Error('Non connecté');
+  const now = new Date();
+  const day = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+  monday.setHours(0,0,0,0);
+  const fmt = d => d.toISOString().slice(0, 10);
+
+  // Update if exists, or upsert
+  const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+  const { error } = await sb.from('challenges').upsert({
+    group_id:   groupId,
+    title:      title,
+    start_date: fmt(monday),
+    end_date:   fmt(sunday)
+  }, { onConflict: 'group_id,start_date' });
+  if (error) throw new Error(error.message);
+}
+
+// ============================================================
 //  ADMIN
 // ============================================================
 
@@ -472,6 +497,7 @@ window.SupabaseClient = {
   getGroupStats,
   getGroupFeed,
   getOrCreateWeeklyChallenge,
+  updateWeeklyChallengeTitle,
   getChallengeProgress,
   toggleReaction,
   deleteGroup,

@@ -6,6 +6,34 @@ const SocialModule = (() => {
 
   const textureEmoji = t => ({ normal:'💩',dur:'🗿',mou:'🍮',spray:'💦',liquide:'🌊',explosif:'💥' })[t] || '💩';
 
+  // --- Skeleton helpers (feature 6) ---
+  function skeletonBars(n = 3) {
+    return Array.from({ length: n }, () => `
+      <div class="flex items-center gap-2 mb-3">
+        <div class="skeleton skeleton-circle"></div>
+        <div class="flex-1">
+          <div class="skeleton skeleton-line skeleton-med"></div>
+          <div class="skeleton skeleton-line skeleton-full" style="height:8px"></div>
+        </div>
+        <div class="skeleton skeleton-line" style="width:28px;height:20px"></div>
+      </div>`).join('');
+  }
+  function skeletonFeed(n = 4) {
+    return Array.from({ length: n }, () => `
+      <div class="p-2 rounded-[1rem]" style="background:color-mix(in srgb,var(--accent) 4%,transparent)">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="skeleton skeleton-circle" style="width:32px;height:32px"></div>
+          <div class="flex-1">
+            <div class="skeleton skeleton-line skeleton-med"></div>
+          </div>
+          <div class="skeleton skeleton-line" style="width:36px;height:10px"></div>
+        </div>
+        <div class="flex gap-1 mt-1">
+          ${Array.from({length:5},()=>'<div class="skeleton" style="width:30px;height:22px;border-radius:99px"></div>').join('')}
+        </div>
+      </div>`).join('');
+  }
+
   function timeAgo(ts) {
     const s = Math.round((Date.now() - ts) / 1000);
     if (s < 60) return 'à l\'instant';
@@ -48,7 +76,7 @@ const SocialModule = (() => {
     const selector = document.getElementById('group-selector');
     if (!listEl) return;
 
-    listEl.innerHTML = '<div class="text-xs text-center opacity-60 py-2">⏳ Chargement…</div>';
+    listEl.innerHTML = skeletonBars(2);
 
     try {
       const groups = await window.SupabaseClient.getMyGroups();
@@ -136,7 +164,7 @@ const SocialModule = (() => {
     const listEl    = document.getElementById('podium-list');
     if (!container || !listEl) return;
 
-    container.innerHTML = '<div class="text-xs opacity-60">⏳</div>';
+    container.innerHTML = skeletonBars(3);
     listEl.innerHTML = '';
 
     try {
@@ -188,7 +216,7 @@ const SocialModule = (() => {
   async function renderCompareChart(groupId) {
     const el = document.getElementById('compare-chart');
     if (!el) return;
-    el.innerHTML = '<div class="text-xs opacity-60 text-center">⏳</div>';
+    el.innerHTML = skeletonBars(3);
 
     try {
       const stats = await window.SupabaseClient.getGroupStats(groupId);
@@ -236,7 +264,7 @@ const SocialModule = (() => {
 
     const el = document.getElementById('activity-feed');
     if (!el) return;
-    el.innerHTML = '<div class="text-xs opacity-60 text-center">⏳</div>';
+    el.innerHTML = skeletonFeed(4);
 
     try {
       const feed = await window.SupabaseClient.getGroupFeed(groupId, 200);
@@ -315,13 +343,32 @@ const SocialModule = (() => {
     const countdownEl = document.getElementById('challenge-countdown');
     if (!barsEl) return;
 
-    barsEl.innerHTML = '<div class="text-xs opacity-60 text-center">⏳</div>';
+    barsEl.innerHTML = skeletonBars(3);
 
     try {
-      const challenge = await window.SupabaseClient.getOrCreateWeeklyChallenge(groupId);
+      const challenge  = await window.SupabaseClient.getOrCreateWeeklyChallenge(groupId);
       if (!challenge) { barsEl.innerHTML = '<div class="text-xs opacity-60">Aucun défi actif</div>'; return; }
 
-      if (titleEl) titleEl.textContent = challenge.title;
+      if (titleEl) titleEl.textContent = challenge.title || 'Qui fera le plus de cacas cette semaine ?';
+
+      // Afficher le bouton "Modifier" si créateur (feature 12)
+      const editBtn  = document.getElementById('edit-challenge-btn');
+      const myProfil = window.SupabaseClient.getCurrentProfile();
+      const groups   = await window.SupabaseClient.getMyGroups();
+      const group    = groups.find(g => g.id === groupId);
+      const isCreator = group?.created_by === myProfil?.id;
+      if (editBtn) {
+        editBtn.classList.toggle('hidden', !isCreator);
+        editBtn.onclick = async () => {
+          const newTitle = prompt('Titre du défi (laisse vide pour le titre par défaut) :', titleEl?.textContent || '');
+          if (newTitle === null) return; // Annulé
+          const title = newTitle.trim() || 'Qui fera le plus de cacas cette semaine ?';
+          try {
+            await window.SupabaseClient.updateWeeklyChallengeTitle(groupId, title);
+            if (titleEl) titleEl.textContent = title;
+          } catch(e) { alert('Erreur : ' + e.message); }
+        };
+      }
 
       // Countdown
       if (countdownEl) {
@@ -368,7 +415,7 @@ const SocialModule = (() => {
     const leaveBtn    = document.getElementById('leave-group-btn');
     if (!listEl) return;
 
-    listEl.innerHTML = '<div class="text-xs opacity-60 text-center">⏳</div>';
+    listEl.innerHTML = skeletonBars(3);
 
     try {
       const members   = await window.SupabaseClient.getGroupMembers(groupId);

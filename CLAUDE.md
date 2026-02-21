@@ -1,4 +1,4 @@
-# 💩 Caca-Tracker 3000 Deluxe - v2.6.0
+# 💩 Caca-Tracker 3000 Deluxe - v2.8.0
 
 ## 🎯 Modifications prévues - Février 2026
 
@@ -228,6 +228,25 @@ function shakeAchievement(id)
 - Poids total : ~50KB
 
 ## 🆗 Changelog
+
+### v2.8.0 (Février 2026) - 💀 SKELETONS + RECORDS + SANTÉ + PDF + DÉFI CUSTOM
+
+- ➕ Skeleton loading animé sur podium, feed, comparatif, gestion membres (remplace les ⏳)
+- ➕ Records personnels dans Stats : meilleur streak, meilleur jour, meilleure semaine, meilleur mois
+- ➕ Tendances de santé sur le Dashboard : alertes constipation (>48h), selles liquides consécutives, dures consécutives, + message positif si streak ≥ 7j
+- ➕ Pull-to-refresh sur l'onglet Social (mobile) : tirer vers le bas pour actualiser
+- ➕ Export PDF médical : bouton "🏥 PDF médical" dans Stats → rapport imprimable avec Bristol, fréquence, transit
+- ➕ Défi personnalisé : le créateur du groupe peut modifier le titre du défi hebdomadaire (bouton ✏️)
+- 🔧 Bump cache SW caca-v8 → caca-v9
+
+### v2.7.0 (Février 2026) - 🔬 BRISTOL + ANNIVERSAIRES + OFFLINE SYNC
+
+- ➕ Échelle de Bristol interactive dans l'onglet Stats (7 niveaux avec répartition réelle de l'utilisatrice)
+- ➕ Anniversaires de cacas sur le Dashboard (ex: "Il y a 1 an, c'était ton 100ème caca !")
+- ➕ Comparatif mensuel à 3 colonnes : mois précédent / ce mois / même mois l'an dernier
+- ➕ Résolution de conflits multi-appareils : champ `updated_at` + merge intelligent (version la plus récente gagne)
+- ➕ Queue offline : les cacas ajoutés/supprimés sans connexion sont mis en attente et synchronisés automatiquement au retour du réseau
+- 🔧 Bump cache SW caca-v7 → caca-v8
 
 ### v2.6.0 (Février 2026) - ☁️ SYNC FIX + CONTRASTE + UX
 - 🔧 Fix sync cloud→local : les données Supabase sont maintenant chargées sur tout nouveau appareil/navigateur lors de la connexion ou de la restauration de session

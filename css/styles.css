@@ -87,6 +87,59 @@
 }
 .reaction-btn:active { transform: scale(.92); }
 
+/* === SKELETON LOADING (feature 6) === */
+@keyframes skeleton-wave {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+.skeleton {
+    background: linear-gradient(90deg,
+        color-mix(in srgb, var(--accent) 7%, rgba(0,0,0,0.06)) 25%,
+        color-mix(in srgb, var(--accent) 16%, rgba(0,0,0,0.06)) 50%,
+        color-mix(in srgb, var(--accent) 7%, rgba(0,0,0,0.06)) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-wave 1.4s ease-in-out infinite;
+    border-radius: 0.75rem;
+}
+.skeleton-line  { height: 12px; margin-bottom: 8px; }
+.skeleton-short { width: 45%; }
+.skeleton-med   { width: 70%; }
+.skeleton-full  { width: 100%; }
+.skeleton-circle { border-radius: 50%; width: 40px; height: 40px; flex-shrink: 0; }
+
+/* === PULL-TO-REFRESH (feature 2) === */
+#ptr-indicator {
+    position: sticky;
+    top: 0;
+    left: 0; right: 0;
+    z-index: 20;
+    text-align: center;
+    padding: 8px;
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--card-bg));
+    border-radius: 0 0 1rem 1rem;
+    transition: transform .2s;
+}
+
+/* === IMPRESSION PDF (feature 8) === */
+@media print {
+    body > * { display: none !important; }
+    #print-report { display: block !important; }
+    #print-report {
+        font-family: 'Georgia', serif;
+        font-size: 12pt;
+        color: #000;
+        max-width: 100%;
+        padding: 20px;
+    }
+    .print-section { page-break-inside: avoid; margin-bottom: 24px; }
+    .print-bar-bg  { background: #e5e7eb; height: 8px; border-radius: 99px; overflow: hidden; }
+    .print-bar-fill { background: #d97706; height: 100%; border-radius: 99px; }
+}
+#print-report { display: none; }
+
 /* === GRAPHIQUES === */
 .charts-section {
     padding: 0;

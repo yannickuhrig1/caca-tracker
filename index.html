@@ -551,6 +551,12 @@
         </div>
       </div>
 
+      <!-- Tendance de santé -->
+      <div id="health-trend-banner" class="hidden card p-3 rounded-[2rem] shadow mb-4 text-sm font-bold text-center"></div>
+
+      <!-- Anniversaire de caca -->
+      <div id="anniversary-banner" class="hidden card p-4 rounded-[2rem] shadow mb-4 text-center" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff"></div>
+
       <div class="card p-5 rounded-[2rem] shadow">
         <div class="mb-3">
           <h3 class="font-bold text-lg">7 derniers jours</h3>
@@ -630,6 +636,12 @@
       <!-- Score santé -->
       <div id="health-score-container" class="mb-4"></div>
 
+      <!-- Records personnels -->
+      <div id="records-container" class="mb-4"></div>
+
+      <!-- Bristol Scale -->
+      <div id="bristol-container" class="mb-4"></div>
+
       <!-- Heatmap calendrier (injectée par charts.js) -->
       <div id="heatmap-container" class="mb-4"></div>
 
@@ -637,10 +649,16 @@
       <div id="advanced-charts-container" class="mb-4"></div>
 
       <!-- Export stats -->
-      <button id="export-stats-btn" class="w-full py-3 rounded-[1.5rem] font-bold mb-3 flex items-center justify-center gap-2 text-sm"
-        style="background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1.5px solid color-mix(in srgb,var(--accent) 30%,transparent)">
-        📤 Exporter mes stats (JSON)
-      </button>
+      <div class="flex gap-2 mb-3">
+        <button id="export-stats-btn" class="flex-1 py-3 rounded-[1.5rem] font-bold flex items-center justify-center gap-2 text-sm"
+          style="background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1.5px solid color-mix(in srgb,var(--accent) 30%,transparent)">
+          📤 JSON
+        </button>
+        <button id="export-pdf-btn" class="flex-1 py-3 rounded-[1.5rem] font-bold flex items-center justify-center gap-2 text-sm"
+          style="background:color-mix(in srgb,#ef4444 12%,transparent);color:#ef4444;border:1.5px solid color-mix(in srgb,#ef4444 30%,transparent)">
+          🏥 PDF médical
+        </button>
+      </div>
 
       <!-- Année en review -->
       <button id="wrapped-btn" class="w-full py-4 rounded-[1.5rem] font-bold text-white shadow mb-4 flex items-center justify-center gap-2"
@@ -760,7 +778,12 @@
           <div id="challenge-card" class="card p-5 rounded-[2rem] shadow">
             <div class="flex items-center justify-between mb-3">
               <h4 class="font-bold">🎯 Défi de la semaine</h4>
-              <span id="challenge-countdown" class="text-xs opacity-60"></span>
+              <div class="flex items-center gap-2">
+                <button id="edit-challenge-btn" class="hidden text-xs font-bold px-2 py-1 rounded-lg"
+                  style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)"
+                  title="Personnaliser le défi">✏️ Modifier</button>
+                <span id="challenge-countdown" class="text-xs opacity-60"></span>
+              </div>
             </div>
             <p id="challenge-title" class="text-sm mb-3 font-bold" style="color:var(--accent)">Qui fera le plus de cacas cette semaine ?</p>
             <div id="challenge-bars" class="space-y-2"></div>
@@ -1646,39 +1669,347 @@
   }
 
   // ===================================================
-  //  COMPARAISON MENSUELLE 📆
+  //  RECORDS PERSONNELS 🏅  (feature 9)
+  // ===================================================
+  function renderPersonalRecords() {
+    const el = $id('records-container');
+    if (!el || state.logs.length < 3) { if (el) el.innerHTML = ''; return; }
+
+    const logs = state.logs;
+
+    // Best single day
+    const dayCounts = {};
+    logs.forEach(l => {
+      const k = new Date(l.date).toDateString();
+      dayCounts[k] = (dayCounts[k] || 0) + 1;
+    });
+    const bestDay = Math.max(...Object.values(dayCounts));
+
+    // Best streak (all time)
+    const uniqueDays = [...new Set(logs.map(l => {
+      const d = new Date(l.date);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    }))].sort((a, b) => a - b);
+    let bestStreak = 1, cur = 1;
+    for (let i = 1; i < uniqueDays.length; i++) {
+      if (uniqueDays[i] - uniqueDays[i-1] === 86400000) { cur++; bestStreak = Math.max(bestStreak, cur); }
+      else cur = 1;
+    }
+
+    // Best week (sliding 7 days)
+    let bestWeek = 0;
+    const sortedDates = logs.map(l => l.date).sort((a, b) => a - b);
+    for (let i = 0; i < sortedDates.length; i++) {
+      const window7End = sortedDates[i] + 7 * 86400000;
+      let count = 0;
+      for (let j = i; j < sortedDates.length && sortedDates[j] <= window7End; j++) count++;
+      bestWeek = Math.max(bestWeek, count);
+    }
+
+    // Best month
+    const monthCounts = {};
+    logs.forEach(l => {
+      const d = new Date(l.date);
+      const k = d.getFullYear() + '-' + d.getMonth();
+      monthCounts[k] = (monthCounts[k] || 0) + 1;
+    });
+    const bestMonth = Math.max(...Object.values(monthCounts));
+
+    // Current streak
+    const curStreak = (() => {
+      let s = 0;
+      const today = new Date(); today.setHours(0,0,0,0);
+      for (let i = 0; i < 366; i++) {
+        const d = new Date(today); d.setDate(d.getDate() - i);
+        if (dayCounts[d.toDateString()]) s++;
+        else if (i > 0) break;
+      }
+      return s;
+    })();
+
+    const records = [
+      { icon: '🔥', label: 'Streak record', value: bestStreak + ' j', sub: curStreak > 0 ? 'actuel: ' + curStreak + 'j' : '' },
+      { icon: '📅', label: 'Meilleur jour', value: bestDay + ' 💩', sub: bestDay > 1 ? 'en une journée !' : '' },
+      { icon: '📆', label: 'Meilleure semaine', value: bestWeek + ' 💩', sub: 'sur 7 jours glissants' },
+      { icon: '🏆', label: 'Meilleur mois', value: bestMonth + ' 💩', sub: 'en un mois calendaire' },
+    ];
+
+    el.innerHTML = `
+      <div class="card p-4 rounded-[1.5rem]">
+        <div class="font-bold mb-3 text-sm">🏅 Tes records personnels</div>
+        <div class="grid grid-cols-2 gap-3">
+          ${records.map(r => `
+            <div class="rounded-[1rem] p-3 text-center" style="background:color-mix(in srgb,var(--accent) 8%,transparent)">
+              <div class="text-2xl mb-1">${r.icon}</div>
+              <div class="text-xs opacity-60 mb-0.5">${r.label}</div>
+              <div class="font-bold text-lg" style="color:var(--accent)">${r.value}</div>
+              ${r.sub ? `<div class="text-xs opacity-50 mt-0.5">${r.sub}</div>` : ''}
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  // ===================================================
+  //  TENDANCES DE SANTÉ 📈  (feature 10)
+  // ===================================================
+  function checkHealthTrends() {
+    const el = $id('health-trend-banner');
+    if (!el) return;
+
+    if (state.logs.length === 0) { el.classList.add('hidden'); return; }
+
+    const sorted = [...state.logs].sort((a, b) => b.date - a.date);
+    const last   = sorted[0];
+    const hoursSinceLast = last ? (Date.now() - last.date) / 3600000 : Infinity;
+
+    // Alertes par ordre de priorité
+    const alerts = [];
+
+    // Constipation (>48h)
+    if (hoursSinceLast > 48) {
+      const h = Math.round(hoursSinceLast);
+      alerts.push({ msg: `⚠️ ${h}h sans caca — attention à la constipation !`, color: '#ef4444', bg: 'rgba(239,68,68,0.1)' });
+    }
+
+    // Selles liquides/explosives consécutives (≥3 dernières)
+    const last3 = sorted.slice(0, 3);
+    if (last3.length === 3 && last3.every(l => l.texture === 'liquide' || l.texture === 'explosif')) {
+      alerts.push({ msg: '💊 3 selles liquides/explosives consécutives — hydrate-toi bien !', color: '#f97316', bg: 'rgba(249,115,22,0.1)' });
+    }
+
+    // Dures consécutives (≥3)
+    if (last3.length === 3 && last3.every(l => l.texture === 'dur')) {
+      alerts.push({ msg: '🪨 3 selles dures consécutives — bois plus d\'eau !', color: '#7c3aed', bg: 'rgba(124,58,237,0.1)' });
+    }
+
+    // Message positif : streak > 7 sans alerte
+    if (!alerts.length) {
+      const streak = (() => {
+        const days = new Set(state.logs.map(l => new Date(l.date).toDateString()));
+        let s = 0, today = new Date();
+        for (let i = 0; i < 30; i++) {
+          const d = new Date(today); d.setDate(d.getDate() - i);
+          if (days.has(d.toDateString())) s++;
+          else if (i > 0) break;
+        }
+        return s;
+      })();
+      if (streak >= 7) {
+        alerts.push({ msg: `🌟 ${streak} jours de suite ! Super régularité intestinale 💪`, color: '#10b981', bg: 'rgba(16,185,129,0.1)' });
+      }
+    }
+
+    if (!alerts.length) { el.classList.add('hidden'); return; }
+
+    const a = alerts[0];
+    el.style.cssText = `background:${a.bg};color:${a.color};border:1.5px solid color-mix(in srgb,${a.color} 30%,transparent)`;
+    el.textContent = a.msg;
+    el.classList.remove('hidden');
+  }
+
+  // ===================================================
+  //  EXPORT PDF MÉDICAL 🏥  (feature 8)
+  // ===================================================
+  function exportMedicalPDF() {
+    const el = $id('print-report');
+    if (!el) return;
+
+    const now = new Date();
+    const logs = state.logs;
+    if (!logs.length) { alert('Aucune donnée à exporter !'); return; }
+
+    const total = logs.length;
+    const sorted = [...logs].sort((a, b) => a.date - b.date);
+    const firstDate = new Date(sorted[0].date).toLocaleDateString('fr');
+    const lastDate  = new Date(sorted[sorted.length - 1].date).toLocaleDateString('fr');
+    const days      = Math.max(1, (sorted[sorted.length - 1].date - sorted[0].date) / 86400000);
+    const avgPerDay = (total / days).toFixed(2);
+
+    const textureCounts = {};
+    logs.forEach(l => { textureCounts[l.texture] = (textureCounts[l.texture] || 0) + 1; });
+
+    const intervals = [];
+    for (let i = 1; i < sorted.length; i++) intervals.push((sorted[i].date - sorted[i-1].date) / 3600000);
+    const avgTransit = intervals.length ? Math.round(intervals.reduce((a,b) => a+b, 0) / intervals.length) : null;
+
+    const textureNames = { normal:'Normal (Bristol 3-4)', dur:'Dur (Bristol 1-2)', mou:'Mou (Bristol 5)', spray:'Floconneux (Bristol 6)', liquide:'Liquide (Bristol 7)', explosif:'Explosif (Bristol 7)' };
+
+    el.innerHTML = `
+      <div class="print-section">
+        <h1 style="font-size:20pt;margin-bottom:4px">📋 Rapport intestinal médical</h1>
+        <p style="opacity:.6;font-size:10pt">Généré le ${now.toLocaleDateString('fr')} — Caca-Tracker 3000 Deluxe</p>
+        <hr style="margin:12px 0">
+        <p><strong>Période :</strong> ${firstDate} → ${lastDate}</p>
+        <p><strong>Total d'entrées :</strong> ${total} selles</p>
+        <p><strong>Fréquence moyenne :</strong> ${avgPerDay}/jour</p>
+        ${avgTransit !== null ? `<p><strong>Transit intestinal moyen :</strong> ${avgTransit}h</p>` : ''}
+        <p><strong>Tonnage estimé :</strong> ${(total * 0.15).toFixed(1)} kg</p>
+      </div>
+      <div class="print-section">
+        <h2 style="font-size:14pt;margin-bottom:8px">Répartition selon l'Échelle de Bristol</h2>
+        ${Object.entries(textureCounts).map(([t, c]) => {
+          const pct = Math.round(c / total * 100);
+          return `<p style="margin-bottom:6px">
+            <strong>${textureNames[t] || t} :</strong> ${c} (${pct}%)
+            <div class="print-bar-bg"><div class="print-bar-fill" style="width:${pct}%"></div></div>
+          </p>`;
+        }).join('')}
+        <p style="margin-top:12px;font-size:10pt;opacity:.7">✅ Idéal médical : 75-85% Normal, moins de 5% Liquide/Explosif</p>
+      </div>
+      <div class="print-section">
+        <h2 style="font-size:14pt;margin-bottom:8px">Note pour le médecin</h2>
+        <p style="font-size:10pt;opacity:.7">Ces données ont été collectées via l'application Caca-Tracker 3000 Deluxe (enregistrement manuel). La classification des selles suit l'Échelle de Bristol (1-7). Les données sont à titre indicatif et doivent être interprétées par un professionnel de santé.</p>
+      </div>`;
+
+    window.print();
+  }
+
+  // ===================================================
+  //  COMPARAISON MENSUELLE 📆  (feature 19 — 3 colonnes)
   // ===================================================
   function renderMonthCompare() {
     const el = $id('month-compare-container');
     if (!el) return;
     const now = new Date();
-    const thisStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-    const lastStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+    const thisStart  = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const lastStart  = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+    const lyStart    = new Date(now.getFullYear() - 1, now.getMonth(), 1).getTime();
+    const lyEnd      = new Date(now.getFullYear() - 1, now.getMonth() + 1, 1).getTime();
+
     const thisCount = state.logs.filter(l => l.date >= thisStart).length;
     const lastCount = state.logs.filter(l => l.date >= lastStart && l.date < thisStart).length;
-    const delta = thisCount - lastCount;
-    const pct   = lastCount > 0 ? Math.round(Math.abs(delta / lastCount) * 100) : null;
-    const arrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '=';
-    const color = delta > 0 ? '#10b981' : delta < 0 ? '#ef4444' : '#94a3b8';
+    const lyCount   = state.logs.filter(l => l.date >= lyStart && l.date < lyEnd).length;
+
+    const delta  = thisCount - lastCount;
+    const color  = delta > 0 ? '#10b981' : delta < 0 ? '#ef4444' : '#94a3b8';
+    const arrow  = delta > 0 ? '↑' : delta < 0 ? '↓' : '=';
+    const pct    = lastCount > 0 ? Math.round(Math.abs(delta / lastCount) * 100) : null;
+
     const monthNames = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
-    const thisMonth = monthNames[now.getMonth()];
-    const lastMonth = monthNames[(now.getMonth() + 11) % 12];
+    const thisMonthName = monthNames[now.getMonth()];
+    const lastMonthName = monthNames[(now.getMonth() + 11) % 12];
+    const lyLabel       = thisMonthName + ' ' + (now.getFullYear() - 1);
+
+    // Barre visuelle (max des 3 pour normaliser)
+    const maxVal = Math.max(thisCount, lastCount, lyCount, 1);
+    function bar(count) {
+      const w = Math.round((count / maxVal) * 100);
+      return `<div class="w-full rounded-full overflow-hidden mt-1" style="height:4px;background:rgba(0,0,0,0.08)">
+        <div style="width:${w}%;height:100%;border-radius:99px;background:var(--accent);transition:width .5s"></div></div>`;
+    }
+
     el.innerHTML = `
       <div class="card p-4 rounded-[1.5rem]">
-        <div class="font-bold mb-3 text-sm">📆 Ce mois vs le précédent</div>
-        <div class="flex items-center gap-4">
-          <div class="flex-1 text-center">
-            <div class="text-xs opacity-60">${lastMonth}</div>
-            <div class="text-2xl font-bold">${lastCount}</div>
+        <div class="font-bold mb-3 text-sm">📆 Moi vs moi-même</div>
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div>
+            <div class="text-xs opacity-50">${lastMonthName}</div>
+            <div class="text-xl font-bold">${lastCount}</div>
+            ${bar(lastCount)}
           </div>
-          <div class="text-3xl font-bold" style="color:${color}">${arrow}</div>
-          <div class="flex-1 text-center">
-            <div class="text-xs opacity-60">${thisMonth}</div>
-            <div class="text-2xl font-bold" style="color:var(--accent)">${thisCount}</div>
+          <div>
+            <div class="text-xs font-bold" style="color:var(--accent)">${thisMonthName} ✨</div>
+            <div class="text-xl font-bold" style="color:var(--accent)">${thisCount}</div>
+            ${bar(thisCount)}
+            ${pct !== null ? `<div class="text-xs font-bold mt-1" style="color:${color}">${delta > 0 ? '+' : ''}${delta !== 0 ? (delta > 0 ? '+' : '') + pct + '%' : '='}</div>` : ''}
           </div>
-          ${pct !== null ? `<div class="text-sm font-bold" style="color:${color}">${delta > 0 ? '+' : ''}${pct}%</div>` : ''}
+          <div>
+            <div class="text-xs opacity-50">${lyLabel}</div>
+            <div class="text-xl font-bold opacity-70">${lyCount}</div>
+            ${bar(lyCount)}
+          </div>
+        </div>
+        ${pct !== null ? `<div class="text-center text-xs mt-3 opacity-60">${arrow} ${Math.abs(delta)} caca${Math.abs(delta) > 1 ? 's' : ''} vs le mois dernier</div>` : ''}
+      </div>`;
+  }
+
+  // ===================================================
+  //  BRISTOL SCALE 🔬  (feature 17)
+  // ===================================================
+  function renderBristolScale() {
+    const el = $id('bristol-container');
+    if (!el || state.logs.length === 0) { if (el) el.innerHTML = ''; return; }
+
+    const bristolLevels = [
+      { num: 1, label: 'Type 1', desc: 'Petites boules dures séparées', textures: ['dur'], color: '#7c3aed', icon: '⚫⚫⚫' },
+      { num: 2, label: 'Type 2', desc: 'Saucisse grumeleuse et dure',   textures: ['dur'], color: '#9c4221', icon: '🟤🟤' },
+      { num: 3, label: 'Type 3', desc: 'Saucisse avec craquelures',     textures: ['normal'], color: '#d97706', icon: '🟫' },
+      { num: 4, label: 'Type 4', desc: 'Saucisse lisse et molle ✅',    textures: ['normal'], color: '#10b981', icon: '💩' },
+      { num: 5, label: 'Type 5', desc: 'Morceaux mous aux bords nets',  textures: ['mou'], color: '#f59e0b', icon: '🟡' },
+      { num: 6, label: 'Type 6', desc: 'Pâteux, morceaux effilochés',   textures: ['spray'], color: '#f97316', icon: '💦' },
+      { num: 7, label: 'Type 7', desc: 'Entièrement liquide',           textures: ['liquide','explosif'], color: '#ef4444', icon: '🌊' },
+    ];
+
+    // Compter par texture mappée sur Bristol
+    const textureCounts = {};
+    state.logs.forEach(l => { textureCounts[l.texture] = (textureCounts[l.texture] || 0) + 1; });
+
+    const totalMapped = bristolLevels.reduce((sum, lvl) => {
+      return sum + lvl.textures.reduce((s, t) => s + (textureCounts[t] || 0), 0);
+    }, 0) || 1;
+
+    const rows = bristolLevels.map(lvl => {
+      const count = lvl.textures.reduce((s, t) => s + (textureCounts[t] || 0), 0);
+      const pct   = Math.round((count / totalMapped) * 100);
+      const isIdeal = lvl.num === 3 || lvl.num === 4;
+      return `
+        <div class="flex items-center gap-2 py-1.5" style="border-bottom:1px solid rgba(0,0,0,0.05)">
+          <div class="w-6 text-center text-xs font-bold opacity-50">${lvl.num}</div>
+          <div class="text-lg w-8 text-center">${lvl.icon}</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-xs font-bold flex items-center gap-1">
+              ${lvl.desc}
+              ${isIdeal ? '<span class="text-xs px-1 rounded" style="background:rgba(16,185,129,0.15);color:#10b981">idéal</span>' : ''}
+            </div>
+            <div class="w-full rounded-full overflow-hidden mt-1" style="height:4px;background:rgba(0,0,0,0.07)">
+              <div style="width:${pct}%;height:100%;border-radius:99px;background:${lvl.color};transition:width .5s"></div>
+            </div>
+          </div>
+          <div class="text-xs font-bold w-10 text-right" style="color:${count > 0 ? lvl.color : 'inherit'};opacity:${count > 0 ? 1 : 0.3}">
+            ${count > 0 ? count + ' (' + pct + '%)' : '—'}
+          </div>
+        </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="card p-4 rounded-[1.5rem]">
+        <div class="font-bold mb-1 text-sm">🔬 Échelle de Bristol</div>
+        <div class="text-xs opacity-50 mb-3">Classification médicale de tes ${state.logs.length} selles</div>
+        ${rows}
+        <div class="mt-3 p-2 rounded-xl text-xs text-center font-bold" style="background:rgba(16,185,129,0.1);color:#10b981">
+          ✅ Types 3 et 4 = selles idéales selon la médecine
         </div>
       </div>`;
+  }
+
+  // ===================================================
+  //  ANNIVERSAIRES DE CACAS 🎂  (feature 18)
+  // ===================================================
+  function checkAnniversaries() {
+    if (state.logs.length === 0) return null;
+    const today = new Date();
+    const todayMD = String(today.getMonth() + 1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    const sorted  = [...state.logs].sort((a, b) => a.date - b.date);
+
+    const milestones = [
+      { count: 1,   emoji: '⭐', label: '1er caca enregistré' },
+      { count: 10,  emoji: '🏅', label: '10ème caca' },
+      { count: 50,  emoji: '🥈', label: '50ème caca' },
+      { count: 100, emoji: '💯', label: '100ème caca' },
+      { count: 200, emoji: '🏆', label: '200ème caca' },
+      { count: 365, emoji: '🌟', label: '365ème caca' },
+    ];
+
+    for (const m of milestones) {
+      if (sorted.length < m.count) continue;
+      const poopDate = new Date(sorted[m.count - 1].date);
+      const poopMD   = String(poopDate.getMonth() + 1).padStart(2,'0') + '-' + String(poopDate.getDate()).padStart(2,'0');
+      const yearsAgo = today.getFullYear() - poopDate.getFullYear();
+      if (poopMD === todayMD && yearsAgo >= 1) {
+        return { emoji: m.emoji, label: m.label, yearsAgo };
+      }
+    }
+    return null;
   }
 
   // ===================================================
@@ -1792,6 +2123,60 @@
   }
 
   // ===================================================
+  //  PULL-TO-REFRESH  (feature 2)
+  // ===================================================
+  function setupPullToRefresh() {
+    const main = document.querySelector('main');
+    if (!main || !('ontouchstart' in window)) return;
+
+    // Create indicator (injected into body, fixed at top)
+    const indicator = document.createElement('div');
+    indicator.id = 'ptr-indicator';
+    indicator.className = 'hidden';
+    indicator.textContent = '⬇️ Tire pour actualiser';
+    document.body.appendChild(indicator);
+
+    let startY = 0;
+    let pulling = false;
+    const THRESHOLD = 72;
+
+    document.addEventListener('touchstart', e => {
+      // Trigger only on social tab when scrolled to top
+      const socialTab = $id('social-tab');
+      if (!socialTab?.classList.contains('active')) return;
+      if (window.scrollY > 5) return;
+      startY = e.touches[0].clientY;
+      pulling = true;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', e => {
+      if (!pulling) return;
+      const dy = e.touches[0].clientY - startY;
+      if (dy > 20) {
+        indicator.classList.remove('hidden');
+        indicator.textContent = dy > THRESHOLD ? '🔄 Relâche pour actualiser' : '⬇️ Tire vers le bas';
+        indicator.style.transform = `translateY(${Math.min(dy - 20, 40)}px)`;
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchend', e => {
+      if (!pulling) return;
+      const dy = e.changedTouches[0].clientY - startY;
+      if (dy > THRESHOLD) {
+        indicator.textContent = '⏳ Actualisation…';
+        window.SocialModule?.renderSocialTab().then(() => {
+          indicator.classList.add('hidden');
+          indicator.style.transform = '';
+        });
+      } else {
+        indicator.classList.add('hidden');
+        indicator.style.transform = '';
+      }
+      pulling = false;
+    }, { passive: true });
+  }
+
+  // ===================================================
   //  EVENTS
   // ===================================================
   function setupEvents() {
@@ -1800,6 +2185,16 @@
     $id('save-poop').addEventListener('click', addPoop);
     $id('export-btn').addEventListener('click', exportData);
     $id('export-stats-btn')?.addEventListener('click', exportData);
+    $id('export-pdf-btn')?.addEventListener('click', exportMedicalPDF);
+
+    // Pull-to-refresh sur le social tab (feature 2)
+    setupPullToRefresh();
+
+    // Offline → online : vider la queue
+    window.addEventListener('online', () => {
+      $debug('🌐 Connexion rétablie — traitement de la queue offline…');
+      processOfflineQueue();
+    });
     $id('import-input').addEventListener('change', importData);
     $id('clear-btn').addEventListener('click', clearAll);
 
@@ -2323,7 +2718,8 @@
       color: selectedColor,
       comment: $id('comment').value.trim(),
       isRetro: isRetro,
-      mood: selectedMood || null
+      mood: selectedMood || null,
+      updated_at: Date.now()
     };
 
     state.logs.push(poop);
@@ -2353,7 +2749,17 @@
 
     // Sync cloud si connecté
     if (window.SupabaseClient?.isLoggedIn()) {
-      window.SupabaseClient.savePoopCloud(poop).catch(e => $debug('cloud save err: ' + e.message));
+      if (navigator.onLine) {
+        window.SupabaseClient.savePoopCloud(poop).catch(e => $debug('cloud save err: ' + e.message));
+      } else {
+        // Hors ligne → mettre en queue
+        try {
+          const queue = JSON.parse(localStorage.getItem('cacaTracker.offlineQueue') || '[]');
+          queue.push({ type: 'add', poop });
+          localStorage.setItem('cacaTracker.offlineQueue', JSON.stringify(queue));
+          $debug('📥 Hors ligne — caca mis en queue (sync au retour)');
+        } catch(e) { $debug('queue err: ' + e.message); }
+      }
     }
 
     // Notifications : mettre à jour l'heure du dernier caca
@@ -2383,6 +2789,23 @@
     $id('mass').textContent = (state.logs.length * 0.15).toFixed(1) + ' kg';
     updateChart();
     updateGoalUI(parseInt(localStorage.getItem('dailyGoal') || '1'));
+
+    // Tendances de santé (feature 10)
+    checkHealthTrends();
+
+    // Anniversaires
+    const anniv = checkAnniversaries();
+    const annivEl = $id('anniversary-banner');
+    if (annivEl) {
+      if (anniv) {
+        annivEl.innerHTML = `<div class="text-3xl mb-1">${anniv.emoji}</div>
+          <div class="font-bold">Anniversaire !</div>
+          <div class="text-sm mt-1 opacity-90">Il y a exactement ${anniv.yearsAgo} an${anniv.yearsAgo > 1 ? 's' : ''}, c'était ton <strong>${anniv.label}</strong> ! 🎂</div>`;
+        annivEl.classList.remove('hidden');
+      } else {
+        annivEl.classList.add('hidden');
+      }
+    }
 
     // Blague du jour
     window.JokesModule?.displayDailyJoke();
@@ -2444,7 +2867,15 @@
     saveState(state);
     renderAll();
     if (window.SupabaseClient?.isLoggedIn()) {
-      window.SupabaseClient.deletePoopCloud(deleted.id).catch(e => $debug('cloud del err: ' + e.message));
+      if (navigator.onLine) {
+        window.SupabaseClient.deletePoopCloud(deleted.id).catch(e => $debug('cloud del err: ' + e.message));
+      } else {
+        try {
+          const queue = JSON.parse(localStorage.getItem('cacaTracker.offlineQueue') || '[]');
+          queue.push({ type: 'del', id: deleted.id });
+          localStorage.setItem('cacaTracker.offlineQueue', JSON.stringify(queue));
+        } catch(e) { $debug('queue del err: ' + e.message); }
+      }
     }
     $debug('🗑️ deleted');
   };
@@ -2527,6 +2958,12 @@
     renderMonthCompare();
     // Score santé intestinale
     renderHealthScore();
+
+    // Records personnels (feature 9)
+    renderPersonalRecords();
+
+    // Bristol Scale (feature 17)
+    renderBristolScale();
 
     // Heatmap calendrier (charts.js)
     if (typeof createHeatmap === 'function') {
@@ -2928,26 +3365,74 @@
       const cloudPoops = await window.SupabaseClient.getMyPoops();
       if (!cloudPoops.length) return;
 
-      // Build a set of local IDs to detect missing entries
-      const localIds = new Set(state.logs.map(l => String(l.id)));
-      let added = 0;
+      // Build a map of local entries by ID
+      const localMap = new Map(state.logs.map(l => [String(l.id), l]));
+      let changed = 0;
+
       for (const p of cloudPoops) {
-        if (!localIds.has(String(p.id))) {
+        const key = String(p.id);
+        if (!localMap.has(key)) {
+          // Absent en local → ajouter
           state.logs.push(p);
-          added++;
+          changed++;
+        } else {
+          // Présent des deux côtés → conserver le plus récent (updated_at)
+          const local = localMap.get(key);
+          const cloudUpdAt = p.updated_at || 0;
+          const localUpdAt = local.updated_at || 0;
+          if (cloudUpdAt > localUpdAt) {
+            Object.assign(local, p);
+            changed++;
+          }
         }
       }
-      if (added > 0) {
+
+      if (changed > 0) {
         state.logs.sort((a, b) => b.date - a.date);
         saveState(state);
         renderAll();
-        $debug(`☁️ ${added} caca(s) récupéré(s) depuis le cloud`);
+        $debug(`☁️ ${changed} entrée(s) synchronisée(s) depuis le cloud`);
       }
     } catch(e) {
       $debug('cloud sync err: ' + e.message);
     }
   }
   window.syncCloudData = syncCloudData;
+
+  // ===================================================
+  //  OFFLINE QUEUE  (feature 14)
+  // ===================================================
+  async function processOfflineQueue() {
+    if (!window.SupabaseClient?.isLoggedIn()) return;
+    const raw = localStorage.getItem('cacaTracker.offlineQueue');
+    if (!raw) return;
+    let queue;
+    try { queue = JSON.parse(raw); } catch { return; }
+    if (!queue.length) return;
+
+    const remaining = [];
+    for (const item of queue) {
+      try {
+        if (item.type === 'add') {
+          await window.SupabaseClient.savePoopCloud(item.poop);
+        } else if (item.type === 'del') {
+          await window.SupabaseClient.deletePoopCloud(item.id);
+        }
+        $debug(`☁️ Queue: ${item.type} envoyé`);
+      } catch(e) {
+        $debug('queue flush err: ' + e.message);
+        remaining.push(item); // réessayer plus tard
+      }
+    }
+
+    if (remaining.length) {
+      localStorage.setItem('cacaTracker.offlineQueue', JSON.stringify(remaining));
+    } else {
+      localStorage.removeItem('cacaTracker.offlineQueue');
+      $debug('✅ File offline vidée — tout synchronisé');
+    }
+  }
+  window.processOfflineQueue = processOfflineQueue;
 
   // ===================================================
   //  EXPORT / CLEAR
@@ -3034,5 +3519,8 @@
     <script src="js/predictions.js"></script>
     <script src="js/charts.js"></script>
     <script src="js/animations.js"></script>
+
+  <!-- Rapport médical (caché, imprimé via @media print) -->
+  <div id="print-report"></div>
 </body>
 </html>
