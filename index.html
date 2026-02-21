@@ -13,11 +13,11 @@
   <meta name="theme-color" content="#d97706" id="theme-color-meta" />
 
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="icon" type="image/png" href="logo.png" />
 
   <!-- Apple Touch Icon PWA iOS -->
-    <link rel="apple-touch-icon" href="https://em-content.zobj.net/source/twitter/376/pile-of-poo_1f4a9.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="https://em-content.zobj.net/source/twitter/376/pile-of-poo_1f4a9.png">
+  <link rel="apple-touch-icon" href="logo.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="logo.png">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -431,31 +431,33 @@
 
   <!-- HEADER -->
   <header class="app-header px-4 pt-3 pb-3 text-white shadow-2xl sticky top-0 z-50 rounded-b-[2rem]">
-    <div class="max-w-md mx-auto">
-      <!-- Titre centré -->
-      <div class="text-center mb-2">
-        <h1 class="font-extrabold leading-tight"
-            style="font-size:1.2rem;text-shadow:0 2px 18px rgba(0,0,0,0.35);letter-spacing:0.04em">
-          💩 Les cacas de Clémence 💖
+    <div class="max-w-md mx-auto flex items-center gap-3">
+      <!-- Logo (crops bottom text, shows character only) -->
+      <div style="width:48px;height:48px;overflow:hidden;border-radius:12px;flex-shrink:0;box-shadow:0 2px 12px rgba(0,0,0,0.3)">
+        <img src="logo.png" alt="Logo" style="width:76px;height:76px;margin-left:-14px;margin-top:0;display:block;object-fit:none" />
+      </div>
+      <!-- Titre -->
+      <div class="flex-1 min-w-0">
+        <h1 class="font-extrabold leading-tight truncate"
+            style="font-size:1.05rem;text-shadow:0 2px 12px rgba(0,0,0,0.3);letter-spacing:0.03em">
+          Les cacas de Clémence 💖
         </h1>
-        <div class="flex items-center justify-center gap-2 mt-1 opacity-55">
-          <div class="h-px flex-1 max-w-[36px] rounded-full" style="background:rgba(255,255,255,0.5)"></div>
-          <span class="text-[8px] tracking-[0.2em] uppercase font-medium">Caca‑Tracker · v2.8.0</span>
-          <div class="h-px flex-1 max-w-[36px] rounded-full" style="background:rgba(255,255,255,0.5)"></div>
+        <div class="flex items-center gap-2 mt-0.5 opacity-55">
+          <span class="text-[8px] tracking-[0.18em] uppercase font-medium">Caca‑Tracker · v2.8.0</span>
         </div>
       </div>
-      <!-- Boutons centrés -->
-      <div class="flex items-center justify-center gap-2">
-        <button id="timer-btn" class="bg-white/20 px-2.5 py-1 rounded-full text-sm font-bold hover:bg-white/30 transition" title="Chrono de séance">
+      <!-- Boutons -->
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+        <button id="timer-btn" class="bg-white/20 px-2 py-1 rounded-full text-sm font-bold hover:bg-white/30 transition" title="Chrono de séance">
           ⏱️ <span id="timer-display" class="hidden font-mono text-xs">00:00</span>
         </button>
-        <div id="streak-badge" class="bg-red-500 px-2.5 py-1 rounded-full items-center gap-1 text-sm font-bold" style="display:none">
+        <div id="streak-badge" class="bg-red-500 px-2 py-1 rounded-full items-center gap-1 text-sm font-bold" style="display:none">
           <i class="fas fa-fire"></i><span id="streak-val">0</span> j 🔥
         </div>
-        <button id="user-badge" class="bg-white/20 px-2.5 py-1.5 rounded-full flex items-center gap-1 text-sm font-bold hover:bg-white/30 transition">
+        <button id="user-badge" class="bg-white/20 px-2 py-1.5 rounded-full flex items-center gap-1 text-sm font-bold hover:bg-white/30 transition">
           <span id="admin-hero" class="hidden" title="Admin">🦸</span>
           <span id="user-avatar">👤</span>
-          <span id="user-name" class="text-xs max-w-[80px] truncate">Connexion</span>
+          <span id="user-name" class="text-xs max-w-[72px] truncate">Connexion</span>
         </button>
       </div>
     </div>
