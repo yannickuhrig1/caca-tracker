@@ -130,13 +130,13 @@
           <table class="w-full text-sm">
             <thead>
               <tr class="text-xs uppercase tracking-wide">
-                <th class="px-4 py-3 text-left">Utilisateur</th>
-                <th class="px-4 py-3 text-left">Email</th>
-                <th class="px-4 py-3 text-left">Inscription</th>
-                <th class="px-4 py-3 text-left">Dernière connexion</th>
-                <th class="px-4 py-3 text-left">Groupes</th>
-                <th class="px-4 py-3 text-left">Rôle</th>
-                <th class="px-4 py-3 text-left">Actions</th>
+                <th class="px-3 py-3 text-left">Utilisateur</th>
+                <th class="px-3 py-3 text-left hidden md:table-cell">Email</th>
+                <th class="px-3 py-3 text-left hidden md:table-cell">Inscription</th>
+                <th class="px-3 py-3 text-left hidden md:table-cell">Dernière conn.</th>
+                <th class="px-3 py-3 text-left hidden md:table-cell">Groupes</th>
+                <th class="px-3 py-3 text-left">Rôle</th>
+                <th class="px-3 py-3 text-left">Actions</th>
               </tr>
             </thead>
             <tbody id="users-tbody">
@@ -340,27 +340,29 @@
 
       return `
         <tr>
-          <td class="px-4 py-3">
-            <div class="flex items-center gap-3">
+          <td class="px-3 py-2.5">
+            <div class="flex items-center gap-2.5">
               <span class="text-2xl shrink-0">${esc(p.avatar || '💩')}</span>
-              <div>
-                <div class="font-medium">${esc(p.username || '—')}</div>
-                <div class="text-xs text-slate-600">…${esc(p.id.slice(-8))}</div>
+              <div class="min-w-0">
+                <div class="font-medium text-sm leading-tight">${esc(p.username || '—')}</div>
+                <!-- Infos visibles seulement sur mobile (colonnes masquées) -->
+                <div class="md:hidden text-xs text-slate-500 truncate max-w-[160px] mt-0.5">${esc(p.email || '—')}</div>
+                <div class="md:hidden flex flex-wrap gap-1 mt-1">${groupsHtml}</div>
               </div>
             </div>
           </td>
-          <td class="px-4 py-3 text-slate-300 text-xs">${esc(p.email || '—')}</td>
-          <td class="px-4 py-3 text-slate-500 text-xs">${fmtDate(p.created_at)}</td>
-          <td class="px-4 py-3 text-xs">${fmtAgo(p.last_login)}</td>
-          <td class="px-4 py-3"><div class="flex flex-wrap gap-1">${groupsHtml}</div></td>
-          <td class="px-4 py-3">${badge}</td>
-          <td class="px-4 py-3">
-            <div class="flex items-center gap-1 flex-wrap">
+          <td class="px-3 py-2.5 text-slate-400 text-xs hidden md:table-cell">${esc(p.email || '—')}</td>
+          <td class="px-3 py-2.5 text-slate-500 text-xs hidden md:table-cell">${fmtDate(p.created_at)}</td>
+          <td class="px-3 py-2.5 text-xs hidden md:table-cell">${fmtAgo(p.last_login)}</td>
+          <td class="px-3 py-2.5 hidden md:table-cell"><div class="flex flex-wrap gap-1">${groupsHtml}</div></td>
+          <td class="px-3 py-2.5">${badge}</td>
+          <td class="px-3 py-2.5">
+            <div class="flex flex-wrap gap-1">
               <button onclick="openUserModal('${p.id}')"
-                class="btn-ghost px-2 py-1 rounded-lg text-xs whitespace-nowrap">👁️ Voir</button>
+                class="btn-ghost px-2 py-1 rounded-lg text-xs whitespace-nowrap">👁️</button>
               ${toggleBtn}
               <button onclick="openPwdModal('${p.id}')"
-                class="btn-ghost px-2 py-1 rounded-lg text-xs">🔑 MDP</button>
+                class="btn-ghost px-2 py-1 rounded-lg text-xs">🔑</button>
               ${deleteBtn}
             </div>
           </td>
