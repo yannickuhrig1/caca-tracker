@@ -922,6 +922,24 @@
         <div class="text-xs opacity-50 text-center mt-2">Compatible iPhone Calendrier, Google Calendar…</div>
       </div>
 
+      <!-- 📌 Bandeau titre persistant -->
+      <div class="card p-4 rounded-[1.5rem] mb-4">
+        <div class="font-bold mb-3 text-sm">📌 Affichage</div>
+        <div class="flex items-center justify-between text-sm">
+          <div>
+            <div class="font-medium">Header toujours visible</div>
+            <div class="text-xs opacity-60">Désactivé = le titre défile avec la page</div>
+          </div>
+          <button id="sticky-header-toggle" onclick="toggleStickyHeader()"
+            class="relative w-11 h-6 rounded-full transition-colors duration-300 focus:outline-none"
+            style="background:#4f46e5" aria-label="Sticky header">
+            <span id="sticky-header-knob"
+              class="absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow transition-transform duration-300"
+              style="transform:translateX(20px)"></span>
+          </button>
+        </div>
+      </div>
+
       <!-- 📖 Guide des fonctionnalités -->
       <div class="card p-4 rounded-[1.5rem] mb-4">
         <div class="font-bold mb-4 text-sm flex items-center gap-2">📖 Guide des fonctionnalités</div>
@@ -1420,11 +1438,8 @@
     applyAutoNight();
     setInterval(() => { applyAutoNight(); checkCustomReminder(); }, 60000);
 
-    // Sticky header (contrôlé depuis admin)
-    if (localStorage.getItem('stickyHeader') === 'false') {
-      const hdr = document.querySelector('header.app-header');
-      if (hdr) { hdr.classList.remove('sticky', 'top-0', 'z-50'); hdr.classList.add('relative'); }
-    }
+    // Sticky header
+    applyStickyHeader();
 
     // Datetime max
     refreshRetroMax();
@@ -3067,6 +3082,28 @@
   };
 
   // ===================================================
+  //  STICKY HEADER 📌
+  // ===================================================
+  function applyStickyHeader() {
+    const isSticky = localStorage.getItem('stickyHeader') !== 'false';
+    const hdr = document.querySelector('header.app-header');
+    if (hdr) {
+      if (isSticky) { hdr.classList.add('sticky','top-0','z-50'); hdr.classList.remove('relative'); }
+      else { hdr.classList.remove('sticky','top-0','z-50'); hdr.classList.add('relative'); }
+    }
+    const btn  = $id('sticky-header-toggle');
+    const knob = $id('sticky-header-knob');
+    if (btn)  btn.style.background  = isSticky ? '#4f46e5' : 'rgba(0,0,0,0.15)';
+    if (knob) knob.style.transform  = isSticky ? 'translateX(20px)' : 'translateX(0)';
+  }
+
+  window.toggleStickyHeader = function() {
+    const isSticky = localStorage.getItem('stickyHeader') !== 'false';
+    localStorage.setItem('stickyHeader', String(!isSticky));
+    applyStickyHeader();
+  };
+
+  // ===================================================
   //  TABS
   // ===================================================
   function switchTab(name) {
@@ -3079,7 +3116,7 @@
     if (name === 'admin') renderHistory();
     if (name === 'dashboard') renderDashboard();
     if (name === 'social') window.SocialModule?.renderSocialTab();
-    if (name === 'settings') { setupNotifications(); setupCustomReminder(); }
+    if (name === 'settings') { setupNotifications(); setupCustomReminder(); applyStickyHeader(); }
   }
 
   // ===================================================

@@ -116,26 +116,6 @@
         </div>
       </details>
 
-      <!-- ── Bandeau titre persistant ── -->
-      <div class="card rounded-2xl p-5 space-y-4">
-        <h2 class="font-bold text-lg">📌 Bandeau titre persistant</h2>
-        <p class="text-xs text-slate-400">Contrôle si le header reste fixe en haut lors du défilement dans l'app.</p>
-        <div class="flex items-center justify-between p-3 rounded-xl" style="background:#0f172a">
-          <div>
-            <div class="font-medium text-sm">Header sticky (toujours visible)</div>
-            <div class="text-xs text-slate-500 mt-0.5">Désactivé = le header défile avec la page</div>
-          </div>
-          <button id="sticky-header-toggle" onclick="toggleStickyHeader()"
-            class="relative w-11 h-6 rounded-full transition-colors duration-300 focus:outline-none"
-            style="background:#4f46e5" aria-label="Sticky header">
-            <span id="sticky-header-knob"
-              class="absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow transition-transform duration-300"
-              style="transform:translateX(20px)"></span>
-          </button>
-        </div>
-        <p class="text-xs text-slate-500">⚠️ Ce réglage est local à ce navigateur. Il affecte l'app sur cet appareil.</p>
-      </div>
-
       <!-- ── Table utilisateurs ── -->
       <div class="card rounded-2xl overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-700 flex flex-wrap items-center gap-3">
@@ -703,29 +683,6 @@
 
   });
 
-  // ============================================================
-  //  BANDEAU TITRE PERSISTANT (sticky header toggle)
-  // ============================================================
-  function initStickyHeaderToggle() {
-    const btn  = document.getElementById('sticky-header-toggle');
-    const knob = document.getElementById('sticky-header-knob');
-    if (!btn || !knob) return;
-    const isSticky = localStorage.getItem('stickyHeader') !== 'false'; // default true
-    btn.style.background  = isSticky ? '#4f46e5' : '#475569';
-    knob.style.transform  = isSticky ? 'translateX(20px)' : 'translateX(0)';
-  }
-
-  window.toggleStickyHeader = function() {
-    const isSticky = localStorage.getItem('stickyHeader') !== 'false';
-    const newVal   = !isSticky;
-    localStorage.setItem('stickyHeader', newVal);
-    const btn  = document.getElementById('sticky-header-toggle');
-    const knob = document.getElementById('sticky-header-knob');
-    btn.style.background = newVal ? '#4f46e5' : '#475569';
-    knob.style.transform = newVal ? 'translateX(20px)' : 'translateX(0)';
-  };
-
-  document.addEventListener('DOMContentLoaded', initStickyHeaderToggle);
 
   </script>
 </body>
