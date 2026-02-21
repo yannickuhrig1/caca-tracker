@@ -446,7 +446,7 @@
           <button id="timer-btn" class="bg-white/20 px-2.5 py-1 rounded-full text-sm font-bold hover:bg-white/30 transition" title="Chrono de séance">
             ⏱️ <span id="timer-display" class="hidden font-mono text-xs">00:00</span>
           </button>
-          <div id="streak-badge" class="hidden bg-red-500 px-2.5 py-1 rounded-full flex items-center gap-1 text-sm font-bold">
+          <div id="streak-badge" class="bg-red-500 px-2.5 py-1 rounded-full items-center gap-1 text-sm font-bold" style="display:none">
             <i class="fas fa-fire"></i><span id="streak-val">0</span> j 🔥
           </div>
           <button id="user-badge" class="bg-white/20 px-2.5 py-1.5 rounded-full flex items-center gap-1 text-sm font-bold hover:bg-white/30 transition">
@@ -540,7 +540,7 @@
           <span class="text-2xl flex-shrink-0">🔮</span>
           <p id="prediction-text" class="text-sm font-bold" style="color:var(--text-secondary)">Ajoute des cacas pour obtenir une prédiction…</p>
         </div>
-        <div id="countdown-container" class="hidden flex items-center gap-2 pt-2 border-t" style="border-color:rgba(0,0,0,0.06)">
+        <div id="countdown-container" class="items-center gap-2 pt-2 border-t" style="display:none;border-color:rgba(0,0,0,0.06)">
           <span class="text-lg">⏱️</span>
           <div>
             <div class="text-xs opacity-60">Compte à rebours</div>
@@ -1608,25 +1608,25 @@
     if (!container || !display) return;
 
     if (state.logs.length < 2 || typeof PredictionEngine === 'undefined') {
-      container.classList.add('hidden');
+      container.style.display = 'none';
       return;
     }
     try {
       const pred = new PredictionEngine(state.logs).predictNextPoop();
-      if (!pred || !pred.nextTime) { container.classList.add('hidden'); return; }
+      if (!pred || !pred.nextTime) { container.style.display = 'none'; return; }
 
       const diffMs = pred.nextTime - Date.now();
       if (diffMs <= 0) {
         display.textContent = 'Maintenant ? 🚨';
-        container.classList.remove('hidden');
+        container.style.display = 'flex';
         return;
       }
       const h = Math.floor(diffMs / 3600000);
       const m = Math.floor((diffMs % 3600000) / 60000);
       display.textContent = h > 0 ? `${h}h ${m}min` : `${m} min`;
-      container.classList.remove('hidden');
+      container.style.display = 'flex';
     } catch(e) {
-      container.classList.add('hidden');
+      container.style.display = 'none';
     }
   }
 
@@ -3480,10 +3480,10 @@
     const el = $id('streak-badge');
     if (!el) return;
     if (streak >= 2) {
-      el.classList.remove('hidden');
+      el.style.display = 'flex';
       $id('streak-val').textContent = streak;
     } else {
-      el.classList.add('hidden');
+      el.style.display = 'none';
     }
   }
 
