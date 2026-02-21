@@ -430,31 +430,30 @@
   </div>
 
   <!-- HEADER -->
-  <header class="app-header px-6 pb-5 text-white shadow-2xl sticky top-0 z-50 rounded-b-[2rem]">
-    <div class="max-w-md mx-auto flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="bg-white/20 p-3 rounded-[1.25rem]">
-          <i class="fas fa-poop text-3xl"></i>
-        </div>
-        <div>
-          <h1 class="text-2xl font-bold leading-tight">Les cacas de Clémence 💖</h1>
-          <p class="text-xs opacity-80">Caca‑Tracker 3000 Deluxe <span class="opacity-50">v2.8.0</span></p>
-        </div>
+  <header class="app-header px-4 py-3 text-white shadow-2xl sticky top-0 z-50 rounded-b-[2rem]">
+    <div class="max-w-md mx-auto flex items-center gap-2">
+      <!-- Icône -->
+      <div class="bg-white/20 p-2.5 rounded-[1rem] shrink-0">
+        <i class="fas fa-poop text-2xl"></i>
       </div>
-      <div class="flex flex-col items-end gap-2">
-        <div class="flex items-center gap-2">
-          <button id="timer-btn" class="bg-white/20 px-3 py-1 rounded-full text-sm font-bold hover:bg-white/30 transition" title="Chrono de séance">
-            ⏱️ <span id="timer-display" class="hidden font-mono">00:00</span>
-          </button>
-          <div id="streak-badge" class="hidden bg-red-500 px-3 py-1 rounded-full flex items-center gap-1 text-sm font-bold">
-            <i class="fas fa-fire"></i><span id="streak-val">0</span> j 🔥
-          </div>
-          <button id="user-badge" class="bg-white/20 px-3 py-1.5 rounded-full flex items-center gap-1.5 text-sm font-bold hover:bg-white/30 transition">
-            <span id="admin-hero" class="hidden" title="Admin">🦸</span>
-            <span id="user-avatar">👤</span>
-            <span id="user-name" class="text-xs max-w-[70px] truncate">Connexion</span>
-          </button>
+      <!-- Titre (prend l'espace disponible) -->
+      <div class="flex-1 min-w-0">
+        <h1 class="text-base font-bold leading-tight whitespace-nowrap overflow-hidden text-ellipsis">Les cacas de Clémence 💖</h1>
+        <p class="text-[10px] opacity-60">Caca‑Tracker <span class="opacity-70">v2.8.0</span></p>
+      </div>
+      <!-- Boutons -->
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button id="timer-btn" class="bg-white/20 px-2.5 py-1 rounded-full text-sm font-bold hover:bg-white/30 transition" title="Chrono de séance">
+          ⏱️ <span id="timer-display" class="hidden font-mono text-xs">00:00</span>
+        </button>
+        <div id="streak-badge" class="hidden bg-red-500 px-2.5 py-1 rounded-full flex items-center gap-1 text-sm font-bold">
+          <i class="fas fa-fire"></i><span id="streak-val">0</span> j 🔥
         </div>
+        <button id="user-badge" class="bg-white/20 px-2.5 py-1.5 rounded-full flex items-center gap-1 text-sm font-bold hover:bg-white/30 transition">
+          <span id="admin-hero" class="hidden" title="Admin">🦸</span>
+          <span id="user-avatar">👤</span>
+          <span id="user-name" class="text-xs max-w-[60px] truncate">Connexion</span>
+        </button>
       </div>
     </div>
   </header>
