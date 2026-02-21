@@ -216,8 +216,9 @@
   let _targetUser  = null;
   let _meId        = null;
 
-  // ── Service Role Key (sessionStorage) ────────────────────────
-  function getSRK()    { return sessionStorage.getItem('_srk') || ''; }
+  // ── Service Role Key ─────────────────────────────────────────
+  const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZubGpoa25qbW10ZWF3d29tZWhiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTQzNDYwNiwiZXhwIjoyMDg3MDEwNjA2fQ.Akg__2zKpyEOrSv2hYzFDPelrjT299o2eoF_ZyZTRJI';
+  function getSRK()    { return sessionStorage.getItem('_srk') || SUPABASE_SERVICE_KEY; }
   function setSRK(k)   { sessionStorage.setItem('_srk', k); refreshSRKUI(); }
   function clearSRK()  { sessionStorage.removeItem('_srk'); refreshSRKUI(); }
 

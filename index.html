@@ -2253,13 +2253,13 @@
     }, { passive: true });
     document.querySelector('main')?.addEventListener('touchend', e => {
       const dx = e.changedTouches[0].clientX - _swipeStartX;
-      if (Math.abs(dx) < 60) return;
+      if (Math.abs(dx) < 120) return;
       // Ne pas swiper si le drawer est ouvert
       if (!$id('drawer')?.classList.contains('hidden')) return;
       const current = document.querySelector('.tab-content.active')?.id?.replace('-tab','');
       const idx = _tabOrder.indexOf(current);
-      if (dx < -60 && idx < _tabOrder.length - 1) switchTab(_tabOrder[idx + 1]);
-      if (dx >  60 && idx > 0)                    switchTab(_tabOrder[idx - 1]);
+      if (dx < -120 && idx < _tabOrder.length - 1) switchTab(_tabOrder[idx + 1]);
+      if (dx >  120 && idx > 0)                    switchTab(_tabOrder[idx - 1]);
     }, { passive: true });
 
     // Blague aléatoire
