@@ -455,8 +455,6 @@
             <span id="user-name" class="text-xs max-w-[70px] truncate">Connexion</span>
           </button>
         </div>
-        <!-- Theme shortcut (full picker in profile) -->
-        <button id="theme-quick-btn" class="bg-white/20 px-2.5 py-1.5 rounded-full text-sm hover:bg-white/30 transition" title="Changer de thème" onclick="document.getElementById('user-badge').click()">🎨</button>
       </div>
     </div>
   </header>
@@ -554,8 +552,37 @@
       <!-- Tendance de santé -->
       <div id="health-trend-banner" class="hidden card p-3 rounded-[2rem] shadow mb-4 text-sm font-bold text-center"></div>
 
+      <!-- Rappel intelligent -->
+      <div id="smart-reminder-banner" class="hidden card p-3 rounded-[2rem] shadow mb-4 text-sm font-bold text-center" style="color:var(--accent)"></div>
+
+      <!-- Défi Streak 7 jours -->
+      <div class="card p-4 rounded-[2rem] shadow mb-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xl">🎯</span>
+          <span class="font-bold text-sm flex-1">Défi : 7 jours de suite !</span>
+          <span id="streak-challenge-badge" class="hidden text-xs px-2 py-0.5 rounded-full font-bold" style="background:#fef3c7;color:#b45309">Complété 🏆</span>
+        </div>
+        <div class="flex items-center gap-2 mb-1">
+          <div class="flex-1 rounded-full overflow-hidden" style="height:8px;background:rgba(0,0,0,0.08)">
+            <div id="streak-challenge-bar" class="h-full rounded-full transition-all duration-700" style="width:0%;background:var(--accent)"></div>
+          </div>
+          <span id="streak-challenge-label" class="text-xs font-bold opacity-60 w-8 text-right">0/7</span>
+        </div>
+        <div id="streak-challenge-msg" class="text-xs opacity-60 text-center mt-1"></div>
+      </div>
+
       <!-- Anniversaire de caca -->
       <div id="anniversary-banner" class="hidden card p-4 rounded-[2rem] shadow mb-4 text-center" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff"></div>
+
+      <!-- Résumé de la semaine -->
+      <div class="card p-4 rounded-[2rem] shadow mb-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-xl">📊</span>
+          <span class="font-bold text-sm flex-1">Résumé de la semaine</span>
+          <span id="week-trend" class="text-lg"></span>
+        </div>
+        <div id="week-summary" class="grid grid-cols-3 gap-3 text-center"></div>
+      </div>
 
       <div class="card p-5 rounded-[2rem] shadow">
         <div class="mb-3">
@@ -683,6 +710,20 @@
 
     <!-- ====== SOCIAL ====== -->
     <section id="social-tab" class="tab-content">
+
+      <!-- Partager l'application -->
+      <div class="card p-4 rounded-[2rem] shadow mb-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-xl">🔗</span>
+          <span class="font-bold text-sm">Partager l'application</span>
+        </div>
+        <button id="share-app-btn" class="w-full py-3 rounded-[1.25rem] font-bold text-sm text-white"
+          style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">
+          📤 Partager le lien
+        </button>
+        <div id="share-app-feedback" class="hidden text-xs text-center mt-2 opacity-60"></div>
+      </div>
+
       <!-- Non connecté -->
       <div id="social-guest" class="text-center py-12">
         <div class="text-6xl mb-4">👥</div>
@@ -758,7 +799,7 @@
           <!-- Podium -->
           <div class="card p-5 rounded-[2rem] shadow">
             <h4 class="font-bold mb-4 text-center">🏆 Podium du mois</h4>
-            <div id="podium-container" class="flex items-end justify-center gap-3 mb-4" style="height:120px"></div>
+            <div id="podium-container" class="flex items-end justify-center gap-3 mb-4" style="min-height:160px"></div>
             <div id="podium-list" class="space-y-2"></div>
           </div>
 
@@ -810,15 +851,24 @@
     <!-- ====== HISTORIQUE ====== -->
     <section id="admin-tab" class="tab-content">
       <h3 class="font-bold text-xl mb-4">📜 Historique</h3>
-      <div id="history-list" class="space-y-3 mb-6" style="max-height:60vh;overflow-y:auto;"></div>
-      <div class="mt-2 card p-4 rounded-[1.5rem]">
-        <div class="font-bold mb-3 text-sm">🔊 Réglages sons</div>
+      <div id="history-list" class="space-y-3" style="max-height:72vh;overflow-y:auto;"></div>
+    </section>
+
+    <!-- ====== PARAMÈTRES ====== -->
+    <section id="settings-tab" class="tab-content">
+      <h3 class="font-bold text-xl mb-5">⚙️ Paramètres</h3>
+
+      <!-- 🔊 Sons -->
+      <div class="card p-4 rounded-[1.5rem] mb-4">
+        <div class="font-bold mb-3 text-sm">🔊 Sons</div>
         <div id="sound-settings"></div>
       </div>
 
-      <!-- Notifications -->
-      <div class="mt-5 card p-4 rounded-[1.5rem]">
+      <!-- 🔔 Notifications -->
+      <div class="card p-4 rounded-[1.5rem] mb-4">
         <div class="font-bold mb-3 text-sm">🔔 Notifications</div>
+
+        <!-- Rappel automatique -->
         <div class="flex items-center justify-between mb-3 text-sm">
           <span>Activer les rappels</span>
           <label class="relative inline-flex items-center cursor-pointer">
@@ -828,7 +878,7 @@
           </label>
         </div>
         <div class="flex items-center justify-between mb-3 text-sm">
-          <span>Rappel si pas de caca depuis</span>
+          <span class="opacity-80">Si pas de caca depuis</span>
           <select id="notif-threshold" class="border rounded-lg px-2 py-1 text-sm" style="background:var(--card-bg);color:var(--text-primary);border-color:rgba(0,0,0,0.15)">
             <option value="12">12h</option>
             <option value="24" selected>24h</option>
@@ -836,6 +886,25 @@
             <option value="48">48h</option>
           </select>
         </div>
+
+        <!-- Rappel à heure fixe -->
+        <div class="flex items-center justify-between mb-3 text-sm pt-3 border-t" style="border-color:rgba(0,0,0,0.07)">
+          <div>
+            <div class="font-medium">⏰ À heure fixe</div>
+            <div class="text-xs opacity-60">Si pas de caca à cette heure</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="time" id="custom-reminder-time" value="20:00"
+              class="border rounded-lg px-2 py-1 text-sm"
+              style="background:var(--card-bg);color:var(--text-primary);border-color:rgba(0,0,0,0.15)" />
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="custom-reminder-enabled" class="sr-only peer" />
+              <div class="w-10 h-5 rounded-full bg-gray-200 peer-checked:bg-indigo-500 transition-colors"></div>
+              <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+            </label>
+          </div>
+        </div>
+
         <button id="notif-permission-btn" class="w-full py-2 text-sm rounded-[1rem] font-bold mb-2"
           style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);border:1.5px solid var(--accent)">
           🔔 Autoriser les notifications navigateur
@@ -843,9 +912,20 @@
         <div id="notif-status" class="text-xs opacity-60 text-center"></div>
       </div>
 
-      <div class="mt-4 card p-4 rounded-[1.5rem] text-xs text-center opacity-50 space-y-1">
+      <!-- 📤 Export -->
+      <div class="card p-4 rounded-[1.5rem] mb-4">
+        <div class="font-bold mb-3 text-sm">📤 Export</div>
+        <button id="export-ical-btn" class="w-full py-3 rounded-[1.25rem] font-bold text-sm flex items-center justify-center gap-2"
+          style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">
+          📅 Calendrier iCal (.ics)
+        </button>
+        <div class="text-xs opacity-50 text-center mt-2">Compatible iPhone Calendrier, Google Calendar…</div>
+      </div>
+
+      <!-- ℹ️ À propos -->
+      <div class="card p-4 rounded-[1.5rem] text-xs text-center opacity-50 space-y-1">
         <div>💩 Les cacas de Clémence</div>
-        <div>Version 2.5.1 — Février 2026</div>
+        <div>Version 2.8.0 — Février 2026</div>
         <div>Fait avec ❤️ par Papa</div>
       </div>
     </section>
@@ -853,22 +933,25 @@
   </main>
 
   <!-- NAV BOTTOM -->
-  <nav class="bottom-nav fixed bottom-0 left-0 right-0 p-3 z-40">
+  <nav class="bottom-nav fixed bottom-0 left-0 right-0 p-2 z-40">
     <div class="max-w-md mx-auto flex justify-around">
-      <button class="tab-btn active py-2 px-4 flex flex-col items-center gap-1" data-tab="dashboard">
-        <i class="fas fa-home text-xl"></i><span class="text-xs">Accueil</span>
+      <button class="tab-btn active py-2 px-1.5 flex flex-col items-center gap-0.5" data-tab="dashboard">
+        <i class="fas fa-home text-lg"></i><span class="text-[10px]">Accueil</span>
       </button>
-      <button class="tab-btn py-2 px-4 flex flex-col items-center gap-1" data-tab="stats">
-        <i class="fas fa-chart-bar text-xl"></i><span class="text-xs">Stats</span>
+      <button class="tab-btn py-2 px-1.5 flex flex-col items-center gap-0.5" data-tab="stats">
+        <i class="fas fa-chart-bar text-lg"></i><span class="text-[10px]">Stats</span>
       </button>
-      <button class="tab-btn py-2 px-4 flex flex-col items-center gap-1" data-tab="badges">
-        <i class="fas fa-trophy text-xl"></i><span class="text-xs">Badges</span>
+      <button class="tab-btn py-2 px-1.5 flex flex-col items-center gap-0.5" data-tab="badges">
+        <i class="fas fa-trophy text-lg"></i><span class="text-[10px]">Badges</span>
       </button>
-      <button class="tab-btn py-2 px-4 flex flex-col items-center gap-1" data-tab="admin">
-        <i class="fas fa-list text-xl"></i><span class="text-xs">Historique</span>
+      <button class="tab-btn py-2 px-1.5 flex flex-col items-center gap-0.5" data-tab="admin">
+        <i class="fas fa-list text-lg"></i><span class="text-[10px]">Historique</span>
       </button>
-      <button class="tab-btn py-2 px-4 flex flex-col items-center gap-1" data-tab="social">
-        <i class="fas fa-users text-xl"></i><span class="text-xs">Social</span>
+      <button class="tab-btn py-2 px-1.5 flex flex-col items-center gap-0.5" data-tab="social">
+        <i class="fas fa-users text-lg"></i><span class="text-[10px]">Social</span>
+      </button>
+      <button class="tab-btn py-2 px-1.5 flex flex-col items-center gap-0.5" data-tab="settings">
+        <i class="fas fa-cog text-lg"></i><span class="text-[10px]">Réglages</span>
       </button>
     </div>
   </nav>
@@ -963,6 +1046,19 @@
         <div class="rounded-[1.5rem] p-4 space-y-3" style="background:color-mix(in srgb,var(--accent) 5%,transparent);border:1.5px solid color-mix(in srgb,var(--accent) 15%,transparent)">
           <div class="font-bold text-sm opacity-70">🎨 Thème</div>
           <div id="profile-theme-grid" class="grid grid-cols-4 gap-2"></div>
+          <!-- Toggle mode nuit auto -->
+          <div class="flex items-center justify-between pt-2 border-t" style="border-color:color-mix(in srgb,var(--accent) 15%,transparent)">
+            <div>
+              <div class="text-sm font-bold">🌙 Mode nuit auto</div>
+              <div class="text-xs opacity-60">Thème sombre de 22h à 7h</div>
+            </div>
+            <button id="auto-night-toggle" onclick="toggleAutoNight()"
+              class="relative w-11 h-6 rounded-full transition-colors duration-300 focus:outline-none"
+              style="background:rgba(0,0,0,0.15)" aria-label="Mode nuit auto">
+              <span id="auto-night-knob"
+                class="absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow transition-transform duration-300"></span>
+            </button>
+          </div>
         </div>
 
         <!-- Sync cloud -->
@@ -1221,6 +1317,14 @@
 
     // Theme
     applyTheme(state.theme || 'default');
+    applyAutoNight();
+    setInterval(() => { applyAutoNight(); checkCustomReminder(); }, 60000);
+
+    // Sticky header (contrôlé depuis admin)
+    if (localStorage.getItem('stickyHeader') === 'false') {
+      const hdr = document.querySelector('header.app-header');
+      if (hdr) { hdr.classList.remove('sticky', 'top-0', 'z-50'); hdr.classList.add('relative'); }
+    }
 
     // Datetime max
     refreshRetroMax();
@@ -1280,6 +1384,8 @@
     $id('close-wrapped-btn')?.addEventListener('click', () => $id('wrapped-modal').classList.add('hidden'));
     $id('close-day-detail-btn')?.addEventListener('click', () => $id('day-detail-modal').classList.add('hidden'));
     $id('share-stats-btn')?.addEventListener('click', shareStats);
+    $id('share-app-btn')?.addEventListener('click', shareApp);
+    $id('export-ical-btn')?.addEventListener('click', exportIcal);
 
     // Auto-join via ?join=CODE in URL
     const urlJoinCode = new URLSearchParams(window.location.search).get('join');
@@ -2554,6 +2660,206 @@
     }
   }
 
+  // ===================================================
+  //  RAPPEL INTELLIGENT
+  // ===================================================
+  function renderSmartReminder() {
+    const el = $id('smart-reminder-banner');
+    if (!el) return;
+
+    const realLogs = state.logs.filter(l => !l.isRetro);
+    if (realLogs.length < 5) { el.classList.add('hidden'); return; }
+
+    // Heure moyenne des cacas
+    const avgHour = Math.round(
+      realLogs.map(l => new Date(l.date).getHours()).reduce((a, b) => a + b, 0) / realLogs.length
+    );
+
+    const today = new Date().toDateString();
+    const poopedToday = realLogs.some(l => new Date(l.date).toDateString() === today);
+    const nowHour = new Date().getHours();
+
+    if (!poopedToday && nowHour >= avgHour) {
+      const diff = nowHour - avgHour;
+      const msg = diff === 0
+        ? `⏰ C'est généralement ton heure de caca (vers ${avgHour}h) !`
+        : `⏰ Tu cacas généralement vers ${avgHour}h — ça fait ${diff}h que tu attends… 👀`;
+      el.innerHTML = msg;
+      el.classList.remove('hidden');
+
+      // Notification intelligente (1 fois par jour)
+      if ('Notification' in window && Notification.permission === 'granted' && localStorage.getItem('notifEnabled') === 'true') {
+        const lastSmartNotif = parseInt(localStorage.getItem('notifSmartLastSent') || '0');
+        const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+        if (lastSmartNotif < todayStart.getTime()) {
+          new Notification('⏰ Caca-Tracker', {
+            body: `Tu cacas généralement vers ${avgHour}h — pas encore de caca aujourd'hui ! 💩`,
+            icon: './favicon.svg',
+            tag: 'smart-reminder'
+          });
+          localStorage.setItem('notifSmartLastSent', Date.now());
+        }
+      }
+    } else {
+      el.classList.add('hidden');
+    }
+  }
+
+  // ===================================================
+  //  RÉSUMÉ DE LA SEMAINE 📊
+  // ===================================================
+  function renderWeekSummary() {
+    const el      = $id('week-summary');
+    const trendEl = $id('week-trend');
+    if (!el) return;
+
+    const now = new Date();
+    const dow = now.getDay() === 0 ? 6 : now.getDay() - 1; // 0=Lun, 6=Dim
+    const monday = new Date(now); monday.setDate(now.getDate() - dow); monday.setHours(0,0,0,0);
+    const lastMonday = new Date(monday); lastMonday.setDate(monday.getDate() - 7);
+    const lastSunday = new Date(monday); lastSunday.setDate(monday.getDate() - 1); lastSunday.setHours(23,59,59,999);
+
+    const thisWeek = state.logs.filter(l => l.date >= monday.getTime());
+    const lastWeek = state.logs.filter(l => l.date >= lastMonday.getTime() && l.date <= lastSunday.getTime());
+
+    const days = {};
+    thisWeek.forEach(l => { const d = new Date(l.date).toDateString(); days[d] = (days[d]||0) + 1; });
+    const bestDay = Math.max(0, ...Object.values(days));
+
+    const tw = thisWeek.length, lw = lastWeek.length;
+    if (trendEl) trendEl.textContent = lw === 0 ? '' : tw > lw ? '📈' : tw < lw ? '📉' : '➡️';
+
+    el.innerHTML = `
+      <div class="rounded-[1.25rem] py-3 px-2" style="background:color-mix(in srgb,var(--accent) 10%,transparent)">
+        <div class="text-2xl font-bold" style="color:var(--accent)">${tw}</div>
+        <div class="text-[11px] opacity-60">Cette semaine</div>
+      </div>
+      <div class="rounded-[1.25rem] py-3 px-2" style="background:rgba(0,0,0,0.05)">
+        <div class="text-2xl font-bold opacity-50">${lw}</div>
+        <div class="text-[11px] opacity-60">Sem. dernière</div>
+      </div>
+      <div class="rounded-[1.25rem] py-3 px-2" style="background:rgba(0,0,0,0.05)">
+        <div class="text-2xl font-bold">${bestDay}</div>
+        <div class="text-[11px] opacity-60">Meilleur jour</div>
+      </div>`;
+  }
+
+  // ===================================================
+  //  RAPPEL À HEURE FIXE ⏰
+  // ===================================================
+  function setupCustomReminder() {
+    const timeInput = $id('custom-reminder-time');
+    const enabledCb = $id('custom-reminder-enabled');
+    if (!timeInput || !enabledCb) return;
+    timeInput.value   = localStorage.getItem('customReminderTime') || '20:00';
+    enabledCb.checked = localStorage.getItem('customReminderEnabled') === 'true';
+    timeInput.addEventListener('change', () => localStorage.setItem('customReminderTime', timeInput.value));
+    enabledCb.addEventListener('change', () => localStorage.setItem('customReminderEnabled', enabledCb.checked));
+  }
+
+  function checkCustomReminder() {
+    if (localStorage.getItem('customReminderEnabled') !== 'true') return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const [h, m] = (localStorage.getItem('customReminderTime') || '20:00').split(':').map(Number);
+    const now = new Date();
+    if (now.getHours() !== h || now.getMinutes() !== m) return;
+    const lastSent = parseInt(localStorage.getItem('customReminderLastSent') || '0');
+    if (Date.now() - lastSent < 60000) return;
+    const today = now.toDateString();
+    if (state.logs.some(l => new Date(l.date).toDateString() === today)) return;
+    const label = m > 0 ? `${h}h${String(m).padStart(2,'0')}` : `${h}h`;
+    new Notification('⏰ Caca-Tracker', {
+      body: `Il est ${label} et pas encore de caca aujourd'hui ! 💩`,
+      icon: './favicon.svg', tag: 'custom-reminder'
+    });
+    localStorage.setItem('customReminderLastSent', Date.now());
+  }
+
+  // ===================================================
+  //  EXPORT iCal 📅
+  // ===================================================
+  function exportIcal() {
+    if (!state.logs.length) { alert('Aucun caca à exporter !'); return; }
+    const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Caca-Tracker//FR','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+    state.logs.forEach((log, i) => {
+      const dt = new Date(log.date);
+      const stamp = dt.toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z';
+      lines.push(
+        'BEGIN:VEVENT',
+        `UID:poop-${log.id || i}@caca-tracker`,
+        `DTSTAMP:${stamp}`,
+        `DTSTART:${stamp}`,
+        `DTEND:${stamp}`,
+        `SUMMARY:💩 Caca (${log.texture || ''} ${log.color || ''})`.trim(),
+        `DESCRIPTION:${(log.comment || '').replace(/[\n\r]/g, '\\n')}`,
+        'END:VEVENT'
+      );
+    });
+    lines.push('END:VCALENDAR');
+    const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'cacas-clemence.ics'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ===================================================
+  //  PARTAGER L'APPLICATION 🔗
+  // ===================================================
+  window.shareApp = async function() {
+    const url      = window.location.origin + window.location.pathname;
+    const feedback = $id('share-app-feedback');
+    // Web Share API (iOS / Android natif)
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Caca-Tracker 3000 Deluxe 💩', text: '💩 Rejoins-moi sur Caca-Tracker !', url });
+        return;
+      } catch(e) { /* annulé par l'utilisateur */ }
+    }
+    // Fallback : copier dans le presse-papier
+    try {
+      await navigator.clipboard.writeText(url);
+      if (feedback) {
+        feedback.textContent = '✅ Lien copié ! Partage-le par SMS, WhatsApp, mail…';
+        feedback.classList.remove('hidden');
+        setTimeout(() => feedback.classList.add('hidden'), 4000);
+      }
+    } catch(e) {
+      if (feedback) { feedback.textContent = url; feedback.classList.remove('hidden'); }
+    }
+  };
+
+  // ===================================================
+  //  DÉFI STREAK 7 JOURS 🎯
+  // ===================================================
+  function renderStreakChallenge() {
+    const streak = calculateStreak();
+    const goal   = 7;
+    const pct    = Math.min(100, Math.round((streak / goal) * 100));
+
+    const bar   = $id('streak-challenge-bar');
+    const label = $id('streak-challenge-label');
+    const badge = $id('streak-challenge-badge');
+    const msg   = $id('streak-challenge-msg');
+    if (!bar) return;
+
+    bar.style.width = pct + '%';
+    label.textContent = streak + '/' + goal;
+
+    if (streak >= goal) {
+      badge.classList.remove('hidden');
+      msg.textContent = '🎉 Incroyable ! Défi relevé ! Continue comme ça !';
+      bar.style.background = 'linear-gradient(90deg,#f59e0b,#ef4444)';
+    } else {
+      badge.classList.add('hidden');
+      const left = goal - streak;
+      msg.textContent = left === 1
+        ? '🔥 Plus qu\'un jour — tu y es presque !'
+        : `💪 Encore ${left} jour${left > 1 ? 's' : ''} pour compléter le défi !`;
+      bar.style.background = streak >= 4 ? 'linear-gradient(90deg,var(--accent),#f59e0b)' : 'var(--accent)';
+    }
+  }
+
   // Auth modal helpers
   function openAuthModal(tab = 'login') {
     $id('auth-modal').classList.remove('hidden');
@@ -2566,6 +2872,8 @@
     } else {
       $id('profile-modal').classList.remove('hidden');
     }
+    // Sync état du toggle mode nuit
+    setTimeout(applyAutoNight, 50);
   }
   function closeProfileModal() { $id('profile-modal').classList.add('hidden'); }
 
@@ -2632,6 +2940,33 @@
   }
 
   // ===================================================
+  //  MODE NUIT AUTO 🌙
+  // ===================================================
+  function applyAutoNight() {
+    const enabled = localStorage.getItem('autoNightMode') === 'true';
+    const knob = $id('auto-night-knob');
+    const btn  = $id('auto-night-toggle');
+    if (btn) {
+      btn.style.background = enabled ? '#4f46e5' : 'rgba(0,0,0,0.15)';
+      if (knob) knob.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)';
+    }
+    if (!enabled) return;
+    const h = new Date().getHours();
+    const isNight = h >= 22 || h < 7;
+    if (isNight) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      applyTheme(state.theme || 'default');
+    }
+  }
+
+  window.toggleAutoNight = function() {
+    const current = localStorage.getItem('autoNightMode') === 'true';
+    localStorage.setItem('autoNightMode', !current);
+    applyAutoNight();
+  };
+
+  // ===================================================
   //  TABS
   // ===================================================
   function switchTab(name) {
@@ -2644,6 +2979,7 @@
     if (name === 'admin') renderHistory();
     if (name === 'dashboard') renderDashboard();
     if (name === 'social') window.SocialModule?.renderSocialTab();
+    if (name === 'settings') { setupNotifications(); setupCustomReminder(); }
   }
 
   // ===================================================
@@ -2785,6 +3121,15 @@
 
     // Tendances de santé (feature 10)
     checkHealthTrends();
+
+    // Rappel intelligent
+    renderSmartReminder();
+
+    // Défi streak
+    renderStreakChallenge();
+
+    // Résumé semaine
+    renderWeekSummary();
 
     // Anniversaires
     const anniv = checkAnniversaries();
