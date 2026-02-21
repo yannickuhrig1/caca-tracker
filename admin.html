@@ -154,6 +154,7 @@
                 <th class="px-4 py-3 text-left">Email</th>
                 <th class="px-4 py-3 text-left">Inscription</th>
                 <th class="px-4 py-3 text-left">Dernière connexion</th>
+                <th class="px-4 py-3 text-left">Groupes</th>
                 <th class="px-4 py-3 text-left">Rôle</th>
                 <th class="px-4 py-3 text-left">Actions</th>
               </tr>
@@ -167,6 +168,20 @@
 
     </div><!-- /admin-content -->
   </main>
+
+  <!-- ── MODAL DÉTAIL UTILISATEUR ── -->
+  <div id="user-detail-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4"
+       style="background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);display:none">
+    <div class="card rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col" style="max-height:90vh">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700 shrink-0">
+        <h3 class="font-bold text-lg">👤 Fiche utilisateur</h3>
+        <button id="close-user-modal" class="text-slate-400 hover:text-white text-2xl leading-none">✕</button>
+      </div>
+      <div id="user-detail-content" class="p-6 overflow-y-auto flex-1">
+        <div class="text-center text-slate-500">Chargement…</div>
+      </div>
+    </div>
+  </div>
 
   <!-- ── MODAL CHANGEMENT DE MOT DE PASSE ── -->
   <div id="pwd-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4"
@@ -233,6 +248,7 @@
   // ============================================================
   let _profiles    = [];
   let _profilesById = {};
+  let _userGroups  = {}; // userId -> [groupName, ...]
   let _targetUser  = null;
   let _meId        = null;
 
@@ -295,7 +311,7 @@
 
     const tbody = document.getElementById('users-tbody');
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-10 text-center text-slate-500">Aucun résultat</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-10 text-center text-slate-500">Aucun résultat</td></tr>';
       return;
     }
 
@@ -304,6 +320,11 @@
       const badge  = p.is_admin
         ? '<span class="badge-admin px-2 py-0.5 rounded-full text-xs font-bold">⭐ Admin</span>'
         : '<span class="badge-user px-2 py-0.5 rounded-full text-xs">Utilisateur</span>';
+
+      const groups = (_userGroups[p.id] || []);
+      const groupsHtml = groups.length
+        ? groups.map(g => `<span class="px-1.5 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap" style="background:#7c3aed22;color:#a78bfa;border:1px solid #7c3aed44">${esc(g)}</span>`).join(' ')
+        : '<span class="text-slate-600 text-xs">—</span>';
 
       const toggleBtn = isMe
         ? '<span class="text-xs text-slate-600">(vous)</span>'
@@ -335,9 +356,12 @@
           <td class="px-4 py-3 text-slate-300 text-xs">${esc(p.email || '—')}</td>
           <td class="px-4 py-3 text-slate-500 text-xs">${fmtDate(p.created_at)}</td>
           <td class="px-4 py-3 text-xs">${fmtAgo(p.last_login)}</td>
+          <td class="px-4 py-3"><div class="flex flex-wrap gap-1">${groupsHtml}</div></td>
           <td class="px-4 py-3">${badge}</td>
           <td class="px-4 py-3">
             <div class="flex items-center gap-1 flex-wrap">
+              <button onclick="openUserModal('${p.id}')"
+                class="btn-ghost px-2 py-1 rounded-lg text-xs whitespace-nowrap">👁️ Voir</button>
               ${toggleBtn}
               <button onclick="openPwdModal('${p.id}')"
                 class="btn-ghost px-2 py-1 rounded-lg text-xs">🔑 MDP</button>
@@ -363,19 +387,20 @@
   // ── Load users ───────────────────────────────────────────────
   async function loadUsers() {
     const tbody = document.getElementById('users-tbody');
-    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-10 text-center text-slate-500">Chargement…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-10 text-center text-slate-500">Chargement…</td></tr>';
     try {
       _profiles = await window.SupabaseClient.getAllProfiles();
-      // Admins d'abord, puis tri alphab.
       _profiles.sort((a, b) => {
         if (a.is_admin !== b.is_admin) return (b.is_admin ? 1 : 0) - (a.is_admin ? 1 : 0);
         return (a.username || '').localeCompare(b.username || '');
       });
       _profilesById = Object.fromEntries(_profiles.map(p => [p.id, p]));
+      // Charger les groupes (service role recommandé pour bypasser RLS)
+      _userGroups = await window.SupabaseClient.getAllUsersGroups(getAdminSB());
       updateStats();
       renderTable();
     } catch (e) {
-      tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-10 text-center text-red-400">❌ ${esc(e.message)}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-red-400">❌ ${esc(e.message)}</td></tr>`;
     }
   }
 
@@ -467,6 +492,102 @@
     el.classList.remove('hidden');
   }
 
+  // ── User detail modal ────────────────────────────────────────
+  async function openUserModal(userId) {
+    const p = _profilesById[userId];
+    if (!p) return;
+
+    const modal   = document.getElementById('user-detail-modal');
+    const content = document.getElementById('user-detail-content');
+    modal.style.display = 'flex';
+
+    const groups = (_userGroups[userId] || []);
+    const groupsHtml = groups.length
+      ? groups.map(g => `<span class="px-2 py-0.5 rounded-full text-xs font-medium" style="background:#7c3aed33;color:#a78bfa;border:1px solid #7c3aed55">${esc(g)}</span>`).join(' ')
+      : '<span class="text-slate-500 text-sm">Aucun groupe</span>';
+
+    content.innerHTML = `
+      <div class="flex items-start gap-4 mb-5">
+        <span class="text-5xl shrink-0">${esc(p.avatar || '💩')}</span>
+        <div class="min-w-0">
+          <div class="text-xl font-bold">${esc(p.username || '—')}</div>
+          <div class="text-sm text-slate-400 truncate">${esc(p.email || '—')}</div>
+          <div class="text-xs text-slate-500 mt-1">
+            Inscrit le ${fmtDate(p.created_at)}
+            ${p.is_admin ? ' · <span style="color:#a78bfa">⭐ Admin</span>' : ''}
+          </div>
+          <div class="text-xs text-slate-500">Dernière connexion : ${fmtAgo(p.last_login)}</div>
+        </div>
+      </div>
+      <div class="mb-5">
+        <div class="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wide">Groupes</div>
+        <div class="flex flex-wrap gap-2">${groupsHtml}</div>
+      </div>
+      <div id="user-poop-stats">
+        <div class="text-slate-400 text-sm text-center py-4">⏳ Chargement des stats…</div>
+      </div>`;
+
+    const adminSB = getAdminSB();
+    const statsEl = document.getElementById('user-poop-stats');
+
+    if (!adminSB) {
+      statsEl.innerHTML = '<div class="text-amber-400 text-xs text-center py-3">⚠️ Configure la clé service role pour voir les cacas de cet utilisateur.</div>';
+      return;
+    }
+
+    try {
+      const { data: poops, error } = await adminSB.from('poops')
+        .select('id, date, texture, color, comment, is_retro')
+        .eq('user_id', userId)
+        .order('date', { ascending: false });
+      if (error) throw new Error(error.message);
+
+      if (!poops || !poops.length) {
+        statsEl.innerHTML = '<div class="text-slate-500 text-sm text-center py-4">Aucun caca enregistré.</div>';
+        return;
+      }
+
+      const total = poops.length;
+      const textureCounts = {};
+      poops.forEach(pp => { textureCounts[pp.texture || '—'] = (textureCounts[pp.texture || '—'] || 0) + 1; });
+      const topTexture = Object.entries(textureCounts).sort((a,b) => b[1]-a[1])[0];
+
+      const recentHtml = poops.slice(0, 8).map(pp => {
+        const dt = new Date(pp.date).toLocaleString('fr-FR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+        return `<div class="flex items-center gap-3 py-1.5 text-xs border-b border-slate-700/50">
+          <span class="text-slate-400 shrink-0">${dt}</span>
+          <span class="text-slate-300 capitalize shrink-0">${esc(pp.texture || '—')} · ${esc(pp.color || '—')}</span>
+          ${pp.comment ? `<span class="text-slate-500 truncate">${esc(pp.comment)}</span>` : ''}
+          ${pp.is_retro ? '<span class="text-purple-400 shrink-0 text-[10px]">⏪</span>' : ''}
+        </div>`;
+      }).join('');
+
+      statsEl.innerHTML = `
+        <div class="grid grid-cols-3 gap-3 mb-5">
+          <div class="card rounded-xl p-3 text-center">
+            <div class="text-2xl font-bold text-purple-400">${total}</div>
+            <div class="text-xs text-slate-400 mt-0.5">Total cacas</div>
+          </div>
+          <div class="card rounded-xl p-3 text-center">
+            <div class="text-lg font-bold text-green-400 leading-tight">${fmtAgo(new Date(poops[0].date).getTime())}</div>
+            <div class="text-xs text-slate-400 mt-0.5">Dernier caca</div>
+          </div>
+          <div class="card rounded-xl p-3 text-center">
+            <div class="text-lg font-bold text-blue-400 capitalize leading-tight">${esc(topTexture?.[0] || '—')}</div>
+            <div class="text-xs text-slate-400 mt-0.5">Texture fav.</div>
+          </div>
+        </div>
+        <div class="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wide">8 derniers cacas</div>
+        <div>${recentHtml}</div>`;
+    } catch(e) {
+      statsEl.innerHTML = `<div class="text-red-400 text-xs text-center py-3">❌ ${esc(e.message)}</div>`;
+    }
+  }
+
+  function closeUserModal() {
+    document.getElementById('user-detail-modal').style.display = 'none';
+  }
+
   // ── Init ─────────────────────────────────────────────────────
   async function init() {
     refreshSRKUI();
@@ -519,6 +640,12 @@
     document.getElementById('signout-btn')?.addEventListener('click', async () => {
       await window.SupabaseClient.signOut();
       window.location.href = 'index.html';
+    });
+
+    // User detail modal — close
+    document.getElementById('close-user-modal')?.addEventListener('click', closeUserModal);
+    document.getElementById('user-detail-modal')?.addEventListener('click', e => {
+      if (e.target === document.getElementById('user-detail-modal')) closeUserModal();
     });
 
     // Password modal — close

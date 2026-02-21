@@ -456,6 +456,19 @@ async function getAllProfiles() {
   return data || [];
 }
 
+// Retourne { userId: [groupName, ...] } — nécessite la service role key pour bypasser RLS
+async function getAllUsersGroups(adminClient) {
+  const sb = adminClient || getSB(); if (!sb) return {};
+  const { data } = await sb.from('group_members')
+    .select('user_id, groups(id, name)');
+  const result = {};
+  (data || []).forEach(row => {
+    if (!result[row.user_id]) result[row.user_id] = [];
+    if (row.groups?.name) result[row.user_id].push(row.groups.name);
+  });
+  return result;
+}
+
 async function updateProfile(updates) {
   const sb = getSB(); if (!sb || !_currentUser) throw new Error('Non connecté');
   const { error } = await sb.from('profiles').update(updates).eq('id', _currentUser.id);
@@ -504,6 +517,7 @@ window.SupabaseClient = {
   removeMember,
   initAuthListener,
   getAllProfiles,
+  getAllUsersGroups,
   setUserAdmin,
   updateProfile
 };
