@@ -438,7 +438,7 @@
         </div>
         <div>
           <h1 class="text-2xl font-bold leading-tight">Les cacas de Clémence 💖</h1>
-          <p class="text-xs opacity-80">Caca‑Tracker 3000 Deluxe</p>
+          <p class="text-xs opacity-80">Caca‑Tracker 3000 Deluxe <span class="opacity-50">v2.8.0</span></p>
         </div>
       </div>
       <div class="flex flex-col items-end gap-2">
@@ -649,16 +649,10 @@
       <div id="advanced-charts-container" class="mb-4"></div>
 
       <!-- Export stats -->
-      <div class="flex gap-2 mb-3">
-        <button id="export-stats-btn" class="flex-1 py-3 rounded-[1.5rem] font-bold flex items-center justify-center gap-2 text-sm"
-          style="background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1.5px solid color-mix(in srgb,var(--accent) 30%,transparent)">
-          📤 JSON
-        </button>
-        <button id="export-pdf-btn" class="flex-1 py-3 rounded-[1.5rem] font-bold flex items-center justify-center gap-2 text-sm"
-          style="background:color-mix(in srgb,#ef4444 12%,transparent);color:#ef4444;border:1.5px solid color-mix(in srgb,#ef4444 30%,transparent)">
-          🏥 PDF médical
-        </button>
-      </div>
+      <button id="export-pdf-btn" class="w-full py-3 rounded-[1.5rem] font-bold mb-3 flex items-center justify-center gap-2 text-sm"
+        style="background:color-mix(in srgb,#ef4444 12%,transparent);color:#ef4444;border:1.5px solid color-mix(in srgb,#ef4444 30%,transparent)">
+        🏥 PDF médical
+      </button>
 
       <!-- Année en review -->
       <button id="wrapped-btn" class="w-full py-4 rounded-[1.5rem] font-bold text-white shadow mb-4 flex items-center justify-center gap-2"
@@ -2184,7 +2178,6 @@
     $id('cancel-drawer').addEventListener('click', closeDrawer);
     $id('save-poop').addEventListener('click', addPoop);
     $id('export-btn').addEventListener('click', exportData);
-    $id('export-stats-btn')?.addEventListener('click', exportData);
     $id('export-pdf-btn')?.addEventListener('click', exportMedicalPDF);
 
     // Pull-to-refresh sur le social tab (feature 2)
