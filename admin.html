@@ -232,11 +232,27 @@
   let _targetUser  = null;
   let _meId        = null;
 
-  // ── Service Role Key (encodée base64, décodée à l'exécution) ─
-  const _b64k = 'ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW1adWJHcG9hMjVxYlcxMFpXRjNkMjl0WldoaUlpd2ljbTlzWlNJNkluTmxjblpwWTJWZmNtOXNaU0lzSW1saGRDSTZNVGMzTVRRek5EWXdOaXdpWlhod0lqb3lNRGczTURFd05qQTJmUS5Ba2dfXzJ6S3B5RU9yU3YyaFl6RkRQZWxyalQyOTlvMmVvRl9aeVpUUkpJ';
-  function getSRK()    { return sessionStorage.getItem('_srk') || atob(_b64k); }
-  function setSRK(k)   { sessionStorage.setItem('_srk', k); refreshSRKUI(); }
-  function clearSRK()  { sessionStorage.removeItem('_srk'); refreshSRKUI(); }
+  // ── Service Role Key (stockée dans app_secrets Supabase, jamais en dur) ─
+  function getSRK()   { return sessionStorage.getItem('_srk'); }
+  function setSRK(k)  { sessionStorage.setItem('_srk', k); refreshSRKUI(); }
+  function clearSRK() { sessionStorage.removeItem('_srk'); refreshSRKUI(); }
+
+  async function fetchSRKFromDB() {
+    try {
+      const sb = window.SupabaseClient && typeof supabase !== 'undefined'
+        ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+        : null;
+      if (!sb) return;
+      // Utilise la session active pour satisfaire la RLS admin-only
+      const { data: { session } } = await supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY).auth.getSession();
+      if (!session) return;
+      const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        global: { headers: { Authorization: `Bearer ${session.access_token}` } }
+      });
+      const { data } = await client.from('app_secrets').select('value').eq('key', 'service_role_key').single();
+      if (data?.value) { sessionStorage.setItem('_srk', data.value); refreshSRKUI(); }
+    } catch(e) { /* clé non disponible, l'admin peut la saisir manuellement */ }
+  }
 
   function refreshSRKUI() {
     const el  = document.getElementById('srk-status-badge');
@@ -589,6 +605,10 @@
     _meId = profile.id;
     document.getElementById('admin-name').textContent =
       `${profile.avatar || '💩'} ${profile.username}`;
+
+    // Charger la service role key depuis app_secrets (RLS : admin uniquement)
+    if (!getSRK()) await fetchSRKFromDB();
+    refreshSRKUI();
 
     document.getElementById('admin-content').classList.remove('hidden');
     await loadUsers();
