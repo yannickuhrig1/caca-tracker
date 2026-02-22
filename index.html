@@ -3894,29 +3894,33 @@
   async function syncCloudData() {
     if (!window.SupabaseClient?.isLoggedIn()) return;
     try {
-      // Nettoyage des doublons UUID créés par l'ancien bug (clé p.id au lieu de p.local_id)
-      // Les entrées légitimes ont un id numérique (timestamp), pas un UUID
+      // Nettoyage des doublons invalides :
+      //  - UUID (ancienne clé p.id au lieu de p.local_id)
+      //  - id undefined/null/"undefined" (bug du fix précédent qui utilisait p.local_id inexistant)
       const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-/i;
       const before = state.logs.length;
-      state.logs = state.logs.filter(l => !uuidRe.test(String(l.id)));
+      state.logs = state.logs.filter(l => {
+        const s = String(l.id);
+        return l.id && s !== 'undefined' && s !== 'null' && !uuidRe.test(s);
+      });
       if (state.logs.length !== before) {
         saveState(state);
-        $debug(`🧹 ${before - state.logs.length} doublon(s) UUID supprimé(s)`);
+        $debug(`🧹 ${before - state.logs.length} doublon(s) invalide(s) supprimé(s)`);
       }
 
       const cloudPoops = await window.SupabaseClient.getMyPoops();
       if (!cloudPoops.length) return;
 
-      // Clé = local_id (timestamp) pour correspondre aux IDs locaux
+      // getMyPoops() retourne { id: local_id, date, texture, ... } — pas de propriété local_id séparée
+      // On utilise donc p.id qui contient déjà le timestamp local
       const localMap = new Map(state.logs.map(l => [String(l.id), l]));
       let changed = 0;
 
       for (const p of cloudPoops) {
-        const key = String(p.local_id); // ← FIX: local_id, pas p.id (UUID)
+        const key = String(p.id); // p.id = local_id (timestamp) tel que mappé par getMyPoops()
         if (!localMap.has(key)) {
-          // Absent en local → ajouter avec local_id comme id (format cohérent)
           state.logs.push({
-            id:        p.local_id,
+            id:        p.id,
             date:      p.date,
             texture:   p.texture,
             color:     p.color,
@@ -3927,7 +3931,6 @@
           });
           changed++;
         } else {
-          // Présent des deux côtés → conserver le plus récent
           const local = localMap.get(key);
           const cloudUpdAt = p.updated_at || 0;
           const localUpdAt = local.updated_at || 0;
