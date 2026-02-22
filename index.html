@@ -1478,20 +1478,20 @@
       $id('new-password-modal').classList.remove('hidden');
     });
 
-    // Supabase : démarrer le listener auth EN PREMIER pour capturer PASSWORD_RECOVERY
+    // Supabase : écouter INITIAL_SESSION (plus fiable que getSession sur mobile/PWA)
+    // L'event est dispatché par initAuthListener dès que le SDK est prêt
+    window.addEventListener('supabase-init', async (e) => {
+      const profile = e.detail;
+      if (profile) {
+        updateUserBadge(profile);
+        await syncCloudData();
+        $debug('☁️ session restored via INITIAL_SESSION: ' + profile.username);
+      }
+    }, { once: true });
+
+    // Démarrer le listener EN PREMIER (déclenche INITIAL_SESSION + PASSWORD_RECOVERY)
     if (window.SupabaseClient) {
       window.SupabaseClient.initAuthListener();
-    }
-
-    // Supabase : restaurer session si déjà connecté
-    if (window.SupabaseClient) {
-      window.SupabaseClient.getSession().then(async profile => {
-        if (profile) {
-          updateUserBadge(profile);
-          await syncCloudData();   // ← pull cloud data into local state
-          $debug('☁️ session restored: ' + profile.username);
-        }
-      }).catch(() => {});
     }
 
     // Initialiser les features supplémentaires

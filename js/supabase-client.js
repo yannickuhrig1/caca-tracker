@@ -18,7 +18,16 @@ function getSB() {
       console.warn('Supabase SDK non chargé');
       return null;
     }
-    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Options explicites pour garantir la persistance sur iOS PWA / mobile
+    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        storage:           window.localStorage,
+        persistSession:    true,
+        autoRefreshToken:  true,
+        detectSessionInUrl: true,
+        storageKey:        'caca-tracker-auth'
+      }
+    });
   }
   return _sb;
 }
@@ -79,14 +88,25 @@ async function updatePassword(newPassword) {
   if (error) throw new Error(error.message);
 }
 
-// Écoute les changements d'état Supabase (recovery, sign-in, sign-out…)
-// Doit être appelé AU PLUS TÔT après le chargement pour ne pas rater
-// l'événement PASSWORD_RECOVERY déclenché par le token dans l'URL
+// Écoute les changements d'état Supabase.
+// INITIAL_SESSION : fiable sur mobile/PWA pour restaurer la session au chargement.
+// Doit être appelé AU PLUS TÔT pour ne pas rater PASSWORD_RECOVERY.
 function initAuthListener() {
   const sb = getSB(); if (!sb) return;
-  sb.auth.onAuthStateChange((event) => {
-    if (event === 'PASSWORD_RECOVERY') {
-      // La session est active — on peut appeler updateUser()
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'INITIAL_SESSION') {
+      // SDK initialisé — session présente ou non
+      if (session?.user) {
+        _currentUser = session.user;
+        _currentProfile = await fetchProfile(_currentUser.id);
+        sb.from('profiles').update({ last_login: new Date().toISOString() })
+          .eq('id', _currentUser.id).then(() => {});
+      }
+      // Notifier l'app (profile = null si non connecté)
+      window.dispatchEvent(new CustomEvent('supabase-init', { detail: _currentProfile }));
+    } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+      _currentUser = session.user;
+    } else if (event === 'PASSWORD_RECOVERY') {
       history.replaceState(null, '', window.location.pathname);
       window.dispatchEvent(new CustomEvent('supabase-password-recovery'));
     }
