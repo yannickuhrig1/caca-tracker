@@ -239,12 +239,12 @@
 
   async function fetchSRKFromDB() {
     try {
-      const sb = window.SupabaseClient && typeof supabase !== 'undefined'
-        ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-        : null;
-      if (!sb) return;
-      // Utilise la session active pour satisfaire la RLS admin-only
-      const { data: { session } } = await supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY).auth.getSession();
+      if (!window.SupabaseClient || typeof supabase === 'undefined') return;
+      // Utilise le même storageKey que supabase-client.js pour trouver la session
+      const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { storageKey: 'caca-tracker-auth', persistSession: false }
+      });
+      const { data: { session } } = await sb.auth.getSession();
       if (!session) return;
       const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         global: { headers: { Authorization: `Bearer ${session.access_token}` } }
