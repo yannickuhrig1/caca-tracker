@@ -407,6 +407,34 @@
       animation: slideUp .3s ease-out;
     }
     #install-banner.hidden { display: none; }
+
+    /* ===== DESKTOP LAYOUT (≥ 1024px) ===== */
+    #desktop-sidebar { display: none; }
+    @media (min-width: 1024px) {
+      body { padding-bottom: 0 !important; }
+      nav.bottom-nav { display: none !important; }
+      #desktop-sidebar { display: flex !important; }
+      main {
+        margin-left: 220px !important;
+        max-width: none !important;
+        padding: 24px 48px !important;
+      }
+      /* Header single-row on desktop */
+      header.app-header > div {
+        max-width: none !important;
+        margin-left: 220px !important;
+        margin-right: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 16px !important;
+      }
+      header.app-header .hdr-row1 { margin-bottom: 0 !important; }
+      header.app-header .hdr-row2 { justify-content: flex-end !important; }
+      /* Dashboard desktop: 2 main columns */
+      .dash-desktop { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
+      .dash-desktop-right { display: block; }
+    }
   </style>
     <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -432,8 +460,8 @@
   <!-- HEADER -->
   <header class="app-header px-4 pt-3 pb-2 text-white shadow-2xl sticky top-0 z-50 rounded-b-[2rem]">
     <div class="max-w-md mx-auto">
-      <!-- Ligne 1 : logo + titre (jamais de chevauchement) -->
-      <div class="flex items-center gap-2.5 mb-1.5">
+      <!-- Ligne 1 / desktop gauche : logo + titre -->
+      <div class="hdr-row1 flex items-center gap-2.5 mb-1.5">
         <!-- Logo PNG détouré — fond transparent = couleur du thème visible en dessous -->
         <img src="logo.png" alt="Logo"
              style="width:50px;height:50px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.35))" />
@@ -445,8 +473,8 @@
           <span class="text-[8px] tracking-[0.18em] uppercase font-medium opacity-55">Caca‑Tracker · v2.8.0</span>
         </div>
       </div>
-      <!-- Ligne 2 : boutons (toujours sous le titre, jamais dessus) -->
-      <div class="flex items-center justify-center gap-2">
+      <!-- Ligne 2 / desktop droite : boutons -->
+      <div class="hdr-row2 flex items-center justify-center gap-2">
         <button id="timer-btn" class="bg-white/20 px-2.5 py-1 rounded-full text-sm font-bold hover:bg-white/30 transition" title="Chrono de séance">
           ⏱️ <span id="timer-display" class="hidden font-mono text-xs">00:00</span>
         </button>
@@ -1054,6 +1082,31 @@
   </main>
 
   <!-- NAV BOTTOM -->
+  <!-- ====== DESKTOP SIDEBAR (caché sur mobile) ====== -->
+  <aside id="desktop-sidebar" class="fixed left-0 top-0 h-full w-[220px] z-40 flex-col overflow-y-auto"
+         style="background:var(--nav-bg);border-right:1px solid var(--card-border);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);transition:background .4s ease">
+    <div class="px-3 flex flex-col gap-0.5" style="padding-top:82px">
+      <button class="tab-btn active py-3 px-4 flex items-center gap-3 text-sm font-semibold w-full text-left" data-tab="dashboard">
+        <i class="fas fa-home w-5 text-center"></i><span>Accueil</span>
+      </button>
+      <button class="tab-btn py-3 px-4 flex items-center gap-3 text-sm font-semibold w-full text-left" data-tab="stats">
+        <i class="fas fa-chart-bar w-5 text-center"></i><span>Stats</span>
+      </button>
+      <button class="tab-btn py-3 px-4 flex items-center gap-3 text-sm font-semibold w-full text-left" data-tab="badges">
+        <i class="fas fa-trophy w-5 text-center"></i><span>Badges</span>
+      </button>
+      <button class="tab-btn py-3 px-4 flex items-center gap-3 text-sm font-semibold w-full text-left" data-tab="admin">
+        <i class="fas fa-list w-5 text-center"></i><span>Historique</span>
+      </button>
+      <button class="tab-btn py-3 px-4 flex items-center gap-3 text-sm font-semibold w-full text-left" data-tab="social">
+        <i class="fas fa-users w-5 text-center"></i><span>Social</span>
+      </button>
+      <button class="tab-btn py-3 px-4 flex items-center gap-3 text-sm font-semibold w-full text-left" data-tab="settings">
+        <i class="fas fa-cog w-5 text-center"></i><span>Réglages</span>
+      </button>
+    </div>
+  </aside>
+
   <nav class="bottom-nav fixed bottom-0 left-0 right-0 p-2 z-40">
     <div class="max-w-md mx-auto flex justify-around">
       <button class="tab-btn active py-2 px-1.5 flex flex-col items-center gap-0.5" data-tab="dashboard">
@@ -3113,7 +3166,8 @@
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     $id(name + '-tab')?.classList.add('active');
-    document.querySelector(`.tab-btn[data-tab="${name}"]`)?.classList.add('active');
+    // Active tous les boutons correspondants (sidebar desktop + bottom nav mobile)
+    document.querySelectorAll(`.tab-btn[data-tab="${name}"]`).forEach(b => b.classList.add('active'));
     if (name === 'stats') renderStats();
     if (name === 'badges') updateBadges();
     if (name === 'admin') renderHistory();
