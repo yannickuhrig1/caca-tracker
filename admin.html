@@ -347,6 +347,7 @@
                 <div class="font-medium text-sm leading-tight">${esc(p.username || '—')}</div>
                 <!-- Infos visibles seulement sur mobile (colonnes masquées) -->
                 <div class="md:hidden text-xs text-slate-500 truncate max-w-[160px] mt-0.5">${esc(p.email || '—')}</div>
+                <div class="md:hidden text-xs text-slate-400 mt-0.5">🕐 ${fmtAgo(p.last_login)}</div>
                 <div class="md:hidden flex flex-wrap gap-1 mt-1">${groupsHtml}</div>
               </div>
             </div>
