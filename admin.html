@@ -232,10 +232,10 @@
   let _targetUser  = null;
   let _meId        = null;
 
-  // ── Service Role Key (stockée dans app_secrets Supabase, jamais en dur) ─
-  function getSRK()   { return sessionStorage.getItem('_srk'); }
-  function setSRK(k)  { sessionStorage.setItem('_srk', k); refreshSRKUI(); }
-  function clearSRK() { sessionStorage.removeItem('_srk'); refreshSRKUI(); }
+  // ── Service Role Key (localStorage pour persister entre les rechargements) ─
+  function getSRK()   { return localStorage.getItem('_srk') || sessionStorage.getItem('_srk'); }
+  function setSRK(k)  { localStorage.setItem('_srk', k); sessionStorage.setItem('_srk', k); refreshSRKUI(); }
+  function clearSRK() { localStorage.removeItem('_srk'); sessionStorage.removeItem('_srk'); refreshSRKUI(); }
 
   async function fetchSRKFromDB() {
     try {
@@ -623,12 +623,25 @@
     init();
 
     // SRK
-    document.getElementById('srk-save-btn')?.addEventListener('click', () => {
+    document.getElementById('srk-save-btn')?.addEventListener('click', async () => {
       const v = document.getElementById('srk-input').value.trim();
       if (!v) { alert('Clé vide'); return; }
       setSRK(v);
       document.getElementById('srk-input').value = '';
-      alert('Clé service role enregistrée pour cette session.');
+      // Persister aussi dans app_secrets Supabase pour les sessions futures
+      try {
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          auth: { storageKey: 'caca-tracker-auth', persistSession: false }
+        });
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) {
+          const cl = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            global: { headers: { Authorization: `Bearer ${session.access_token}` } }
+          });
+          await cl.from('app_secrets').upsert({ key: 'service_role_key', value: v }, { onConflict: 'key' });
+        }
+      } catch(_) {}
+      alert('Clé service role enregistrée.');
     });
     document.getElementById('srk-clear-btn')?.addEventListener('click', () => {
       clearSRK();
