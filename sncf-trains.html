@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#C0272D">
+  <title>Mon Service — SNCF</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚂</text></svg>">
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red:       #C0272D;
+      --red-dark:  #8a1b20;
+      --red-light: #fdf0f0;
+      --blue:      #1565C0;
+      --blue-bg:   #E3F2FD;
+      --green:     #2E7D32;
+      --green-bg:  #E8F5E9;
+      --orange:    #E65100;
+      --orange-bg: #FFF8E1;
+      --purple:    #6A1B9A;
+      --purple-bg: #F3E5F5;
+      --grey-10:   #1a1a2e;
+      --grey-40:   #444;
+      --grey-60:   #777;
+      --grey-80:   #b0b0b0;
+      --grey-90:   #e8e8e8;
+      --grey-95:   #f4f4f4;
+      --white:     #ffffff;
+      --radius:    10px;
+      --shadow:    0 1px 4px rgba(0,0,0,.10);
+      --shadow-md: 0 4px 16px rgba(0,0,0,.13);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--grey-95);
+      color: var(--grey-40);
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    /* ===== HEADER ===== */
+    .app-header {
+      background: var(--red);
+      color: white;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow-md);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .sncf-logo-box {
+      background: white;
+      color: var(--red);
+      font-weight: 900;
+      font-size: 13px;
+      padding: 4px 7px;
+      border-radius: 4px;
+      letter-spacing: -.5px;
+      flex-shrink: 0;
+    }
+
+    .header-titles { flex: 1; }
+    .header-titles h1 { font-size: 16px; font-weight: 700; }
+    .header-titles p  { font-size: 12px; opacity: .85; }
+
+    .header-actions { display: flex; gap: 8px; }
+
+    /* ===== TABS ===== */
+    .tabs {
+      background: white;
+      display: flex;
+      border-bottom: 2px solid var(--grey-90);
+      position: sticky;
+      top: 58px;
+      z-index: 99;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 11px 4px;
+      border: none;
+      background: none;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--grey-60);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: color .15s, border-color .15s;
+    }
+
+    .tab-btn.active {
+      color: var(--red);
+      border-bottom-color: var(--red);
+      font-weight: 700;
+    }
+
+    /* ===== CONTENT ===== */
+    .content {
+      padding: 14px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* ===== CARDS ===== */
+    .card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--red);
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      margin-bottom: 12px;
+    }
+
+    /* ===== FORMS ===== */
+    .form-group { margin-bottom: 10px; }
+    .form-group:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--grey-60);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+
+    input[type=text], input[type=password], input[type=time], input[type=date], select {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1.5px solid var(--grey-90);
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--grey-10);
+      background: white;
+      transition: border-color .15s;
+      appearance: none;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--red);
+    }
+
+    .helper { font-size: 11px; color: var(--grey-80); margin-top: 3px; }
+
+    .row { display: flex; gap: 8px; }
+    .col { flex: 1; min-width: 0; }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+
+    .btn:active { transform: scale(.97); }
+    .btn-full { width: 100%; }
+    .btn-sm { padding: 6px 10px; font-size: 12px; }
+    .btn-xs { padding: 4px 8px; font-size: 11px; border-radius: 6px; }
+
+    .btn-red    { background: var(--red); color: white; }
+    .btn-red:hover    { background: var(--red-dark); }
+    .btn-ghost  { background: var(--grey-95); color: var(--grey-40); border: 1.5px solid var(--grey-90); }
+    .btn-ghost:hover  { background: var(--grey-90); }
+    .btn-danger { background: var(--red-light); color: var(--red); }
+    .btn-print  { background: rgba(255,255,255,.15); color: white; border: 1.5px solid rgba(255,255,255,.4); }
+
+    /* ===== ALERTS ===== */
+    .alert {
+      padding: 11px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .alert-info    { background: var(--blue-bg);   color: var(--blue);   border-left: 3px solid var(--blue); }
+    .alert-success { background: var(--green-bg);  color: var(--green);  border-left: 3px solid var(--green); }
+    .alert-warn    { background: var(--orange-bg); color: var(--orange); border-left: 3px solid var(--orange); }
+    .alert-error   { background: var(--red-light); color: var(--red);    border-left: 3px solid var(--red); }
+
+    /* ===== BADGES ===== */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .5px;
+    }
+
+    .badge-ps   { background: var(--blue-bg);   color: var(--blue); }
+    .badge-ea   { background: var(--green-bg);  color: var(--green); }
+    .badge-fs   { background: var(--red-light); color: var(--red); }
+    .badge-ec   { background: var(--purple-bg); color: var(--purple); }
+    .badge-train { background: var(--grey-90);  color: var(--grey-40); }
+
+    /* ===== SERVICE HEADER CARD ===== */
+    .service-hero {
+      background: linear-gradient(135deg, var(--red), var(--red-dark));
+      color: white;
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 14px;
+    }
+
+    .service-hero-ref  { font-size: 11px; opacity: .75; letter-spacing: 1px; text-transform: uppercase; }
+    .service-hero-route { font-size: 22px; font-weight: 800; margin: 4px 0 2px; }
+    .service-hero-date  { font-size: 13px; opacity: .85; }
+
+    /* ===== SCHEDULE TABLE ===== */
+    .table-wrap {
+      overflow: hidden;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .sched-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background: white;
+    }
+
+    .sched-table thead th {
+      background: var(--red);
+      color: white;
+      padding: 9px 10px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    .sched-table tbody td {
+      padding: 11px 10px;
+      border-bottom: 1px solid var(--grey-90);
+      vertical-align: middle;
+    }
+
+    .sched-table tbody tr:last-child td { border-bottom: none; }
+    .sched-table tbody tr:hover td { background: var(--grey-95); }
+
+    .sched-table .row-ps td { background: #f0f6ff; }
+    .sched-table .row-fs td { background: #fff4f4; }
+
+    .st-name { font-weight: 700; color: var(--grey-10); font-size: 13px; }
+    .st-code { font-size: 10px; color: var(--grey-80); }
+    .st-time { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--grey-10); }
+    .train-id { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; font-weight: 700; color: var(--red); }
+
+    .no-val { color: var(--grey-80); }
+
+    /* ===== TRAIN EDITOR ROWS ===== */
+    .train-editor {
+      background: white;
+      border-radius: var(--radius);
+      border: 1.5px solid var(--grey-90);
+      padding: 12px;
+      margin-bottom: 10px;
+      transition: border-color .2s;
+    }
+
+    .train-editor.is-loaded { border-color: #a5d6a7; }
+    .train-editor.is-error  { border-color: #ef9a9a; }
+
+    .train-editor-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .train-num-big {
+      font-family: monospace;
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--grey-10);
+    }
+
+    .train-fetch-status {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-left: auto;
+    }
+
+    .status-pending { background: var(--orange-bg); color: var(--orange); }
+    .status-loading { background: var(--blue-bg); color: var(--blue); }
+    .status-loaded  { background: var(--green-bg); color: var(--green); }
+    .status-error   { background: var(--red-light); color: var(--red); }
+
+    .api-preview {
+      background: var(--grey-95);
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .api-preview-route { font-weight: 700; color: var(--grey-10); }
+    .api-preview-stops { color: var(--grey-60); font-size: 11px; }
+
+    /* ===== ADD TRAIN AREA ===== */
+    .add-train-box {
+      border: 2px dashed var(--grey-90);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+
+    /* ===== STATION CODES LIST ===== */
+    .station-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--grey-90);
+    }
+
+    .station-row:last-child { border-bottom: none; }
+
+    .station-code-tag {
+      font-family: monospace;
+      font-weight: 800;
+      font-size: 13px;
+      color: var(--red);
+      background: var(--red-light);
+      border-radius: 4px;
+      padding: 2px 6px;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    /* ===== SPINNER ===== */
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(0,0,0,.1);
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== TOAST ===== */
+    #toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: white;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,.25);
+    }
+
+    #toast.show { opacity: 1; }
+
+    /* ===== SECTION SEPARATOR ===== */
+    .section-sep {
+      text-align: center;
+      font-size: 11px;
+      color: var(--grey-80);
+      margin: 6px 0;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+    }
+
+    /* ===== PRINT ===== */
+    @media print {
+      .app-header, .tabs, .no-print { display: none !important; }
+      body { background: white; padding: 0; }
+      .content { padding: 0; }
+      .card { box-shadow: none; border: 1px solid #ddd; }
+      .service-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .sched-table thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .tab-pane { display: block !important; }
+      #tab-trains, #tab-config { display: none !important; }
+    }
+
+    @media (max-width: 420px) {
+      .sched-table { font-size: 12px; }
+      .sched-table thead th { padding: 7px 6px; }
+      .sched-table tbody td { padding: 9px 6px; }
+      .st-time { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================= HEADER ============================= -->
+<header class="app-header">
+  <div class="sncf-logo-box">SNCF</div>
+  <div class="header-titles">
+    <h1>Mon Service</h1>
+    <p>Tableau de service du jour</p>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-sm btn-print no-print" onclick="window.print()">🖨️</button>
+  </div>
+</header>
+
+<!-- ============================= TABS ============================= -->
+<nav class="tabs">
+  <button class="tab-btn active" onclick="switchTab('service')" id="tab-btn-service">📋 Service</button>
+  <button class="tab-btn" onclick="switchTab('trains')"  id="tab-btn-trains">🚂 Trains</button>
+  <button class="tab-btn" onclick="switchTab('config')"  id="tab-btn-config">⚙️ Config</button>
+</nav>
+
+<!-- ============================= CONTENT ============================= -->
+<div class="content">
+
+  <!-- ====== TAB : SERVICE ====== -->
+  <div class="tab-pane active" id="tab-service">
+
+    <div id="no-service-msg" class="alert alert-info">
+      ℹ️ Ajoutez vos trains dans l'onglet <strong>Trains</strong> pour afficher votre tableau de service.
+    </div>
+
+    <div id="service-display" style="display:none">
+
+      <div class="service-hero">
+        <div class="service-hero-ref" id="hero-ref">Réf —</div>
+        <div class="service-hero-route" id="hero-route">— → —</div>
+        <div class="service-hero-date" id="hero-date">—</div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="sched-table" id="sched-table">
+          <thead>
+            <tr>
+              <th style="width:70px">Nature</th>
+              <th>Départ</th>
+              <th>Arrivée</th>
+              <th style="width:80px">N° Train</th>
+            </tr>
+          </thead>
+          <tbody id="sched-body"></tbody>
+        </table>
+      </div>
+
+      <div style="height:10px"></div>
+      <button class="btn btn-ghost btn-full no-print" onclick="switchTab('trains')" style="font-size:13px;">
+        ✏️ Modifier le service
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ====== TAB : TRAINS ====== -->
+  <div class="tab-pane" id="tab-trains">
+
+    <!-- Service metadata -->
+    <div class="card">
+      <div class="card-title">📅 Informations du service</div>
+      <div class="row">
+        <div class="col">
+          <div class="form-group">
+            <label>Réf. de service</label>
+            <input type="text" id="inp-ref" placeholder="Y001">
+          </div>
+        </div>
+        <div class="col">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="inp-date">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PS Row -->
+    <div class="card">
+      <div class="card-title" style="color:var(--blue)">🟦 PS — Prise de Service</div>
+      <div class="row">
+        <div class="col">
+          <div class="form-group">
+            <label>Station</label>
+            <input type="text" id="ps-station" placeholder="NY" maxlength="5" style="text-transform:uppercase">
+          </div>
+        </div>
+        <div class="col">
+          <div class="form-group">
+            <label>Heure</label>
+            <input type="time" id="ps-time">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Train list -->
+    <div id="trains-container"></div>
+
+    <!-- Add train -->
+    <div class="add-train-box no-print">
+      <div class="card-title" style="margin-bottom:10px">➕ Ajouter un train</div>
+      <div class="row" style="margin-bottom:8px">
+        <div class="col">
+          <label>N° de train</label>
+          <input type="text" id="new-num" placeholder="837523" maxlength="12">
+        </div>
+        <div class="col" style="max-width:120px">
+          <label>Nature</label>
+          <select id="new-nature">
+            <option value="EA">EA</option>
+            <option value="TER">TER</option>
+            <option value="IC">IC</option>
+            <option value="TGV">TGV</option>
+            <option value="RER">RER</option>
+            <option value="FRET">FRET</option>
+            <option value="ECRIT">Écritures</option>
+            <option value="AUTRE">Autre</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-red btn-full" onclick="addTrain()">Ajouter ce train</button>
+    </div>
+
+    <!-- FS Row -->
+    <div class="card">
+      <div class="card-title" style="color:var(--red)">🟥 FS — Fin de Service</div>
+      <div class="row">
+        <div class="col">
+          <div class="form-group">
+            <label>Station</label>
+            <input type="text" id="fs-station" placeholder="MZ" maxlength="5" style="text-transform:uppercase">
+          </div>
+        </div>
+        <div class="col">
+          <div class="form-group">
+            <label>Heure</label>
+            <input type="time" id="fs-time">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <button class="btn btn-red btn-full no-print" onclick="fetchAllTrains()" id="fetch-btn" style="margin-bottom:8px">
+      🔄 Récupérer les horaires via l'API
+    </button>
+    <button class="btn btn-ghost btn-full no-print" onclick="buildAndShowSchedule()">
+      📋 Générer le tableau de service
+    </button>
+
+  </div>
+
+  <!-- ====== TAB : CONFIG ====== -->
+  <div class="tab-pane" id="tab-config">
+
+    <div class="card">
+      <div class="card-title">🔑 Clé API SNCF (Navitia)</div>
+      <div class="form-group">
+        <label>Token d'authentification</label>
+        <input type="password" id="inp-token" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off">
+        <div class="helper">Obtenez votre token gratuit sur <strong>numerique.sncf.com/startup/api</strong></div>
+      </div>
+      <div class="form-group">
+        <label>Version API</label>
+        <select id="inp-api-version">
+          <option value="sncf">api.sncf.com/v1 — SNCF (recommandé)</option>
+          <option value="navitia">api.navitia.io/v1 — Navitia.io</option>
+        </select>
+      </div>
+      <button class="btn btn-red" onclick="saveConfig()">💾 Sauvegarder</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🗺️ Codes stations</div>
+      <p style="font-size:13px;color:var(--grey-60);margin-bottom:12px">
+        Codes courts utilisés dans votre service :
+      </p>
+      <div id="station-list"></div>
+      <div class="row" style="margin-top:12px;gap:6px">
+        <div class="col" style="max-width:90px">
+          <input type="text" id="new-code" placeholder="BTG" maxlength="6" style="text-transform:uppercase">
+        </div>
+        <div class="col">
+          <input type="text" id="new-station-name" placeholder="Bettembourg">
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="addStationCode()" style="flex-shrink:0">+</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">ℹ️ API SNCF — Aide</div>
+      <div class="alert alert-info" style="margin-bottom:8px">
+        <strong>Endpoint utilisé :</strong><br>
+        <code style="font-size:11px;word-break:break-all">
+          https://api.sncf.com/v1/coverage/sncf/vehicle_journeys<br>
+          ?headsign={N°train}&since=YYYYMMDDT000000&until=YYYYMMDDTT235959
+        </code>
+      </div>
+      <div class="alert alert-warn">
+        ⚠️ Si l'API retourne une erreur CORS, les horaires devront être saisis manuellement dans chaque ligne de train.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🗑️ Données locales</div>
+      <button class="btn btn-danger" onclick="clearAllData()">Effacer toutes les données</button>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// =============================================================================
+// STATE
+// =============================================================================
+
+const DEFAULT_STATIONS = {
+  'NY':  'Nancy',
+  'MZ':  'Metz',
+  'BTG': 'Bettembourg',
+  'THL': 'Thionville',
+  'SB':  'Strasbourg',
+  'EPL': 'Épinal',
+  'REI': 'Reims',
+  'SRB': 'Sarrebourg',
+  'SAV': 'Sarreguemines',
+  'PA':  'Paris-Est',
+  'LN':  'Lunéville',
+};
+
+let S = {
+  apiToken: '',
+  apiVersion: 'sncf',
+  serviceRef: '',
+  serviceDate: '',
+  psStation: 'NY',
+  psTime: '',
+  fsStation: 'MZ',
+  fsTime: '',
+  trains: [],
+  stations: { ...DEFAULT_STATIONS },
+};
+
+// =============================================================================
+// INIT
+// =============================================================================
+
+function init() {
+  try {
+    const raw = localStorage.getItem('sncf-service-v2');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      S = { ...S, ...parsed };
+      // Merge station codes
+      S.stations = { ...DEFAULT_STATIONS, ...(parsed.stations || {}) };
+    }
+  } catch(e) { /* ignore */ }
+
+  // Default date = today
+  if (!S.serviceDate) {
+    S.serviceDate = todayISO();
+  }
+
+  // Populate fields
+  set('inp-token', S.apiToken);
+  set('inp-api-version', S.apiVersion || 'sncf');
+  set('inp-ref', S.serviceRef);
+  set('inp-date', S.serviceDate);
+  set('ps-station', S.psStation);
+  set('ps-time', S.psTime);
+  set('fs-station', S.fsStation);
+  set('fs-time', S.fsTime);
+
+  renderTrains();
+  renderStations();
+}
+
+// =============================================================================
+// PERSISTENCE
+// =============================================================================
+
+function persist() {
+  readFormIntoState();
+  localStorage.setItem('sncf-service-v2', JSON.stringify(S));
+}
+
+function readFormIntoState() {
+  S.apiToken    = get('inp-token');
+  S.apiVersion  = get('inp-api-version');
+  S.serviceRef  = get('inp-ref');
+  S.serviceDate = get('inp-date');
+  S.psStation   = get('ps-station').toUpperCase();
+  S.psTime      = get('ps-time');
+  S.fsStation   = get('fs-station').toUpperCase();
+  S.fsTime      = get('fs-time');
+}
+
+function saveConfig() {
+  persist();
+  toast('✅ Configuration sauvegardée', 'success');
+}
+
+// =============================================================================
+// TABS
+// =============================================================================
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('tab-btn-' + name).classList.add('active');
+  if (name === 'service') buildAndShowSchedule();
+}
+
+// =============================================================================
+// STATION CODES
+// =============================================================================
+
+function stationName(code) {
+  return S.stations[code.toUpperCase()] || code;
+}
+
+function findCode(name) {
+  const lc = name.toLowerCase().replace(/-/g, ' ');
+  for (const [code, fullName] of Object.entries(S.stations)) {
+    if (fullName.toLowerCase().replace(/-/g, ' ') === lc ||
+        lc.startsWith(fullName.toLowerCase().replace(/-/g, ' ').split(' ')[0])) {
+      return code;
+    }
+  }
+  return null;
+}
+
+function renderStations() {
+  const el = document.getElementById('station-list');
+  el.innerHTML = Object.entries(S.stations).map(([code, name]) => `
+    <div class="station-row">
+      <span class="station-code-tag">${code}</span>
+      <span style="flex:1;font-size:13px">${name}</span>
+      <button class="btn btn-xs btn-danger" onclick="removeStation('${code}')">✕</button>
+    </div>
+  `).join('');
+}
+
+function addStationCode() {
+  const code = get('new-code').toUpperCase().trim();
+  const name = get('new-station-name').trim();
+  if (!code || !name) return;
+  S.stations[code] = name;
+  set('new-code', '');
+  set('new-station-name', '');
+  renderStations();
+  persist();
+  toast('Station ajoutée : ' + code, 'success');
+}
+
+function removeStation(code) {
+  delete S.stations[code];
+  renderStations();
+  persist();
+}
+
+// =============================================================================
+// TRAIN LIST (EDITOR)
+// =============================================================================
+
+function addTrain() {
+  const num    = get('new-num').trim();
+  const nature = get('new-nature');
+  if (!num) { toast('⚠️ Entrez un numéro de train', 'warn'); return; }
+
+  S.trains.push({
+    id:         Date.now(),
+    num,
+    nature,
+    status:     'pending',   // pending | loading | loaded | error
+    stops:      [],
+    // API-fetched
+    fromCode: '', fromTime: '',
+    toCode:   '', toTime:   '',
+    // Manual overrides
+    manFrom: '', manDep: '',
+    manTo:   '', manArr: '',
+    errorMsg: '',
+  });
+
+  set('new-num', '');
+  persist();
+  renderTrains();
+}
+
+function removeTrain(id) {
+  S.trains = S.trains.filter(t => t.id !== id);
+  persist();
+  renderTrains();
+}
+
+function moveTrainUp(id) {
+  const i = S.trains.findIndex(t => t.id === id);
+  if (i > 0) {
+    [S.trains[i-1], S.trains[i]] = [S.trains[i], S.trains[i-1]];
+    persist();
+    renderTrains();
+  }
+}
+
+function moveTrainDown(id) {
+  const i = S.trains.findIndex(t => t.id === id);
+  if (i < S.trains.length - 1) {
+    [S.trains[i], S.trains[i+1]] = [S.trains[i+1], S.trains[i]];
+    persist();
+    renderTrains();
+  }
+}
+
+function updateTrain(id, field, value) {
+  const t = S.trains.find(t => t.id === id);
+  if (!t) return;
+  const upper = ['manFrom','manTo'];
+  t[field] = upper.includes(field) ? value.toUpperCase() : value;
+  persist();
+}
+
+function renderTrains() {
+  const c = document.getElementById('trains-container');
+
+  if (S.trains.length === 0) {
+    c.innerHTML = `<div class="alert alert-info">ℹ️ Aucun train. Utilisez le formulaire ci-dessous pour ajouter des trains.</div>`;
+    return;
+  }
+
+  c.innerHTML = S.trains.map((t, idx) => {
+    const stClass = { pending:'status-pending', loading:'status-loading', loaded:'status-loaded', error:'status-error' }[t.status];
+    const stText  = { pending:'En attente', loading:'Chargement…', loaded:'✅ Chargé', error:'❌ Erreur' }[t.status];
+    const editorClass = t.status === 'loaded' ? 'is-loaded' : t.status === 'error' ? 'is-error' : '';
+
+    const apiPreview = t.status === 'loaded' && t.stops.length > 0 ? (() => {
+      const f = t.stops[0], l = t.stops[t.stops.length-1];
+      return `<div class="api-preview">
+        <div>
+          <div class="api-preview-route">${f.name} ${f.dep} → ${l.name} ${l.arr}</div>
+          <div class="api-preview-stops">${t.stops.length} arrêts via l'API</div>
+        </div>
+        <span style="font-size:11px;color:var(--grey-60)">API ✓</span>
+      </div>`;
+    })() : '';
+
+    const errBox = t.status === 'error' ? `<div class="alert alert-warn" style="font-size:12px;margin-bottom:8px">⚠️ ${t.errorMsg || 'Erreur API — saisissez manuellement'}</div>` : '';
+
+    return `
+      <div class="train-editor ${editorClass}" id="train-${t.id}">
+        <div class="train-editor-header">
+          <span class="badge ${badgeClass(t.nature)}">${t.nature}</span>
+          <span class="train-num-big">${t.num}</span>
+          <span class="train-fetch-status ${stClass}">${stText}</span>
+          <button class="btn btn-xs btn-ghost" onclick="moveTrainUp(${t.id})" ${idx === 0 ? 'disabled' : ''}>▲</button>
+          <button class="btn btn-xs btn-ghost" onclick="moveTrainDown(${t.id})" ${idx === S.trains.length-1 ? 'disabled' : ''}>▼</button>
+          <button class="btn btn-xs btn-danger" onclick="removeTrain(${t.id})">✕</button>
+        </div>
+        ${errBox}
+        ${apiPreview}
+        <div class="row" style="gap:6px">
+          <div class="col">
+            <label>Dép. (code)</label>
+            <input type="text" value="${t.manFrom || t.fromCode}" maxlength="6"
+              placeholder="${t.fromCode || 'NY'}"
+              onchange="updateTrain(${t.id},'manFrom',this.value)"
+              style="font-size:13px;padding:7px 9px;text-transform:uppercase">
+          </div>
+          <div class="col">
+            <label>Heure dép.</label>
+            <input type="time" value="${t.manDep || t.fromTime}"
+              onchange="updateTrain(${t.id},'manDep',this.value)"
+              style="font-size:13px;padding:7px 9px">
+          </div>
+          <div class="col">
+            <label>Arr. (code)</label>
+            <input type="text" value="${t.manTo || t.toCode}" maxlength="6"
+              placeholder="${t.toCode || 'MZ'}"
+              onchange="updateTrain(${t.id},'manTo',this.value)"
+              style="font-size:13px;padding:7px 9px;text-transform:uppercase">
+          </div>
+          <div class="col">
+            <label>Heure arr.</label>
+            <input type="time" value="${t.manArr || t.toTime}"
+              onchange="updateTrain(${t.id},'manArr',this.value)"
+              style="font-size:13px;padding:7px 9px">
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function badgeClass(nature) {
+  if (nature === 'PS')    return 'badge-ps';
+  if (nature === 'FS')    return 'badge-fs';
+  if (nature === 'ECRIT') return 'badge-ec';
+  return 'badge-ea';
+}
+
+// =============================================================================
+// API FETCH
+// =============================================================================
+
+async function fetchAllTrains() {
+  persist();
+
+  const token = S.apiToken;
+  if (!token) {
+    toast('⚠️ Configurez votre token API dans l\'onglet Config', 'warn');
+    switchTab('config');
+    return;
+  }
+
+  const date = S.serviceDate;
+  if (!date) {
+    toast('⚠️ Sélectionnez une date', 'warn');
+    return;
+  }
+
+  const targets = S.trains.filter(t => !['ECRIT','AUTRE'].includes(t.nature));
+  if (targets.length === 0) {
+    toast('ℹ️ Aucun train à récupérer', 'info');
+    return;
+  }
+
+  document.getElementById('fetch-btn').disabled = true;
+  document.getElementById('fetch-btn').innerHTML = '<span class="spinner"></span> Récupération…';
+
+  const dateStr = date.replace(/-/g, '');
+  let ok = 0, fail = 0;
+
+  for (const train of targets) {
+    train.status = 'loading';
+    renderTrains();
+
+    try {
+      const data = await callNavitia(token, train.num, dateStr, S.apiVersion);
+
+      if (data.vehicle_journeys && data.vehicle_journeys.length > 0) {
+        const vj = data.vehicle_journeys[0];
+        const stops = (vj.stop_times || []).map(st => ({
+          name: st.stop_point?.name || '?',
+          dep:  fmtTime(st.departure_time),
+          arr:  fmtTime(st.arrival_time),
+          id:   st.stop_point?.id || '',
+        }));
+
+        train.stops    = stops;
+        train.status   = 'loaded';
+
+        if (stops.length > 0) {
+          const first = stops[0], last = stops[stops.length - 1];
+          train.fromCode = findCode(first.name) || first.name.substring(0, 3).toUpperCase();
+          train.fromTime = first.dep;
+          train.toCode   = findCode(last.name)  || last.name.substring(0,  3).toUpperCase();
+          train.toTime   = last.arr;
+        }
+        ok++;
+      } else {
+        train.status   = 'error';
+        train.errorMsg = `Train ${train.num} non trouvé pour le ${fmtDateFR(date)}`;
+        fail++;
+      }
+    } catch(e) {
+      train.status   = 'error';
+      train.errorMsg = e.message;
+      fail++;
+    }
+
+    renderTrains();
+    persist();
+    await sleep(350); // rate limit
+  }
+
+  document.getElementById('fetch-btn').disabled = false;
+  document.getElementById('fetch-btn').innerHTML = '🔄 Récupérer les horaires via l\'API';
+
+  if (fail === 0) {
+    toast(`✅ ${ok} train(s) récupéré(s)`, 'success');
+  } else if (ok > 0) {
+    toast(`⚠️ ${ok} OK, ${fail} erreur(s) — saisie manuelle`, 'warn');
+  } else {
+    toast(`❌ ${fail} erreur(s) — vérifiez le token et la date`, 'error');
+  }
+}
+
+async function callNavitia(token, trainNum, dateStr, version) {
+  const since = `${dateStr}T000000`;
+  const until = `${dateStr}T235959`;
+  const base  = version === 'navitia'
+    ? 'https://api.navitia.io/v1/coverage/fr-ne/vehicle_journeys'
+    : 'https://api.sncf.com/v1/coverage/sncf/vehicle_journeys';
+
+  const url = `${base}?headsign=${encodeURIComponent(trainNum)}&since=${since}&until=${until}&count=1&depth=2`;
+
+  const resp = await fetch(url, {
+    headers: { 'Authorization': 'Basic ' + btoa(token + ':') }
+  });
+
+  if (!resp.ok) {
+    const body = await resp.text();
+    let msg = `HTTP ${resp.status}`;
+    try {
+      const j = JSON.parse(body);
+      if (j.message) msg = j.message;
+    } catch(e) { /* ignore */ }
+    throw new Error(msg);
+  }
+
+  return resp.json();
+}
+
+// =============================================================================
+// SCHEDULE GENERATION
+// =============================================================================
+
+function buildAndShowSchedule() {
+  persist();
+
+  const hasData = S.trains.length > 0 || S.psTime || S.fsTime;
+  if (!hasData) {
+    document.getElementById('no-service-msg').style.display = 'block';
+    document.getElementById('service-display').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('no-service-msg').style.display = 'none';
+  document.getElementById('service-display').style.display = 'block';
+
+  // Hero card
+  const ref = S.serviceRef || 'Y—';
+  document.getElementById('hero-ref').textContent  = 'Réf. ' + ref;
+  document.getElementById('hero-date').textContent = fmtDateFR(S.serviceDate) || 'Aujourd\'hui';
+
+  const psName = stationName(S.psStation || '');
+  const fsName = stationName(S.fsStation || '');
+  document.getElementById('hero-route').textContent = `${psName} → ${fsName}`;
+
+  // Build rows
+  const rows = [];
+
+  // PS
+  rows.push({ nature:'PS', fromCode:S.psStation, fromTime:S.psTime, toCode:'', toTime:'', num:'' });
+
+  // Trains
+  for (const t of S.trains) {
+    rows.push({
+      nature:   t.nature,
+      fromCode: t.manFrom || t.fromCode,
+      fromTime: t.manDep  || t.fromTime,
+      toCode:   t.manTo   || t.toCode,
+      toTime:   t.manArr  || t.toTime,
+      num:      t.num,
+    });
+  }
+
+  // FS
+  rows.push({ nature:'FS', fromCode:'', fromTime:'', toCode:S.fsStation, toTime:S.fsTime, num:'' });
+
+  const tbody = document.getElementById('sched-body');
+  tbody.innerHTML = rows.map(r => {
+    const trClass = r.nature === 'PS' ? 'row-ps' : r.nature === 'FS' ? 'row-fs' : '';
+    const fromCell = r.fromCode
+      ? `<span class="st-name">${stationName(r.fromCode)}</span><span class="st-code">${r.fromCode}</span>${r.fromTime ? `<br><span class="st-time">${r.fromTime}</span>` : ''}`
+      : `<span class="no-val">—</span>`;
+    const toCell = r.toCode
+      ? `<span class="st-name">${stationName(r.toCode)}</span><span class="st-code">${r.toCode}</span>${r.toTime ? `<br><span class="st-time">${r.toTime}</span>` : ''}`
+      : `<span class="no-val">—</span>`;
+    const numCell = r.num ? `<span class="train-id">${r.num}</span>` : `<span class="no-val">—</span>`;
+
+    return `<tr class="${trClass}">
+      <td><span class="badge ${badgeClass(r.nature)}">${r.nature}</span></td>
+      <td>${fromCell}</td>
+      <td>${toCell}</td>
+      <td>${numCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+// =============================================================================
+// UTILITIES
+// =============================================================================
+
+function fmtTime(t) {
+  if (t == null) return '';
+  // Integer = seconds since midnight
+  if (typeof t === 'number') {
+    const h = Math.floor(t / 3600) % 24;
+    const m = Math.floor((t % 3600) / 60);
+    return pad2(h) + ':' + pad2(m);
+  }
+  // String "HHMMSS" or "HH:MM:SS"
+  const s = String(t).replace(/:/g, '');
+  if (s.length >= 4) {
+    const h = parseInt(s.substring(0, 2)) % 24;
+    const m = parseInt(s.substring(2, 4));
+    return pad2(h) + ':' + pad2(m);
+  }
+  return t;
+}
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+function fmtDateFR(iso) {
+  if (!iso) return '';
+  try {
+    return new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', {
+      weekday:'long', day:'numeric', month:'long', year:'numeric'
+    });
+  } catch(e) { return iso; }
+}
+
+function todayISO() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// DOM helpers
+function get(id)      { const el = document.getElementById(id); return el ? el.value : ''; }
+function set(id, val) { const el = document.getElementById(id); if (el) el.value = val || ''; }
+
+// =============================================================================
+// TOAST
+// =============================================================================
+
+let toastTimer;
+function toast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  const bg = { info:'#1565C0', success:'#2E7D32', warn:'#E65100', error:'#C62828' };
+  t.style.background = bg[type] || bg.info;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// =============================================================================
+// CLEAR DATA
+// =============================================================================
+
+function clearAllData() {
+  if (confirm('Effacer toutes les données locales ?')) {
+    localStorage.removeItem('sncf-service-v2');
+    location.reload();
+  }
+}
+
+// =============================================================================
+// START
+// =============================================================================
+
+init();
+</script>
+</body>
+</html>
