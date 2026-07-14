@@ -139,8 +139,36 @@ const SocialModule = (() => {
       renderCompareChart(groupId),
       renderFeed(groupId),
       renderChallenge(groupId),
-      renderMemberFilter(groupId)
+      renderMemberFilter(groupId),
+      renderMonthlyHistory(groupId)
     ]);
+  }
+
+  // ============================================================
+  //  PODIUMS DES MOIS PASSÉS (v2.10.0)
+  // ============================================================
+  async function renderMonthlyHistory(groupId) {
+    const el = document.getElementById('monthly-history');
+    if (!el) return;
+    el.innerHTML = skeletonBars(2);
+    try {
+      const months = await window.SupabaseClient.getGroupMonthlyRanking(groupId, 3);
+      const medals = ['🥇', '🥈', '🥉'];
+      const withData = months.filter(m => m.ranking.length);
+      if (!withData.length) {
+        el.innerHTML = '<p class="text-sm opacity-60 text-center">Pas encore de mois complet dans ce groupe 📆</p>';
+        return;
+      }
+      el.innerHTML = withData.map(m => `
+        <div class="flex items-start justify-between gap-3 py-2 border-b last:border-b-0" style="border-color:rgba(0,0,0,0.07)">
+          <div class="font-semibold text-sm capitalize whitespace-nowrap">${m.label}</div>
+          <div class="text-sm text-right space-y-0.5">
+            ${m.ranking.map((r, i) => `<div>${medals[i]} ${r.avatar} <span class="font-medium">${r.username}</span> <span class="opacity-60">— ${r.count}</span></div>`).join('')}
+          </div>
+        </div>`).join('');
+    } catch (e) {
+      el.innerHTML = '<p class="text-sm opacity-60 text-center">Erreur de chargement 😕</p>';
+    }
   }
 
   // ============================================================

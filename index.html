@@ -834,6 +834,12 @@
             <div id="podium-list" class="space-y-2"></div>
           </div>
 
+          <!-- Historique des podiums mensuels -->
+          <div class="card p-5 rounded-[2rem] shadow">
+            <h4 class="font-bold mb-4">🗓️ Podiums des mois passés</h4>
+            <div id="monthly-history" class="space-y-3"></div>
+          </div>
+
           <!-- Comparatif 7 jours -->
           <div class="card p-5 rounded-[2rem] shadow">
             <h4 class="font-bold mb-4">📊 Comparatif 7 jours</h4>
@@ -3563,14 +3569,23 @@
   //  STREAK
   // ===================================================
   function calculateStreak() {
+    // Streak "tolérant" (v2.10.0) : 1 jour raté est pardonné (joker 🃏),
+    // dans la limite d'un joker par fenêtre de 7 jours, si le jour précédent
+    // le trou a bien un caca. Le jour joker ne compte pas dans le total.
     const hasDay = d => state.logs.some(l => new Date(l.date).toDateString() === d.toDateString());
     const today = new Date();
     if (!hasDay(today)) return 0;
     let streak = 1;
-    for (let i = 1; i < 90; i++) {
+    let lastJokerAt = -Infinity;
+    for (let i = 1; i < 366; i++) {
       const d = new Date(); d.setDate(d.getDate() - i);
-      if (hasDay(d)) streak++;
-      else break;
+      if (hasDay(d)) { streak++; continue; }
+      const dBefore = new Date(); dBefore.setDate(dBefore.getDate() - i - 1);
+      if (i - lastJokerAt >= 7 && hasDay(dBefore)) {
+        lastJokerAt = i; // joker consommé : le trou est pardonné mais ne compte pas
+        continue;
+      }
+      break;
     }
     return streak;
   }

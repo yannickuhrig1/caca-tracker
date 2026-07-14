@@ -329,6 +329,43 @@ async function getGroupStats(groupId) {
   return result;
 }
 
+// Podiums des mois passés (v2.10.0) : top 3 par mois terminé.
+async function getGroupMonthlyRanking(groupId, monthsBack = 3) {
+  const sb = getSB(); if (!sb) return [];
+  const members = await getGroupMembers(groupId);
+  if (!members.length) return [];
+
+  const memberIds = members.map(m => m.id);
+  const now = new Date();
+  const oldest = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1).getTime();
+  const { data: poops } = await sb.from('poops')
+    .select('user_id, date')
+    .in('user_id', memberIds)
+    .gte('date', oldest);
+
+  const months = [];
+  for (let i = 1; i <= monthsBack; i++) {
+    const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const end   = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+    const counts = {};
+    (poops || []).forEach(p => {
+      if (p.date >= start.getTime() && p.date < end.getTime()) {
+        counts[p.user_id] = (counts[p.user_id] || 0) + 1;
+      }
+    });
+    const ranking = members
+      .map(m => ({ username: m.username, avatar: m.avatar || '💩', count: counts[m.id] || 0 }))
+      .filter(r => r.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+    months.push({
+      label: start.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
+      ranking
+    });
+  }
+  return months;
+}
+
 async function getGroupFeed(groupId, limit = 20) {
   const sb = getSB(); if (!sb) return [];
   const members = await getGroupMembers(groupId);
@@ -529,6 +566,7 @@ window.SupabaseClient = {
   getGroupMembers,
   getGroupStats,
   getGroupFeed,
+  getGroupMonthlyRanking,
   getOrCreateWeeklyChallenge,
   updateWeeklyChallengeTitle,
   getChallengeProgress,
