@@ -918,6 +918,20 @@
           </select>
         </div>
 
+        <!-- Push serveur : notifs même app fermée -->
+        <div class="flex items-center justify-between mb-3 text-sm pt-3 border-t" style="border-color:rgba(0,0,0,0.07)">
+          <div>
+            <div class="font-medium">📲 Push (même app fermée)</div>
+            <div class="text-xs opacity-60">Réactions reçues + rappel 24h, envoyés par le serveur</div>
+            <div id="push-status" class="text-xs opacity-60 mt-1"></div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="push-toggle" class="sr-only peer" />
+            <div class="w-10 h-5 rounded-full bg-gray-200 peer-checked:bg-emerald-500 transition-colors"></div>
+            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+          </label>
+        </div>
+
         <!-- Rappel à heure fixe -->
         <div class="flex items-center justify-between mb-3 text-sm pt-3 border-t" style="border-color:rgba(0,0,0,0.07)">
           <div>
@@ -2803,6 +2817,35 @@
       updatePermStatus();
       if (result === 'granted' && toggle.checked) checkPoopNotification();
     });
+
+    // --- Push serveur (Web Push) ---
+    const pushToggle = $id('push-toggle');
+    const pushStatus = $id('push-status');
+    if (pushToggle) {
+      if (!window.PushModule?.supported()) {
+        pushToggle.disabled = true;
+        if (pushStatus) pushStatus.textContent = '⚠️ Non supporté par ce navigateur';
+      } else {
+        window.PushModule.isEnabled().then(on => { pushToggle.checked = on; });
+        pushToggle.addEventListener('change', async () => {
+          pushToggle.disabled = true;
+          try {
+            if (pushToggle.checked) {
+              await window.PushModule.enable();
+              if (pushStatus) pushStatus.textContent = '✅ Push activé sur cet appareil';
+            } else {
+              await window.PushModule.disable();
+              if (pushStatus) pushStatus.textContent = 'Push désactivé';
+            }
+          } catch (e) {
+            pushToggle.checked = !pushToggle.checked;
+            if (pushStatus) pushStatus.textContent = '❌ ' + e.message;
+          } finally {
+            pushToggle.disabled = false;
+          }
+        });
+      }
+    }
   }
 
   function checkPoopNotification() {
@@ -4075,6 +4118,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="js/supabase-client.js"></script>
     <script src="js/social.js"></script>
+    <script src="js/push.js"></script>
     <script src="js/sounds.js"></script>
     <script src="js/jokes.js"></script>
     <script src="js/achievements.js"></script>

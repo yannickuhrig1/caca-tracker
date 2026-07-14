@@ -13,7 +13,8 @@ const ASSETS = [
   './js/sounds.js',
   './js/animations.js',
   './js/supabase-client.js',
-  './js/social.js'
+  './js/social.js',
+  './js/push.js'
 ];
 
 // ---- Install : pré-cache tous les assets, activation immédiate ----
@@ -35,6 +36,29 @@ self.addEventListener('activate', e => {
 // ---- Message : page demande au SW de s'activer tout de suite ----
 self.addEventListener('message', e => {
   if (e.data === 'SKIP_WAITING') self.skipWaiting();
+});
+
+// ---- Push serveur (Web Push) : réactions + rappel 24h ----
+self.addEventListener('push', e => {
+  let data = {};
+  try { data = e.data ? e.data.json() : {}; } catch (_) {}
+  e.waitUntil(self.registration.showNotification(data.title || '💩 Caca-Tracker', {
+    body:  data.body || '',
+    icon:  './logo.png',
+    badge: './logo.png',
+    data:  { url: data.url || './' }
+  }));
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = e.notification.data?.url || './';
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const existing = list.find(c => c.url.includes('caca-tracker'));
+      return existing ? existing.focus() : clients.openWindow(url);
+    })
+  );
 });
 
 // ---- Fetch ----
