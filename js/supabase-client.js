@@ -536,6 +536,7 @@ window.SupabaseClient = {
   deleteGroup,
   removeMember,
   initAuthListener,
+  getClient: getSB,
   getAllProfiles,
   getAllUsersGroups,
   setUserAdmin,

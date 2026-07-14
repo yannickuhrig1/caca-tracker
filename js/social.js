@@ -64,6 +64,7 @@ const SocialModule = (() => {
     guest.classList.add('hidden');
     connected.classList.remove('hidden');
 
+    initRealtime();
     await renderGroupList();
   }
 
@@ -532,6 +533,37 @@ const SocialModule = (() => {
   // ============================================================
   //  APRÈS LOGIN
   // ============================================================
+  // ============================================================
+  //  REALTIME — feed & réactions en direct (v2.10.0)
+  // ============================================================
+  let _rtChannel = null;
+  let _rtRefreshTimer = null;
+
+  function scheduleRealtimeRefresh() {
+    // Débounce : plusieurs événements WAL rapprochés → un seul re-render
+    clearTimeout(_rtRefreshTimer);
+    _rtRefreshTimer = setTimeout(async () => {
+      if (!_activeGroupId || !window.SupabaseClient?.isLoggedIn()) return;
+      try {
+        await Promise.all([
+          renderPodium(_activeGroupId),
+          renderCompareChart(_activeGroupId),
+          renderFeed(_activeGroupId),
+          renderChallenge(_activeGroupId)
+        ]);
+      } catch (e) { console.warn('Realtime refresh échoué', e); }
+    }, 400);
+  }
+
+  function initRealtime() {
+    const sb = window.SupabaseClient.getClient?.();
+    if (!sb || _rtChannel) return;
+    _rtChannel = sb.channel('social-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'poops' }, scheduleRealtimeRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions' }, scheduleRealtimeRefresh)
+      .subscribe();
+  }
+
   async function afterLogin() {
     const profile = window.SupabaseClient.getCurrentProfile();
     if (!profile) return;
