@@ -1,4 +1,6 @@
-# 💩 Caca-Tracker 3000 Deluxe - v2.8.0
+# 💩 Caca-Tracker 3000 Deluxe - v2.9.0
+
+> ☁️ **Backend** : Supabase **auto-hébergé sur le NAS Unraid** depuis v2.9.0 (2026-07-14) — API `https://caca-api.yannick-uhrig.com` (Traefik + Cloudflare Tunnel → Postgres/GoTrue/PostgREST, stack `compose-stacks/caca-supabase`). L'ancien projet cloud `fnljhknjmmteawwomehb` est en pause.
 
 ## 🎯 Modifications prévues - Février 2026
 
@@ -228,6 +230,13 @@ function shakeAchievement(id)
 - Poids total : ~50KB
 
 ## 🆗 Changelog
+
+### v2.9.0 (Juillet 2026) - ☁️→🏠 MIGRATION NAS
+
+- 🔧 Backend Supabase migré du cloud vers le NAS Unraid (Postgres + GoTrue + PostgREST auto-hébergés)
+- 🔧 Nouvelle URL API `https://caca-api.yannick-uhrig.com` + nouvelle clé anon
+- 🔧 Mails d'auth via Resend SMTP
+- 🔧 Bump cache SW caca-v14 → caca-v15
 
 ### v2.8.0 (Février 2026) - 💀 SKELETONS + RECORDS + SANTÉ + PDF + DÉFI CUSTOM
 

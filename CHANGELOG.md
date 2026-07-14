@@ -5,6 +5,18 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.9.0] — 2026-07-14
+
+### Modifié
+- **Migration du backend Supabase cloud → NAS auto-hébergé** : la base (comptes, cacas, groupes, réactions, défis) tourne désormais sur le NAS Unraid (Postgres + GoTrue + PostgREST), exposée via `https://caca-api.yannick-uhrig.com` (Cloudflare Tunnel + Traefik)
+- Nouvelle `SUPABASE_URL` + `SUPABASE_ANON_KEY` dans `js/supabase-client.js`
+- Mails d'auth (confirmation, reset mot de passe) envoyés via Resend (`caca-tracker@yannick-uhrig.com`)
+- 🔧 Bump cache SW caca-v14 → caca-v15
+
+### Notes
+- Toutes les données et tous les comptes ont été migrés à l'identique (mots de passe inchangés)
+- Le projet Supabase cloud `fnljhknjmmteawwomehb` est remis en pause (plus utilisé)
+
 ## [2.5.1] — 2026-02-19
 
 ### Ajouté

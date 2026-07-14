@@ -4,8 +4,8 @@
 //     Supabase > Settings > API > Project URL / anon public key
 // ============================================================
 
-const SUPABASE_URL      = 'https://fnljhknjmmteawwomehb.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZubGpoa25qbW10ZWF3d29tZWhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MzQ2MDYsImV4cCI6MjA4NzAxMDYwNn0.aWlwsLdpH9u4BZjbpx5BNxWF5tiZ0c6sI0U1J7gjBfo';
+const SUPABASE_URL      = 'https://caca-api.yannick-uhrig.com';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MDQ1MzEzLCJleHAiOjIwOTk0MDUzMTN9.Dkl7iz_8Yz4_hbPrv2n3qrTyy0xTaBTP89s7nEZhKX8';
 
 // URL de production (pour les liens de reset de mot de passe)
 const SITE_URL = 'https://caca-tracker.vercel.app/index.html';
