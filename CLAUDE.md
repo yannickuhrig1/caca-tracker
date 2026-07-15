@@ -1,4 +1,4 @@
-# 💩 Caca-Tracker 3000 Deluxe - v2.9.0
+# 💩 Caca-Tracker 3000 Deluxe - v2.10.0
 
 > ☁️ **Backend** : Supabase **auto-hébergé sur le NAS Unraid** depuis v2.9.0 (2026-07-14) — API `https://caca-api.yannick-uhrig.com` (Traefik + Cloudflare Tunnel → Postgres/GoTrue/PostgREST, stack `compose-stacks/caca-supabase`). L'ancien projet cloud `fnljhknjmmteawwomehb` est en pause.
 
@@ -230,6 +230,17 @@ function shakeAchievement(id)
 - Poids total : ~50KB
 
 ## 🆗 Changelog
+
+### v2.10.0 (Juillet 2026) - ⚡ REALTIME + PUSH + SÉCURITÉ
+
+- ➕ Feed social temps réel (Supabase Realtime self-hosted, conteneur `caca-realtime`)
+- ➕ Notifications push Web Push : réactions + rappel 24h (worker `caca-push`, toggle Réglages)
+- ➕ Streak tolérant (1 joker / 7 jours) + podiums des mois passés
+- ➕ Templates mail FR : confirmation, invitation, changement d'email
+- 🔒 Proxy admin `/admin/v1` (conteneur `caca-admin`) — la clé service_role ne quitte plus le serveur ; `app_secrets` supprimée
+- 🔒 Backup quotidien caca-db (03h45 + offsite) + sondes Uptime Kuma
+- 🗑️ Tables `hdd_*` supprimées
+- 🔧 Bump cache SW caca-v15 → caca-v16
 
 ### v2.9.0 (Juillet 2026) - ☁️→🏠 MIGRATION NAS
 

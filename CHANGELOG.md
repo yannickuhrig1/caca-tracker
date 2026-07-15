@@ -5,6 +5,23 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.10.0] — 2026-07-15
+
+### Ajouté
+- **⚡ Temps réel** : le feed social, le podium et les réactions se mettent à jour instantanément chez tous les membres (Supabase Realtime self-hosted, websocket via `caca-api.yannick-uhrig.com/realtime/v1`)
+- **📲 Notifications push** (Web Push/VAPID, toggle dans Réglages) : réactions reçues + rappel « 24h sans caca » — envoyées par le worker `caca-push` du NAS, fonctionne app fermée
+- **🃏 Streak tolérant** : un jour raté est pardonné (1 joker max par fenêtre de 7 jours)
+- **🗓️ Podiums des mois passés** : top 3 des 3 derniers mois dans l'onglet Social
+- Templates français pour les mails de confirmation, invitation et changement d'email
+
+### Sécurité
+- **La clé service_role ne transite plus par le navigateur** : la page admin passe par un proxy (`/admin/v1`, conteneur `caca-admin`) qui vérifie le JWT + `is_admin` côté serveur ; table `app_secrets` supprimée
+- Backup quotidien de la base (03h45, rétention 14 j + copie offsite) et sondes Uptime Kuma (API + heartbeat backup)
+
+### Supprimé
+- Tables `hdd_*` (ancien tracker de prix de disques sans rapport avec l'app)
+- 🔧 Bump cache SW caca-v15 → caca-v16
+
 ## [2.9.0] — 2026-07-14
 
 ### Modifié

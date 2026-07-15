@@ -89,32 +89,8 @@
         </div>
       </div>
 
-      <!-- ── Service Role Key (pour changer les MDP directement) ── -->
-      <details class="card rounded-2xl overflow-hidden">
-        <summary class="px-5 py-4 cursor-pointer font-medium flex items-center gap-2 select-none hover:bg-white/5 transition">
-          <span>🔑 Clé service role</span>
-          <span class="text-xs text-slate-500 ml-1">— pour changer les mots de passe sans email</span>
-          <span class="ml-auto text-xs px-2 py-0.5 rounded-full" id="srk-status-badge"
-                style="background:#1e293b;color:#64748b">Non configurée</span>
-        </summary>
-        <div class="px-5 pb-5 pt-3 space-y-3 border-t border-slate-700">
-          <div class="text-xs text-amber-400 bg-amber-900/20 border border-amber-700/30 rounded-xl p-3 flex gap-2">
-            <span class="shrink-0">⚠️</span>
-            <span>La clé service role donne un accès <strong>total</strong> à ta base de données.
-              Ne la partage jamais. Elle est stockée <strong>uniquement en mémoire de session</strong>
-              et effacée à la fermeture de l'onglet.</span>
-          </div>
-          <p class="text-xs text-slate-400">
-            Supabase → Settings → API → <strong class="text-slate-300">service_role</strong> (Secret)
-          </p>
-          <div class="flex gap-2">
-            <input type="password" id="srk-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6…"
-                   class="flex-1 px-3 py-2 rounded-xl text-sm" />
-            <button id="srk-save-btn" class="btn-primary px-4 py-2 rounded-xl text-sm font-bold shrink-0">Enregistrer</button>
-            <button id="srk-clear-btn" class="btn-ghost px-3 py-2 rounded-xl text-sm shrink-0" title="Effacer">✕</button>
-          </div>
-        </div>
-      </details>
+      <!-- ── Les opérations sensibles passent par le proxy admin du NAS (v2.10.0) :
+              la clé service_role ne quitte plus jamais le serveur. ── -->
 
       <!-- ── Table utilisateurs ── -->
       <div class="card rounded-2xl overflow-hidden">
@@ -206,9 +182,6 @@
 
       <!-- Direct mode -->
       <div id="pwd-direct-section" class="hidden space-y-3">
-        <div id="srk-required-notice" class="hidden text-xs text-amber-400 bg-amber-900/20 border border-amber-700/30 rounded-xl p-3">
-          ⚠️ Configure d'abord la <strong>clé service role</strong> (section en haut de page) pour activer cette option.
-        </div>
         <input type="password" id="new-pwd-input" placeholder="Nouveau mot de passe (min. 6 caractères)"
                class="w-full px-4 py-3 rounded-xl text-sm" />
         <button id="set-pwd-btn" class="w-full btn-success py-3 rounded-xl font-bold text-sm">
@@ -232,43 +205,25 @@
   let _targetUser  = null;
   let _meId        = null;
 
-  // ── Service Role Key (localStorage pour persister entre les rechargements) ─
-  function getSRK()   { return localStorage.getItem('_srk') || sessionStorage.getItem('_srk'); }
-  function setSRK(k)  { localStorage.setItem('_srk', k); sessionStorage.setItem('_srk', k); refreshSRKUI(); }
-  function clearSRK() { localStorage.removeItem('_srk'); sessionStorage.removeItem('_srk'); refreshSRKUI(); }
+  // ── Proxy admin (NAS) : vérifie le JWT + is_admin côté serveur,
+  //    la clé service_role reste sur le serveur (v2.10.0). ──────
+  const ADMIN_API = SUPABASE_URL + '/admin/v1';
 
-  async function fetchSRKFromDB() {
-    try {
-      if (!window.SupabaseClient || typeof supabase === 'undefined') return;
-      // Utilise le même storageKey que supabase-client.js pour trouver la session
-      const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: { storageKey: 'caca-tracker-auth', persistSession: false }
-      });
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) return;
-      const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        global: { headers: { Authorization: `Bearer ${session.access_token}` } }
-      });
-      const { data } = await client.from('app_secrets').select('value').eq('key', 'service_role_key').single();
-      if (data?.value) { sessionStorage.setItem('_srk', data.value); refreshSRKUI(); }
-    } catch(e) { /* clé non disponible, l'admin peut la saisir manuellement */ }
-  }
-
-  function refreshSRKUI() {
-    const el  = document.getElementById('srk-status-badge');
-    const has = !!getSRK();
-    if (!el) return;
-    el.textContent  = has ? '✅ Configurée' : 'Non configurée';
-    el.style.background = has ? '#16a34a33' : '#1e293b';
-    el.style.color      = has ? '#4ade80'   : '#64748b';
-  }
-
-  function getAdminSB() {
-    const k = getSRK();
-    if (!k || typeof supabase === 'undefined') return null;
-    return supabase.createClient(SUPABASE_URL, k, {
-      auth: { autoRefreshToken: false, persistSession: false }
+  async function adminApi(path, opts = {}) {
+    const sb = window.SupabaseClient.getClient();
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) throw new Error('Session expirée — reconnecte-toi');
+    const r = await fetch(ADMIN_API + path, {
+      ...opts,
+      headers: {
+        'Authorization': 'Bearer ' + session.access_token,
+        'Content-Type': 'application/json',
+        ...(opts.headers || {})
+      }
     });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+    return j;
   }
 
   // ── Date helpers ─────────────────────────────────────────────
@@ -394,8 +349,14 @@
         return (a.username || '').localeCompare(b.username || '');
       });
       _profilesById = Object.fromEntries(_profiles.map(p => [p.id, p]));
-      // Charger les groupes (service role recommandé pour bypasser RLS)
-      _userGroups = await window.SupabaseClient.getAllUsersGroups(getAdminSB());
+      // Charger les groupes via le proxy admin (bypass RLS côté serveur)
+      _userGroups = {};
+      try {
+        const groups = await adminApi('/groups');
+        groups.forEach(g => (g.members || []).forEach(mb => {
+          (_userGroups[mb.user_id] = _userGroups[mb.user_id] || []).push(g.name);
+        }));
+      } catch (e) { console.warn('Groupes indisponibles :', e.message); }
       updateStats();
       renderTable();
     } catch (e) {
@@ -423,16 +384,9 @@
     if (!p) return;
     if (!confirm(`⚠️ Supprimer définitivement ${p.username} (${p.email || userId}) ?\n\nCette action est IRRÉVERSIBLE : compte supprimé, cacas supprimés, données perdues.`)) return;
 
-    const adminSB = getAdminSB();
-    if (!adminSB) {
-      alert('❌ La clé service role est requise pour supprimer un utilisateur.\nConfigure-la dans le panneau "Clé service role" ci-dessus.');
-      return;
-    }
-
     try {
-      // Delete auth user (cascades to profiles + poops via FK or RLS)
-      const { error } = await adminSB.auth.admin.deleteUser(userId);
-      if (error) throw new Error(error.message);
+      // Suppression via le proxy admin (cascade profiles + poops via FK)
+      await adminApi(`/users/${userId}`, { method: 'DELETE' });
       await loadUsers();
       alert(`✅ ${p.username} supprimé.`);
     } catch(e) {
@@ -472,15 +426,6 @@
         active ? 'btn-primary' : 'btn-ghost'}`;
     });
 
-    // Dans le mode direct, vérifier si la clé service est configurée
-    if (mode === 'direct') {
-      const notice = document.getElementById('srk-required-notice');
-      const setBtn = document.getElementById('set-pwd-btn');
-      const hasSRK = !!getSRK();
-      notice.classList.toggle('hidden', hasSRK);
-      setBtn.disabled = !hasSRK;
-      setBtn.style.opacity = hasSRK ? '1' : '0.5';
-    }
   }
 
   function setPwdFeedback(msg, ok = true) {
@@ -526,20 +471,10 @@
         <div class="text-slate-400 text-sm text-center py-4">⏳ Chargement des stats…</div>
       </div>`;
 
-    const adminSB = getAdminSB();
     const statsEl = document.getElementById('user-poop-stats');
 
-    if (!adminSB) {
-      statsEl.innerHTML = '<div class="text-amber-400 text-xs text-center py-3">⚠️ Configure la clé service role pour voir les cacas de cet utilisateur.</div>';
-      return;
-    }
-
     try {
-      const { data: poops, error } = await adminSB.from('poops')
-        .select('id, date, texture, color, comment, is_retro')
-        .eq('user_id', userId)
-        .order('date', { ascending: false });
-      if (error) throw new Error(error.message);
+      const poops = await adminApi(`/users/${userId}/poops`);
 
       if (!poops || !poops.length) {
         statsEl.innerHTML = '<div class="text-slate-500 text-sm text-center py-4">Aucun caca enregistré.</div>';
@@ -589,8 +524,6 @@
 
   // ── Init ─────────────────────────────────────────────────────
   async function init() {
-    refreshSRKUI();
-
     const profile = await window.SupabaseClient.getSession();
     document.getElementById('loading-state').classList.add('hidden');
 
@@ -609,10 +542,6 @@
     document.getElementById('admin-name').textContent =
       `${profile.avatar || '💩'} ${profile.username}`;
 
-    // Charger la service role key depuis app_secrets (RLS : admin uniquement)
-    if (!getSRK()) await fetchSRKFromDB();
-    refreshSRKUI();
-
     document.getElementById('admin-content').classList.remove('hidden');
     await loadUsers();
   }
@@ -621,32 +550,6 @@
   document.addEventListener('DOMContentLoaded', () => {
 
     init();
-
-    // SRK
-    document.getElementById('srk-save-btn')?.addEventListener('click', async () => {
-      const v = document.getElementById('srk-input').value.trim();
-      if (!v) { alert('Clé vide'); return; }
-      setSRK(v);
-      document.getElementById('srk-input').value = '';
-      // Persister aussi dans app_secrets Supabase pour les sessions futures
-      try {
-        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-          auth: { storageKey: 'caca-tracker-auth', persistSession: false }
-        });
-        const { data: { session } } = await sb.auth.getSession();
-        if (session) {
-          const cl = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            global: { headers: { Authorization: `Bearer ${session.access_token}` } }
-          });
-          await cl.from('app_secrets').upsert({ key: 'service_role_key', value: v }, { onConflict: 'key' });
-        }
-      } catch(_) {}
-      alert('Clé service role enregistrée.');
-    });
-    document.getElementById('srk-clear-btn')?.addEventListener('click', () => {
-      clearSRK();
-      document.getElementById('srk-input').value = '';
-    });
 
     // Table
     document.getElementById('search-input')?.addEventListener('input', renderTable);
@@ -693,20 +596,18 @@
       }
     });
 
-    // Set password directly (requires service role key)
+    // Set password directly (via le proxy admin)
     document.getElementById('set-pwd-btn')?.addEventListener('click', async () => {
       const pwd    = document.getElementById('new-pwd-input').value;
       if (pwd.length < 6) { alert('Minimum 6 caractères'); return; }
-      const adminSB = getAdminSB();
-      if (!adminSB) { alert('Configure la clé service role d\'abord.'); return; }
 
       const btn = document.getElementById('set-pwd-btn');
       btn.textContent = '⏳ Modification…';
       btn.disabled    = true;
       try {
-        const { error } = await adminSB.auth.admin.updateUserById(
-          _targetUser.id, { password: pwd });
-        if (error) throw new Error(error.message);
+        await adminApi(`/users/${_targetUser.id}/password`, {
+          method: 'POST', body: JSON.stringify({ password: pwd })
+        });
         setPwdFeedback(`✅ Mot de passe modifié pour ${_targetUser.username}`);
         document.getElementById('new-pwd-input').value = '';
       } catch (e) {
