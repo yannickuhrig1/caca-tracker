@@ -1,4 +1,4 @@
-# 💩 Caca-Tracker 3000 Deluxe - v2.10.0
+# 💩 Caca-Tracker 3000 Deluxe - v2.11.0
 
 > ☁️ **Backend** : Supabase **auto-hébergé sur le NAS Unraid** depuis v2.9.0 (2026-07-14) — API `https://caca-api.yannick-uhrig.com` (Traefik + Cloudflare Tunnel → Postgres/GoTrue/PostgREST, stack `compose-stacks/caca-supabase`). L'ancien projet cloud `fnljhknjmmteawwomehb` est en pause.
 
@@ -230,6 +230,21 @@ function shakeAchievement(id)
 - Poids total : ~50KB
 
 ## 🆗 Changelog
+
+### v2.11.0 (Juillet 2026) - 💬 SOCIAL BOOST
+
+- ➕ **Commentaires / chambrage** sous chaque caca du feed (fil déroulant + suppression, RLS `comments`)
+- ➕ **Nudge / relance** : bouton « 👉 Relancer » sur les membres inactifs du jour → notif push (table `nudges` + worker)
+- ➕ **Badges dans le feed** : déblocage d'achievement partagé au groupe (table `feed_events`, push aux copines)
+- ➕ **Défis hebdo thématiques tournants** : count / lève-tôt / hibou / régularité / arc-en-ciel / série (rotation auto par n° de semaine, scoring par type)
+- ➕ **Hall of Fame** : palmarès des gagnantes hebdo (table `challenge_wins`, calculé par le worker + backfill 8 semaines) + 🏆×N à côté des noms
+- ➕ **Célébration gagnante** : overlay couronne + confettis quand tu remportes le défi de la semaine
+- ➕ **Couronne 👑 reine du mois** dans le header si #1 du podium mensuel (≥2 membres actifs)
+- ➕ **Récap hebdo « Wrapped »** : carte bilan de la semaine passée (total, championne, jour le + actif, réaction star), masquable
+- ➕ **Réactions enrichies** : 8 emojis (ajout 😱 🤢 ⚡) + **mise à jour optimiste** (plus de re-render complet du feed)
+- 🎨 **Toasts + modales** maison (`js/ui.js`) en remplacement de tous les `prompt/alert/confirm`
+- 🔧 Worker push migré `Client` → `Pool` (jobs concurrents sans collision), nouveaux jobs nudges/badges/défis
+- 🔧 Bump cache SW caca-v16 → caca-v17
 
 ### v2.10.0 (Juillet 2026) - ⚡ REALTIME + PUSH + SÉCURITÉ
 

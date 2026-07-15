@@ -295,6 +295,7 @@ async function getGroupStats(groupId) {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
   const week7Start = now.getTime() - 7 * 24 * 3600 * 1000;
+  const today0 = new Date(); today0.setHours(0, 0, 0, 0);
 
   const { data: poops } = await sb.from('poops')
     .select('user_id, date')
@@ -305,6 +306,8 @@ async function getGroupStats(groupId) {
     const userPoops = (poops || []).filter(p => p.user_id === m.id);
     const month = userPoops.filter(p => p.date >= monthStart).length;
     const week7 = userPoops.filter(p => p.date >= week7Start).length;
+    const todayCount = userPoops.filter(p => p.date >= today0.getTime()).length;
+    const lastPoop = userPoops.length ? Math.max(...userPoops.map(p => p.date)) : 0;
     // Calcul streak simplifié
     let streak = 0;
     const days = new Set(userPoops.map(p => new Date(p.date).toDateString()));
@@ -318,11 +321,14 @@ async function getGroupStats(groupId) {
       }
     }
     result[m.id] = {
+      id:       m.id,
       username: m.username,
       avatar:   m.avatar || '💩',
       total:    userPoops.length,
       month,
       week7,
+      today:    todayCount,
+      lastPoop,
       streak
     };
   });
@@ -366,7 +372,7 @@ async function getGroupMonthlyRanking(groupId, monthsBack = 3) {
   return months;
 }
 
-async function getGroupFeed(groupId, limit = 20) {
+async function getGroupFeed(groupId, limit = 30) {
   const sb = getSB(); if (!sb) return [];
   const members = await getGroupMembers(groupId);
   if (!members.length) return [];
@@ -381,33 +387,116 @@ async function getGroupFeed(groupId, limit = 20) {
     .limit(limit);
 
   const poops = data || [];
-  if (!poops.length) return [];
+  const poopIds = poops.map(p => p.id);
 
   // Charger les réactions pour ces poops
-  const poopIds = poops.map(p => p.id);
-  const { data: reactions } = await sb.from('reactions')
-    .select('poop_id, user_id, emoji')
-    .in('poop_id', poopIds);
-
-  // Grouper réactions par poop_id : { emoji: count }
   const reactionMap = {};
-  (reactions || []).forEach(r => {
-    if (!reactionMap[r.poop_id]) reactionMap[r.poop_id] = {};
-    reactionMap[r.poop_id][r.emoji] = (reactionMap[r.poop_id][r.emoji] || 0) + 1;
-  });
-  // Réaction de l'user courant par poop
   const myReactions = {};
-  (reactions || []).filter(r => r.user_id === _currentUser?.id).forEach(r => {
-    myReactions[r.poop_id] = r.emoji;
-  });
+  const commentCounts = {};
+  if (poopIds.length) {
+    const { data: reactions } = await sb.from('reactions')
+      .select('poop_id, user_id, emoji')
+      .in('poop_id', poopIds);
+    (reactions || []).forEach(r => {
+      if (!reactionMap[r.poop_id]) reactionMap[r.poop_id] = {};
+      reactionMap[r.poop_id][r.emoji] = (reactionMap[r.poop_id][r.emoji] || 0) + 1;
+      if (r.user_id === _currentUser?.id) myReactions[r.poop_id] = r.emoji;
+    });
+    // Compteurs de commentaires
+    const { data: cRows } = await sb.from('comments')
+      .select('poop_id').in('poop_id', poopIds);
+    (cRows || []).forEach(c => { commentCounts[c.poop_id] = (commentCounts[c.poop_id] || 0) + 1; });
+  }
 
-  return poops.map(p => ({
+  const poopItems = poops.map(p => ({
+    kind:        'poop',
     ...p,
-    username:   profileMap[p.user_id]?.username || '???',
-    avatar:     profileMap[p.user_id]?.avatar   || '💩',
-    reactions:  reactionMap[p.id]  || {},
-    myReaction: myReactions[p.id]  || null
+    username:     profileMap[p.user_id]?.username || '???',
+    avatar:       profileMap[p.user_id]?.avatar   || '💩',
+    reactions:    reactionMap[p.id]  || {},
+    myReaction:   myReactions[p.id]  || null,
+    commentCount: commentCounts[p.id] || 0
   }));
+
+  // Événements « badge débloqué » (feature #3)
+  const { data: evData } = await sb.from('feed_events')
+    .select('id, user_id, type, ref, title, emoji, created_at')
+    .in('user_id', memberIds)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  const events = (evData || []).map(e => ({
+    kind:     'badge',
+    id:       e.id,
+    user_id:  e.user_id,
+    username: profileMap[e.user_id]?.username || '???',
+    avatar:   profileMap[e.user_id]?.avatar   || '💩',
+    date:     new Date(e.created_at).getTime(),
+    title:    e.title,
+    emoji:    e.emoji
+  }));
+
+  // Timeline fusionnée, triée du plus récent au plus ancien
+  return [...poopItems, ...events].sort((a, b) => b.date - a.date);
+}
+
+// ---- Commentaires (feature #1) ----
+async function getPoopComments(poopId) {
+  const sb = getSB(); if (!sb) return [];
+  const { data } = await sb.from('comments')
+    .select('id, user_id, body, created_at')
+    .eq('poop_id', poopId)
+    .order('created_at', { ascending: true });
+  const rows = data || [];
+  const ids = [...new Set(rows.map(r => r.user_id))];
+  let pmap = {};
+  if (ids.length) {
+    const { data: profs } = await sb.from('profiles').select('id, username, avatar').in('id', ids);
+    (profs || []).forEach(p => { pmap[p.id] = p; });
+  }
+  return rows.map(r => ({
+    id:         r.id,
+    user_id:    r.user_id,
+    body:       r.body,
+    created_at: new Date(r.created_at).getTime(),
+    username:   pmap[r.user_id]?.username || '???',
+    avatar:     pmap[r.user_id]?.avatar   || '💩'
+  }));
+}
+
+async function addComment(poopId, body) {
+  const sb = getSB(); if (!sb || !_currentUser) throw new Error('Non connecté');
+  const clean = String(body || '').trim().slice(0, 280);
+  if (!clean) throw new Error('Commentaire vide');
+  const { data, error } = await sb.from('comments')
+    .insert({ poop_id: poopId, user_id: _currentUser.id, body: clean })
+    .select().single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+async function deleteComment(commentId) {
+  const sb = getSB(); if (!sb || !_currentUser) throw new Error('Non connecté');
+  const { error } = await sb.from('comments').delete().eq('id', commentId);
+  if (error) throw new Error(error.message);
+}
+
+// ---- Nudge / poke (feature #2) ----
+async function sendNudge(toUserId, groupId, emoji = '💩') {
+  const sb = getSB(); if (!sb || !_currentUser) throw new Error('Non connecté');
+  const { error } = await sb.from('nudges')
+    .insert({ from_user: _currentUser.id, to_user: toUserId, group_id: groupId, emoji });
+  if (error) throw new Error(error.message);
+}
+
+// ---- Badge dans le feed (feature #3) ----
+async function publishBadgeEvent(badge) {
+  const sb = getSB(); if (!sb || !_currentUser) return;
+  try {
+    await sb.from('feed_events').upsert(
+      { user_id: _currentUser.id, type: 'badge', ref: badge.id, title: badge.name, emoji: badge.icon },
+      { onConflict: 'user_id,type,ref', ignoreDuplicates: true }
+    );
+  } catch (e) { console.warn('publishBadgeEvent', e.message); }
 }
 
 async function toggleReaction(poopId, emoji) {
@@ -427,6 +516,42 @@ async function toggleReaction(poopId, emoji) {
   }
 }
 
+// Défis thématiques tournants (feature #4)
+const CHALLENGE_META = {
+  count:   { emoji: '💩', title: 'Qui fera le plus de cacas cette semaine ?',          unit: '💩', desc: 'Le plus de cacas' },
+  early:   { emoji: '🌅', title: 'Team lève-tôt : le plus de cacas avant 8h !',        unit: '🌅', desc: 'Cacas avant 8h' },
+  night:   { emoji: '🦉', title: 'Hibou de nuit : le plus de cacas entre minuit et 6h !', unit: '🦉', desc: 'Cacas de nuit (0-6h)' },
+  regular: { emoji: '📅', title: 'La plus régulière : le plus de jours différents !',  unit: 'j',  desc: 'Jours actifs' },
+  rainbow: { emoji: '🌈', title: 'Arc-en-ciel : le plus de textures différentes !',    unit: '🎨', desc: 'Textures variées' },
+  streak:  { emoji: '🔥', title: "La plus longue série de jours d'affilée !",           unit: '🔥', desc: 'Série de jours' }
+};
+const CHALLENGE_ROTATION = ['count', 'early', 'night', 'regular', 'rainbow', 'streak'];
+function weeklyChallengeType(monday) {
+  const idx = Math.floor(monday.getTime() / (7 * 86400000));
+  const n = CHALLENGE_ROTATION.length;
+  return CHALLENGE_ROTATION[((idx % n) + n) % n];
+}
+function getChallengeMeta(type) { return CHALLENGE_META[type] || CHALLENGE_META.count; }
+
+function scoreChallenge(type, poops) {
+  switch (type) {
+    case 'early':   return poops.filter(p => new Date(p.date).getHours() < 8).length;
+    case 'night':   return poops.filter(p => { const h = new Date(p.date).getHours(); return h >= 0 && h < 6; }).length;
+    case 'regular': return new Set(poops.map(p => new Date(p.date).toDateString())).size;
+    case 'rainbow': return new Set(poops.map(p => p.texture || 'normal')).size;
+    case 'streak': {
+      const days = [...new Set(poops.map(p => { const d = new Date(p.date); d.setHours(0,0,0,0); return d.getTime(); }))].sort((a,b)=>a-b);
+      let best = 0, cur = 0, prev = null;
+      for (const d of days) {
+        if (prev !== null && d - prev === 86400000) cur++; else cur = 1;
+        best = Math.max(best, cur); prev = d;
+      }
+      return best;
+    }
+    default:        return poops.length; // 'count'
+  }
+}
+
 async function getOrCreateWeeklyChallenge(groupId) {
   const sb = getSB(); if (!sb) return null;
   const now = new Date();
@@ -443,8 +568,9 @@ async function getOrCreateWeeklyChallenge(groupId) {
     .select('*').eq('group_id', groupId).eq('start_date', fmt(monday)).single();
 
   if (existing) return existing;
+  const type = weeklyChallengeType(monday);
   const { data } = await sb.from('challenges')
-    .insert({ group_id: groupId, start_date: fmt(monday), end_date: fmt(sunday) })
+    .insert({ group_id: groupId, start_date: fmt(monday), end_date: fmt(sunday), type, title: CHALLENGE_META[type].title })
     .select().single();
   return data;
 }
@@ -459,18 +585,19 @@ async function getChallengeProgress(groupId, challenge) {
   const end   = new Date(challenge.end_date).getTime() + 86399999;
 
   const { data } = await sb.from('poops')
-    .select('user_id, date')
+    .select('user_id, date, texture')
     .in('user_id', memberIds)
     .gte('date', start)
     .lte('date', end);
 
-  const counts = {};
-  memberIds.forEach(id => { counts[id] = 0; });
-  (data || []).forEach(p => { counts[p.user_id] = (counts[p.user_id] || 0) + 1; });
+  const type = challenge.type || 'count';
+  const byUser = {};
+  memberIds.forEach(id => { byUser[id] = []; });
+  (data || []).forEach(p => { (byUser[p.user_id] = byUser[p.user_id] || []).push(p); });
 
   return Object.fromEntries(
-    Object.entries(counts).map(([id, count]) => [id, {
-      count,
+    memberIds.map(id => [id, {
+      count:    scoreChallenge(type, byUser[id] || []),
       username: profileMap[id]?.username || '???',
       avatar:   profileMap[id]?.avatar   || '💩'
     }])
@@ -498,6 +625,118 @@ async function updateWeeklyChallengeTitle(groupId, title) {
     end_date:   fmt(sunday)
   }, { onConflict: 'group_id,start_date' });
   if (error) throw new Error(error.message);
+}
+
+// ============================================================
+//  HALL OF FAME / PALMARÈS (feature #5)
+// ============================================================
+async function getHallOfFame(groupId, limit = 12) {
+  const sb = getSB(); if (!sb) return [];
+  const { data } = await sb.from('challenge_wins')
+    .select('week_start, challenge_type, title, score, user_id')
+    .eq('group_id', groupId)
+    .order('week_start', { ascending: false })
+    .limit(limit);
+  const rows = data || [];
+  const ids = [...new Set(rows.map(r => r.user_id))];
+  let pmap = {};
+  if (ids.length) {
+    const { data: profs } = await sb.from('profiles').select('id, username, avatar').in('id', ids);
+    (profs || []).forEach(p => { pmap[p.id] = p; });
+  }
+  return rows.map(r => ({
+    ...r,
+    username: pmap[r.user_id]?.username || '???',
+    avatar:   pmap[r.user_id]?.avatar   || '💩'
+  }));
+}
+
+// { userId: nbVictoires } — pour afficher 🏆×N à côté des noms
+async function getGroupTrophies(groupId) {
+  const sb = getSB(); if (!sb) return {};
+  const { data } = await sb.from('challenge_wins').select('user_id').eq('group_id', groupId);
+  const counts = {};
+  (data || []).forEach(r => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
+  return counts;
+}
+
+// ============================================================
+//  COURONNE REINE DU MOIS (feature #6)
+//  Retourne { group, count } si l'utilisateur courant est #1 ce mois-ci
+//  dans un de ses groupes (≥2 membres actifs), sinon null.
+// ============================================================
+async function myMonthlyCrown() {
+  if (!_currentProfile) return null;
+  const groups = await getMyGroups();
+  for (const g of groups) {
+    const stats = await getGroupStats(g.id);
+    const active = Object.values(stats).filter(s => s.month > 0).sort((a, b) => b.month - a.month);
+    if (active.length >= 2 && active[0].id === _currentProfile.id) {
+      return { group: g.name, count: active[0].month };
+    }
+  }
+  return null;
+}
+
+// ============================================================
+//  RÉCAP HEBDO « WRAPPED » (feature #7)
+//  Bilan de la dernière semaine complète (lundi→dimanche précédents).
+// ============================================================
+async function getWeeklyRecap(groupId) {
+  const sb = getSB(); if (!sb) return null;
+  const members = await getGroupMembers(groupId);
+  if (!members.length) return null;
+  const memberIds = members.map(m => m.id);
+  const pmap = Object.fromEntries(members.map(m => [m.id, m]));
+
+  const now = new Date(); const day = now.getDay();
+  const thisMon = new Date(now); thisMon.setDate(now.getDate() - (day === 0 ? 6 : day - 1)); thisMon.setHours(0,0,0,0);
+  const lastMon = new Date(thisMon); lastMon.setDate(thisMon.getDate() - 7);
+  const start = lastMon.getTime(); const end = thisMon.getTime() - 1;
+  const label = `${lastMon.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} – ${new Date(end).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}`;
+
+  const { data: poops } = await sb.from('poops')
+    .select('id, user_id, date, texture')
+    .in('user_id', memberIds).gte('date', start).lte('date', end);
+  const list = poops || [];
+  if (!list.length) return { label, total: 0 };
+
+  const counts = {};
+  list.forEach(p => { counts[p.user_id] = (counts[p.user_id] || 0) + 1; });
+  const champEntry = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  const champ = { ...(pmap[champEntry[0]] || {}), count: champEntry[1] };
+
+  // Jour le plus actif
+  const byDay = {};
+  list.forEach(p => { const k = new Date(p.date).toLocaleDateString('fr-FR', { weekday: 'long' }); byDay[k] = (byDay[k] || 0) + 1; });
+  const topDayEntry = Object.entries(byDay).sort((a, b) => b[1] - a[1])[0];
+
+  // Réactions de la semaine
+  const ids = list.map(p => p.id);
+  let topEmoji = null, funniest = null;
+  if (ids.length) {
+    const { data: reacts } = await sb.from('reactions').select('poop_id, emoji').in('poop_id', ids);
+    const emojiCounts = {}; const poopReacts = {};
+    (reacts || []).forEach(r => {
+      emojiCounts[r.emoji] = (emojiCounts[r.emoji] || 0) + 1;
+      poopReacts[r.poop_id] = (poopReacts[r.poop_id] || 0) + 1;
+    });
+    const te = Object.entries(emojiCounts).sort((a, b) => b[1] - a[1])[0];
+    if (te) topEmoji = { emoji: te[0], count: te[1] };
+    const fp = Object.entries(poopReacts).sort((a, b) => b[1] - a[1])[0];
+    if (fp) { const poop = list.find(p => p.id === fp[0]); if (poop) funniest = { ...(pmap[poop.user_id] || {}), reactions: fp[1] }; }
+  }
+
+  return {
+    label,
+    total: list.length,
+    kg: (list.length * 0.15).toFixed(1),
+    activeMembers: Object.keys(counts).length,
+    champ,
+    topDay: topDayEntry ? { day: topDayEntry[0], count: topDayEntry[1] } : null,
+    topEmoji,
+    funniest
+  };
 }
 
 // ============================================================
@@ -570,7 +809,17 @@ window.SupabaseClient = {
   getOrCreateWeeklyChallenge,
   updateWeeklyChallengeTitle,
   getChallengeProgress,
+  getChallengeMeta,
   toggleReaction,
+  getPoopComments,
+  addComment,
+  deleteComment,
+  sendNudge,
+  publishBadgeEvent,
+  getHallOfFame,
+  getGroupTrophies,
+  myMonthlyCrown,
+  getWeeklyRecap,
   deleteGroup,
   removeMember,
   initAuthListener,

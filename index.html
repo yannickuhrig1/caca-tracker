@@ -470,7 +470,7 @@
               style="font-size:1.05rem;text-shadow:0 2px 12px rgba(0,0,0,0.3);letter-spacing:0.03em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
             Les cacas de Clémence 💖
           </h1>
-          <span class="text-[8px] tracking-[0.18em] uppercase font-medium opacity-55">Caca‑Tracker · v2.10.0</span>
+          <span class="text-[8px] tracking-[0.18em] uppercase font-medium opacity-55">Caca‑Tracker · v2.11.0</span>
         </div>
       </div>
       <!-- Ligne 2 / desktop droite : boutons -->
@@ -827,6 +827,9 @@
             </div>
           </div>
 
+          <!-- Récap hebdo « Wrapped » (feature #7) -->
+          <div id="weekly-recap"></div>
+
           <!-- Podium -->
           <div class="card p-5 rounded-[2rem] shadow">
             <h4 class="font-bold mb-4 text-center">🏆 Podium du mois</h4>
@@ -840,6 +843,12 @@
             <div id="monthly-history" class="space-y-3"></div>
           </div>
 
+          <!-- Hall of Fame — palmarès des défis (feature #5) -->
+          <div id="hall-of-fame-card" class="card p-5 rounded-[2rem] shadow hidden">
+            <h4 class="font-bold mb-4">🏅 Palmarès des défis</h4>
+            <div id="hall-of-fame" class="space-y-1"></div>
+          </div>
+
           <!-- Comparatif 7 jours -->
           <div class="card p-5 rounded-[2rem] shadow">
             <h4 class="font-bold mb-4">📊 Comparatif 7 jours</h4>
@@ -849,7 +858,7 @@
           <!-- Défi de la semaine -->
           <div id="challenge-card" class="card p-5 rounded-[2rem] shadow">
             <div class="flex items-center justify-between mb-3">
-              <h4 class="font-bold">🎯 Défi de la semaine</h4>
+              <h4 class="font-bold">🎯 Défi <span id="challenge-chip"></span></h4>
               <div class="flex items-center gap-2">
                 <button id="edit-challenge-btn" class="hidden text-xs font-bold px-2 py-1 rounded-lg"
                   style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)"
@@ -1094,7 +1103,7 @@
       <!-- ℹ️ À propos -->
       <div class="card p-4 rounded-[1.5rem] text-xs text-center opacity-50 space-y-1">
         <div>💩 Les cacas de Clémence</div>
-        <div>Version 2.10.0 — Juillet 2026</div>
+        <div>Version 2.11.0 — Juillet 2026</div>
         <div>Fait avec ❤️ par Papa</div>
       </div>
     </section>
@@ -3118,6 +3127,7 @@
     } else {
       if (avatar) avatar.textContent = '👤';
       if (name) name.textContent = 'Connexion';
+      document.getElementById('queen-crown')?.remove();
     }
     // Lien admin visible uniquement pour les admins
     const adminLink = $id('admin-link');
@@ -3316,7 +3326,13 @@
       }
     }
     if (typeof achievementManager !== 'undefined') {
-      achievementManager.checkAchievements(state.logs).forEach(a => achievementManager.showAchievementPopup(a));
+      achievementManager.checkAchievements(state.logs).forEach(a => {
+        achievementManager.showAchievementPopup(a);
+        // Publier le déblocage dans le feed du groupe (feature #3)
+        if (window.SupabaseClient?.isLoggedIn()) {
+          window.SupabaseClient.publishBadgeEvent(a).catch(() => {});
+        }
+      });
     }
 
     // Sync cloud si connecté
@@ -4132,6 +4148,7 @@
     <!-- Nouveaux modules JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="js/supabase-client.js"></script>
+    <script src="js/ui.js"></script>
     <script src="js/social.js"></script>
     <script src="js/push.js"></script>
     <script src="js/sounds.js"></script>
