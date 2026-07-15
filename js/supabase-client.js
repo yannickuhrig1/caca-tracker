@@ -492,8 +492,11 @@ async function sendNudge(toUserId, groupId, emoji = '💩') {
 async function publishBadgeEvent(badge) {
   const sb = getSB(); if (!sb || !_currentUser) return;
   try {
+    // Les badges rares utilisent le type 'badge_rare' : le worker ne pousse
+    // de notif push au groupe QUE pour ceux-là (les autres restent au feed).
+    const type = badge.rare ? 'badge_rare' : 'badge';
     await sb.from('feed_events').upsert(
-      { user_id: _currentUser.id, type: 'badge', ref: badge.id, title: badge.name, emoji: badge.icon },
+      { user_id: _currentUser.id, type, ref: badge.id, title: badge.name, emoji: badge.icon },
       { onConflict: 'user_id,type,ref', ignoreDuplicates: true }
     );
   } catch (e) { console.warn('publishBadgeEvent', e.message); }

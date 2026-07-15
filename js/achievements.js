@@ -20,6 +20,7 @@ const ACHIEVEMENTS = {
         name: '🚀 Centenaire',
         description: '100 cacas ! Tu es une machine !',
         icon: '🚀',
+        rare: true,
         check: (poops) => poops.length >= 100
     },
     perfect_week: {
@@ -27,6 +28,7 @@ const ACHIEVEMENTS = {
         name: '⭐ Régularité Parfaite',
         description: '7 jours d\'affilée à la même heure (±30min)',
         icon: '⭐',
+        rare: true,
         check: (poops) => {
             if (poops.length < 7) return false;
             // poops est trié du plus récent au plus ancien, slice(0,7) = 7 derniers
@@ -61,6 +63,7 @@ const ACHIEVEMENTS = {
         name: '🌈 Artiste',
         description: 'Toutes les couleurs utilisées',
         icon: '🌈',
+        rare: true,
         check: (poops) => {
             const colors = ['marron', 'vert', 'jaune', 'noir', 'rouge'];
             const usedColors = [...new Set(poops.map(p => p.color))];
@@ -72,6 +75,7 @@ const ACHIEVEMENTS = {
         name: '🔥 Semaine Enflamée',
         description: '7 jours d\'affilée',
         icon: '🔥',
+        rare: true,
         check: (poops) => getCurrentStreak(poops) >= 7
     },
     streak_30: {
@@ -79,6 +83,7 @@ const ACHIEVEMENTS = {
         name: '🌟 Mois Magique',
         description: '30 jours d\'affilée !',
         icon: '🌟',
+        rare: true,
         check: (poops) => getCurrentStreak(poops) >= 30
     },
     record_month: {
@@ -86,6 +91,7 @@ const ACHIEVEMENTS = {
         name: '🏆 Record du Mois',
         description: 'Plus de cacas ce mois-ci que le mois dernier',
         icon: '🏆',
+        rare: true,
         check: (poops) => {
             const now = new Date();
             const thisMonth = poops.filter(p => {
