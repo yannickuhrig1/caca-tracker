@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Rebuild Tailwind CSS
+        run: npm run build:css
+
+      - name: css/tailwind.css doit être à jour
+        run: |
+          if ! git diff --quiet -- css/tailwind.css; then
+            echo "::error::css/tailwind.css est périmé. Lance 'npm run build:css' et committe le résultat."
+            git --no-pager diff -- css/tailwind.css
+            exit 1
+          fi
+
+      - name: Vérif syntaxe JS
+        run: node --check sw.js && for f in js/*.js; do node --check "$f"; done
