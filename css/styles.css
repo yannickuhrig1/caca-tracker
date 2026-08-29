@@ -766,3 +766,19 @@
 }
 .winner-overlay.show .winner-card { transform: scale(1); }
 .winner-crown { font-size: 54px; animation: queen-bounce 1.6s ease-in-out infinite; }
+
+/* === ICÔNES SVG INLINE (remplacent Font Awesome) === */
+.icon {
+    width: 1em;
+    height: 1em;
+    display: inline-block;
+    vertical-align: -0.125em;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.icon-fill { fill: currentColor; stroke: none; }
+.icon-5    { width: 1.25rem; height: 1.25rem; }
