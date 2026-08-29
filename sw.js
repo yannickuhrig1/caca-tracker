@@ -1,4 +1,4 @@
-const CACHE = 'caca-v22';
+const CACHE = 'caca-v23';
 const ASSETS = [
   './',
   './index.html',
@@ -21,6 +21,17 @@ const ASSETS = [
   './vendor/chart.umd.min.js',
   './vendor/qrcode.min.js',
   './vendor/supabase.min.js',
+  './js/app/app-core.js',
+  './js/app/app-goal.js',
+  './js/app/app-health.js',
+  './js/app/app-pwa.js',
+  './js/app/app-events.js',
+  './js/app/app-notifications.js',
+  './js/app/app-ui.js',
+  './js/app/app-entries.js',
+  './js/app/app-render.js',
+  './js/app/app-badges.js',
+  './js/app/app-sync.js',
   './js/jokes.js',
   './js/achievements.js',
   './js/predictions.js',

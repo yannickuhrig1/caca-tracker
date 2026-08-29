@@ -30,4 +30,6 @@ jobs:
           fi
 
       - name: Vérif syntaxe JS
-        run: node --check sw.js && for f in js/*.js; do node --check "$f"; done
+        run: |
+          node --check sw.js
+          for f in js/*.js js/app/*.js; do node --check "$f"; done
