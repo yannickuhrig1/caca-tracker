@@ -61,7 +61,7 @@ self.addEventListener('notificationclick', e => {
   const url = e.notification.data?.url || './';
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      const existing = list.find(c => c.url.includes('caca-tracker'));
+      const existing = list.find(c => c.url.startsWith(self.location.origin));
       return existing ? existing.focus() : clients.openWindow(url);
     })
   );
