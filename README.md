@@ -4,8 +4,8 @@
 
 [![PWA](https://img.shields.io/badge/PWA-compatible-brightgreen)](#)
 [![Vanilla JS](https://img.shields.io/badge/Vanilla%20JS-no%20framework-yellow)](#)
-[![Version](https://img.shields.io/badge/version-2.8.0-orange)](#)
-[![Supabase](https://img.shields.io/badge/Backend-Supabase-3ECF8E)](#)
+[![Version](https://img.shields.io/badge/version-2.11.0-orange)](#)
+[![Supabase](https://img.shields.io/badge/Backend-Supabase%20self--hosted%20(NAS)-3ECF8E)](#)
 
 ---
 
@@ -87,7 +87,8 @@
 | Font Awesome 6.4 | Icônes |
 | Fredoka / Space Mono | Polices Google Fonts |
 | localStorage | Persistance locale |
-| Supabase | Auth + DB cloud + Social |
+| Supabase (auto-hébergé) | Auth + DB + Social + Realtime — sur le NAS Unraid depuis v2.9.0 |
+| Web Push (VAPID) | Notifications (worker `caca-push`) |
 | Service Worker | Offline / PWA |
 
 ---
@@ -109,12 +110,18 @@ Puis ouvrir [http://localhost:3000](http://localhost:3000)
 
 ## ⚙️ Configuration Supabase
 
-1. Créer un projet sur [supabase.com](https://supabase.com)
-2. Aller dans **SQL Editor** → coller et exécuter `supabase-schema.sql`
+> Depuis v2.9.0, le backend est un **Supabase auto-hébergé sur le NAS Unraid**
+> (`https://caca-api.yannick-uhrig.com`, stack `compose-stacks/caca-supabase`).
+> Le projet cloud d'origine est en pause.
+
+Pour repartir d'une instance neuve (cloud ou self-hosted) :
+
+1. Provisionner l'instance (projet [supabase.com](https://supabase.com) ou stack Docker self-hosted)
+2. **SQL Editor** → exécuter `supabase-schema.sql`, puis les patchs `supabase-*.sql` nécessaires
 3. En cas de problème de groupes → exécuter `supabase-rls-fix.sql`
-4. Dans `js/supabase-client.js`, remplacer :
+4. Dans `js/supabase-client.js`, renseigner :
 ```js
-const SUPABASE_URL      = 'https://VOTRE_ID.supabase.co';
+const SUPABASE_URL      = 'https://VOTRE_INSTANCE';
 const SUPABASE_ANON_KEY = 'VOTRE_ANON_KEY';
 ```
 
@@ -125,16 +132,21 @@ const SUPABASE_ANON_KEY = 'VOTRE_ANON_KEY';
 ```
 Caca-Tracker/
 ├── index.html              ← App principale (structure + logique core)
+├── admin.html              ← Tableau de bord admin (rôle is_admin)
 ├── manifest.json           ← Manifest PWA
-├── sw.js                   ← Service Worker (cache offline)
+├── sw.js                   ← Service Worker (cache offline + Web Push)
 ├── favicon.svg             ← Favicon emoji 💩
 ├── supabase-schema.sql     ← Schéma SQL Supabase (setup initial)
 ├── supabase-rls-fix.sql    ← Patch RLS (si problème de groupes)
+├── supabase-*.sql          ← Autres patchs SQL (admin, réactions, updated_at…)
+├── email-templates/        ← Templates mail FR (confirmation, invite, recovery…)
 ├── css/
 │   └── styles.css          ← Styles des modules v2.0
 └── js/
-    ├── supabase-client.js  ← Client Supabase (auth + DB)
-    ├── social.js           ← Module social (groupes, podium, feed)
+    ├── supabase-client.js  ← Client Supabase (auth + DB + sync)
+    ├── social.js           ← Module social (groupes, podium, feed, défis)
+    ├── ui.js               ← Toasts + modales maison
+    ├── push.js             ← Abonnement Web Push
     ├── sounds.js           ← Sons par texture + contrôle volume
     ├── jokes.js            ← 30+ blagues rotatives
     ├── achievements.js     ← Système d'achievements

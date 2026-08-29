@@ -5,6 +5,25 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.11.0] — 2026-07-15
+
+### Ajouté
+- **💬 Commentaires / chambrage** sous chaque caca du feed (fil déroulant + suppression, RLS `comments`)
+- **👉 Nudge / relance** : bouton sur les membres inactifs du jour → notif push (table `nudges` + worker)
+- **🏅 Badges dans le feed** : le déblocage d'un achievement est partagé au groupe (table `feed_events`)
+- **🎯 Défis hebdo thématiques tournants** : count / lève-tôt / hibou / régularité / arc-en-ciel / série (rotation auto par n° de semaine, scoring par type)
+- **🏆 Hall of Fame** : palmarès des gagnantes hebdo (table `challenge_wins`, calculé par le worker + backfill 8 semaines) + 🏆×N à côté des noms
+- **👑 Célébration gagnante** : overlay couronne + confettis quand tu remportes le défi de la semaine
+- **👑 Couronne « reine du mois »** dans le header si #1 du podium mensuel (≥ 2 membres actifs)
+- **📅 Récap hebdo « Wrapped »** : carte bilan de la semaine passée (total, championne, jour le + actif, réaction star), masquable
+- **Réactions enrichies** : 8 emojis (ajout 😱 🤢 ⚡) + mise à jour optimiste (plus de re-render complet du feed)
+
+### Modifié
+- **Toasts + modales maison** (`js/ui.js`) en remplacement de tous les `prompt` / `alert` / `confirm`
+- Worker push migré `Client` → `Pool` (jobs concurrents sans collision), nouveaux jobs nudges / badges / défis
+- **Push badge** : le groupe n'est notifié que pour les badges rares (flag `rare` sur 6 achievements marquants ; type `badge_rare`) — tous les badges restent affichés au feed
+- 🔧 Bump cache SW caca-v16 → caca-v18
+
 ## [2.10.0] — 2026-07-15
 
 ### Ajouté
