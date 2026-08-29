@@ -1,10 +1,11 @@
-const CACHE = 'caca-v18';
+const CACHE = 'caca-v20';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './favicon.svg',
   './logo.png',
+  './css/tailwind.css',
   './css/styles.css',
   './js/jokes.js',
   './js/achievements.js',
