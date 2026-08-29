@@ -32,6 +32,15 @@ function getSB() {
   return _sb;
 }
 
+// ---- Journalisation des erreurs ----
+// Sans ça, `const { data } = await sb...` avale l'erreur : une requête en échec
+// devient indiscernable d'un résultat vide. C'est exactement ce qui a laissé le
+// QR code cassé (CDN en 404) passer inaperçu pendant des mois.
+function logSbError(where, error) {
+  if (error) console.warn(`[Supabase] ${where} :`, error.message || error);
+  return error;
+}
+
 // ---- State ----
 let _currentUser = null;
 let _currentProfile = null;
@@ -129,7 +138,8 @@ function getCurrentProfile() { return _currentProfile; }
 
 async function fetchProfile(userId) {
   const sb = getSB(); if (!sb) return null;
-  const { data } = await sb.from('profiles').select('*').eq('id', userId).single();
+  const { data, error } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
+  logSbError('fetchProfile', error);
   return data;
 }
 
@@ -161,10 +171,11 @@ async function deletePoopCloud(localId) {
 // Fetch all of the current user's poops from Supabase (for cloud→local sync)
 async function getMyPoops() {
   const sb = getSB(); if (!sb || !_currentUser) return [];
-  const { data } = await sb.from('poops')
+  const { data, error } = await sb.from('poops')
     .select('id, local_id, date, texture, color, comment, is_retro, mood, updated_at')
     .eq('user_id', _currentUser.id)
     .order('date', { ascending: false });
+  logSbError('getMyPoops', error);
   return (data || []).map(p => ({
     id:         p.local_id || p.id,   // prefer the original local UUID
     date:       p.date,
@@ -260,9 +271,10 @@ async function removeMember(groupId, userId) {
 
 async function getMyGroups() {
   const sb = getSB(); if (!sb || !_currentUser) return [];
-  const { data } = await sb.from('group_members')
+  const { data, error } = await sb.from('group_members')
     .select('group_id, groups(id, name, invite_code, created_by, allow_member_invite)')
     .eq('user_id', _currentUser.id);
+  logSbError('getMyGroups', error);
   return (data || []).map(r => r.groups).filter(Boolean);
 }
 
@@ -279,9 +291,10 @@ async function updateGroupSettings(groupId, settings) {
 
 async function getGroupMembers(groupId) {
   const sb = getSB(); if (!sb) return [];
-  const { data } = await sb.from('group_members')
+  const { data, error } = await sb.from('group_members')
     .select('profiles(id, username, avatar)')
     .eq('group_id', groupId);
+  logSbError('getGroupMembers', error);
   return (data || []).map(r => r.profiles).filter(Boolean);
 }
 
@@ -380,11 +393,12 @@ async function getGroupFeed(groupId, limit = 30) {
   const memberIds = members.map(m => m.id);
   const profileMap = Object.fromEntries(members.map(m => [m.id, m]));
 
-  const { data } = await sb.from('poops')
+  const { data, error } = await sb.from('poops')
     .select('id, user_id, date, texture, color')
     .in('user_id', memberIds)
     .order('date', { ascending: false })
     .limit(limit);
+  logSbError('getGroupFeed', error);
 
   const poops = data || [];
   const poopIds = poops.map(p => p.id);
@@ -442,10 +456,11 @@ async function getGroupFeed(groupId, limit = 30) {
 // ---- Commentaires (feature #1) ----
 async function getPoopComments(poopId) {
   const sb = getSB(); if (!sb) return [];
-  const { data } = await sb.from('comments')
+  const { data, error } = await sb.from('comments')
     .select('id, user_id, body, created_at')
     .eq('poop_id', poopId)
     .order('created_at', { ascending: true });
+  logSbError('getPoopComments', error);
   const rows = data || [];
   const ids = [...new Set(rows.map(r => r.user_id))];
   let pmap = {};
@@ -567,14 +582,17 @@ async function getOrCreateWeeklyChallenge(groupId) {
   sunday.setDate(monday.getDate() + 6);
 
   const fmt = d => d.toISOString().slice(0, 10);
-  const { data: existing } = await sb.from('challenges')
-    .select('*').eq('group_id', groupId).eq('start_date', fmt(monday)).single();
+  // maybeSingle : l'absence de défi en début de semaine est normale, single() renverrait un 406
+  const { data: existing, error: exErr } = await sb.from('challenges')
+    .select('*').eq('group_id', groupId).eq('start_date', fmt(monday)).maybeSingle();
+  logSbError('getOrCreateWeeklyChallenge (lecture)', exErr);
 
   if (existing) return existing;
   const type = weeklyChallengeType(monday);
-  const { data } = await sb.from('challenges')
+  const { data, error } = await sb.from('challenges')
     .insert({ group_id: groupId, start_date: fmt(monday), end_date: fmt(sunday), type, title: CHALLENGE_META[type].title })
     .select().single();
+  logSbError('getOrCreateWeeklyChallenge (création)', error);
   return data;
 }
 
@@ -587,11 +605,12 @@ async function getChallengeProgress(groupId, challenge) {
   const start = new Date(challenge.start_date).getTime();
   const end   = new Date(challenge.end_date).getTime() + 86399999;
 
-  const { data } = await sb.from('poops')
+  const { data, error } = await sb.from('poops')
     .select('user_id, date, texture')
     .in('user_id', memberIds)
     .gte('date', start)
     .lte('date', end);
+  logSbError('getChallengeProgress', error);
 
   const type = challenge.type || 'count';
   const byUser = {};
@@ -635,11 +654,12 @@ async function updateWeeklyChallengeTitle(groupId, title) {
 // ============================================================
 async function getHallOfFame(groupId, limit = 12) {
   const sb = getSB(); if (!sb) return [];
-  const { data } = await sb.from('challenge_wins')
+  const { data, error } = await sb.from('challenge_wins')
     .select('week_start, challenge_type, title, score, user_id')
     .eq('group_id', groupId)
     .order('week_start', { ascending: false })
     .limit(limit);
+  logSbError('getHallOfFame', error);
   const rows = data || [];
   const ids = [...new Set(rows.map(r => r.user_id))];
   let pmap = {};
@@ -657,7 +677,8 @@ async function getHallOfFame(groupId, limit = 12) {
 // { userId: nbVictoires } — pour afficher 🏆×N à côté des noms
 async function getGroupTrophies(groupId) {
   const sb = getSB(); if (!sb) return {};
-  const { data } = await sb.from('challenge_wins').select('user_id').eq('group_id', groupId);
+  const { data, error } = await sb.from('challenge_wins').select('user_id').eq('group_id', groupId);
+  logSbError('getGroupTrophies', error);
   const counts = {};
   (data || []).forEach(r => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
   return counts;
@@ -758,8 +779,9 @@ async function getAllProfiles() {
 // Retourne { userId: [groupName, ...] } — nécessite la service role key pour bypasser RLS
 async function getAllUsersGroups(adminClient) {
   const sb = adminClient || getSB(); if (!sb) return {};
-  const { data } = await sb.from('group_members')
+  const { data, error } = await sb.from('group_members')
     .select('user_id, groups(id, name)');
+  logSbError('getAllUsersGroups', error);
   const result = {};
   (data || []).forEach(row => {
     if (!result[row.user_id]) result[row.user_id] = [];
