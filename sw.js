@@ -4,7 +4,11 @@ const ASSETS = [
   './index.html',
   './manifest.json',
   './favicon.svg',
-  './logo.png',
+  './icons/favicon-32.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/maskable-512.png',
+  './icons/apple-touch-icon.png',
   './css/tailwind.css',
   './css/styles.css',
   './js/jokes.js',
@@ -46,8 +50,8 @@ self.addEventListener('push', e => {
   try { data = e.data ? e.data.json() : {}; } catch (_) {}
   e.waitUntil(self.registration.showNotification(data.title || '💩 Caca-Tracker', {
     body:  data.body || '',
-    icon:  './logo.png',
-    badge: './logo.png',
+    icon:  './icons/icon-192.png',
+    badge: './icons/favicon-32.png',
     data:  { url: data.url || './' }
   }));
 });

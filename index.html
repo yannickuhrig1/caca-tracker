@@ -13,11 +13,12 @@
   <meta name="theme-color" content="#d97706" id="theme-color-meta" />
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
 
   <!-- Apple Touch Icon PWA iOS -->
-  <link rel="apple-touch-icon" href="logo.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="logo.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 
   <!-- Tailwind compilé localement (npm run build:css) — remplace le CDN JIT cdn.tailwindcss.com -->
   <link rel="stylesheet" href="css/tailwind.css" />
@@ -464,7 +465,7 @@
       <!-- Ligne 1 / desktop gauche : logo + titre -->
       <div class="hdr-row1 flex items-center gap-2.5 mb-1.5">
         <!-- Logo PNG détouré — fond transparent = couleur du thème visible en dessous -->
-        <img src="logo.png" alt="Logo"
+        <img src="icons/icon-192.png" alt="Logo" width="50" height="50"
              style="width:50px;height:50px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.35))" />
         <div class="min-w-0 overflow-hidden">
           <h1 class="font-extrabold leading-tight"
