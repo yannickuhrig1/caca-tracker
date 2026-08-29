@@ -1,4 +1,4 @@
-const CACHE = 'caca-v20';
+const CACHE = 'caca-v21';
 const ASSETS = [
   './',
   './index.html',
@@ -9,8 +9,18 @@ const ASSETS = [
   './icons/icon-512.png',
   './icons/maskable-512.png',
   './icons/apple-touch-icon.png',
+  './css/fonts.css',
   './css/tailwind.css',
   './css/styles.css',
+  './fonts/fredoka-latin.woff2',
+  './fonts/fredoka-latin-ext.woff2',
+  './fonts/space-mono-400-latin.woff2',
+  './fonts/space-mono-400-latin-ext.woff2',
+  './fonts/space-mono-700-latin.woff2',
+  './fonts/space-mono-700-latin-ext.woff2',
+  './vendor/chart.umd.min.js',
+  './vendor/qrcode.min.js',
+  './vendor/supabase.min.js',
   './js/jokes.js',
   './js/achievements.js',
   './js/predictions.js',

@@ -82,10 +82,11 @@
 |-------------|-------|
 | HTML5 / CSS3 | Structure & styles |
 | Vanilla JS | Logique applicative |
-| Tailwind CSS (CDN) | Classes utilitaires |
-| Chart.js 4.4 (CDN) | Graphiques |
-| Font Awesome 6.4 | Icônes |
-| Fredoka / Space Mono | Polices Google Fonts |
+| Tailwind CSS (compilé local) | Classes utilitaires |
+| Chart.js 4.4 (vendorée) | Graphiques |
+| qrcode 1.5.3 (bundlée) | QR code d'invitation |
+| Icônes SVG inline | Sprite maison (9 icônes) — remplace Font Awesome |
+| Fredoka / Space Mono | Polices auto-hébergées (woff2 latin + latin-ext) |
 | localStorage | Persistance locale |
 | Supabase (auto-hébergé) | Auth + DB + Social + Realtime — sur le NAS Unraid depuis v2.9.0 |
 | Web Push (VAPID) | Notifications (worker `caca-push`) |
