@@ -1,4 +1,4 @@
-const CACHE = 'caca-v19';
+const CACHE = 'caca-v20';
 const ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const ASSETS = [
   './icons/icon-512.png',
   './icons/maskable-512.png',
   './icons/apple-touch-icon.png',
+  './css/tailwind.css',
   './css/styles.css',
   './js/jokes.js',
   './js/achievements.js',

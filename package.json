@@ -1,0 +1,19 @@
+{
+  "name": "caca-tracker",
+  "version": "2.11.0",
+  "description": "Caca-Tracker 3000 Deluxe — PWA vanilla JS de suivi des selles",
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/tailwind.css -o ./css/tailwind.css --minify",
+    "watch:css": "tailwindcss -i ./src/tailwind.css -o ./css/tailwind.css --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yannickuhrig1/caca-tracker.git"
+  },
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  },
+  "private": "true"
+}
