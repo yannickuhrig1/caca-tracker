@@ -4,7 +4,7 @@
 
 [![PWA](https://img.shields.io/badge/PWA-compatible-brightgreen)](#)
 [![Vanilla JS](https://img.shields.io/badge/Vanilla%20JS-no%20framework-yellow)](#)
-[![Version](https://img.shields.io/badge/version-2.12.0-orange)](#)
+[![Version](https://img.shields.io/badge/version-2.13.0-orange)](#)
 [![Supabase](https://img.shields.io/badge/Backend-Supabase%20self--hosted%20(NAS)-3ECF8E)](#)
 
 ---

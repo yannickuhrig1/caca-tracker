@@ -66,6 +66,20 @@ function loadInto(files, extra = {}) {
   return ctx;
 }
 
+/**
+ * Lit des liaisons du contexte par leur nom.
+ *
+ * Nécessaire pour les `const`/`let` de premier niveau : dans un script
+ * classique ils vivent dans la portée lexicale globale, pas comme propriétés
+ * de l'objet global — `ctx.APP_VERSION` vaudrait donc undefined. Les
+ * déclarations `function`, elles, sont bien des propriétés.
+ */
+function readGlobals(ctx, names) {
+  const out = {};
+  for (const n of [].concat(names)) out[n] = vm.runInContext(n, ctx);
+  return out;
+}
+
 /** Horodatage de `n` jours avant aujourd'hui, à l'heure indiquée. */
 function daysAgo(n, hour = 12) {
   const d = new Date();
@@ -74,4 +88,4 @@ function daysAgo(n, hour = 12) {
   return d.getTime();
 }
 
-module.exports = { loadInto, daysAgo, ROOT };
+module.exports = { loadInto, readGlobals, daysAgo, ROOT };

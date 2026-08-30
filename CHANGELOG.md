@@ -5,6 +5,22 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.13.0] — 2026-08-30
+
+### Ajouté
+- **🎉 Popup « Quoi de neuf »** au premier lancement suivant une mise à jour :
+  liste des nouveautés, écrite pour l'utilisatrice et non pour un développeur.
+  - Cumule **toutes** les versions sautées si on revient après plusieurs mises à jour
+  - Ne s'affiche **pas** au tout premier lancement — l'onboarding s'en charge,
+    enchaîner deux fenêtres serait pénible
+  - Rejouable via « 🎉 Quoi de neuf ? » dans les Réglages
+- `APP_VERSION` devient la **source de vérité unique** de la version : l'en-tête
+  et les Réglages sont remplis à partir d'elle. Ces libellés étaient jusqu'ici
+  écrits en dur et avaient déjà divergé par le passé.
+
+### Modifié
+- 🔧 Bump cache SW caca-v28 → caca-v29
+
 ## [2.12.0] — 2026-08-30
 
 ### Ajouté

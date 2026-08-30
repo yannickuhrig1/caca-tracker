@@ -170,8 +170,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1500);
   }
 
-  // Présentation de bienvenue — en dernier, pour ne rien retarder au démarrage
+  // Libellés de version depuis APP_VERSION (source de vérité unique)
+  applyVersionLabels();
+
+  // Présentation de bienvenue, puis nouveautés — dans cet ordre, et jamais les
+  // deux à la fois : maybeShowWhatsNew() ne fait rien au tout premier lancement.
   maybeShowOnboarding();
+  maybeShowWhatsNew();
 
   $debug('✅ ready. logs=' + state.logs.length);
 });
