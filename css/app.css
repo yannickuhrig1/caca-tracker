@@ -109,7 +109,9 @@ nav {
 .tab-btn.active { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
 
 /* ===================== TOGGLE ===================== */
-.toggle-wrap { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+/* :not(.hidden) — sinon ce display gagne sur .hidden de Tailwind, chargé plus haut */
+.toggle-wrap:not(.hidden) { display: inline-flex; }
+.toggle-wrap { align-items: center; gap: 10px; cursor: pointer; }
 .toggle-wrap input { display: none; }
 .toggle-track {
   width: 52px; height: 28px; background: #e2e8f0; border-radius: 99px;

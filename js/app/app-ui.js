@@ -114,7 +114,11 @@ function openDrawer() {
 function closeDrawer() {
   $id('drawer').classList.add('hidden');
   document.body.style.overflow = '';
-  // Reset
+  // Reset — repasse aussi le drawer en mode création s'il servait à modifier
+  editingId = null;
+  $id('drawer-title').textContent    = 'Nouveau 💩';
+  $id('drawer-subtitle').textContent = 'Texture + couleur obligatoires';
+  $id('save-poop').innerHTML         = '💥 Valider';
   $id('comment').value = '';
   selectedTexture = null;
   selectedColor   = null;
@@ -122,6 +126,8 @@ function closeDrawer() {
   document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('border-amber-400','bg-amber-50'));
   $id('retro-chk').checked = false;
   $id('retro-date-wrap').classList.add('hidden');
+  $id('retro-toggle-row').classList.remove('hidden');
+  $id('retro-date-label').textContent = 'Date et heure du caca :';
   document.querySelectorAll('.texture-btn').forEach(b => b.classList.remove('border-amber-500', 'bg-amber-100', 'selected'));
   document.querySelectorAll('.color-btn').forEach(b => { b.style.transform = ''; b.style.outline = ''; });
   $id('texture-err')?.classList.add('hidden');
