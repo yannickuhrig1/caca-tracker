@@ -4,7 +4,7 @@
 
 [![PWA](https://img.shields.io/badge/PWA-compatible-brightgreen)](#)
 [![Vanilla JS](https://img.shields.io/badge/Vanilla%20JS-no%20framework-yellow)](#)
-[![Version](https://img.shields.io/badge/version-2.11.0-orange)](#)
+[![Version](https://img.shields.io/badge/version-2.12.0-orange)](#)
 [![Supabase](https://img.shields.io/badge/Backend-Supabase%20self--hosted%20(NAS)-3ECF8E)](#)
 
 ---
@@ -118,9 +118,10 @@ Puis ouvrir [http://localhost:3000](http://localhost:3000)
 Pour repartir d'une instance neuve (cloud ou self-hosted) :
 
 1. Provisionner l'instance (projet [supabase.com](https://supabase.com) ou stack Docker self-hosted)
-2. **SQL Editor** → exécuter `supabase-schema.sql`, puis les patchs `supabase-*.sql` nécessaires
-3. En cas de problème de groupes → exécuter `supabase-rls-fix.sql`
-4. Dans `js/supabase-client.js`, renseigner :
+2. **SQL Editor** → jouer les migrations de `supabase/migrations/` dans l'ordre numérique
+   ⚠️ Voir `supabase/SCHEMA.md` : les migrations du dépôt **ne reproduisent pas**
+   la base de production à elles seules (6 tables de v2.10/v2.11 y manquent).
+3. Dans `js/supabase-client.js`, renseigner :
 ```js
 const SUPABASE_URL      = 'https://VOTRE_INSTANCE';
 const SUPABASE_ANON_KEY = 'VOTRE_ANON_KEY';
@@ -137,9 +138,10 @@ Caca-Tracker/
 ├── manifest.json           ← Manifest PWA
 ├── sw.js                   ← Service Worker (cache offline + Web Push)
 ├── favicon.svg             ← Favicon emoji 💩
-├── supabase-schema.sql     ← Schéma SQL Supabase (setup initial)
-├── supabase-rls-fix.sql    ← Patch RLS (si problème de groupes)
-├── supabase-*.sql          ← Autres patchs SQL (admin, réactions, updated_at…)
+├── supabase/
+│   ├── SCHEMA.md           ← État réel de la base (introspection PostgREST)
+│   ├── SECURITE-RLS.md     ← Audit RLS et correctif proposé
+│   └── migrations/         ← Migrations numérotées 01 → 12
 ├── email-templates/        ← Templates mail FR (confirmation, invite, recovery…)
 ├── css/
 │   └── styles.css          ← Styles des modules v2.0

@@ -5,6 +5,28 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.12.0] — 2026-08-30
+
+### Ajouté
+- **✏️ Édition d'une entrée** : bouton crayon dans l'historique. Le drawer de saisie
+  s'ouvre pré-rempli (texture, couleur, humeur, note, date) et enregistre sur place.
+  Jusqu'ici il fallait supprimer puis re-saisir.
+  - La date est toujours modifiable en édition : le toggle « caca en retard » est masqué
+    (il décrit une saisie, pas une correction) et `isRetro` est préservé tel quel
+  - `updated_at` est avancé à chaque modification, ce qui laisse la résolution de conflit
+    multi-appareils (v2.7.0) faire gagner la version la plus récente
+  - Côté cloud, `savePoopCloud` fait déjà un upsert sur `(user_id, local_id)` : la ligne
+    est mise à jour, pas dupliquée. Fonctionne aussi hors ligne via la queue existante.
+
+### Corrigé
+- `.toggle-wrap` définissait `display: inline-flex` après le chargement de Tailwind et
+  gagnait donc sur `.hidden` : le toggle restait visible quand on le masquait. Restreint
+  en `.toggle-wrap:not(.hidden)`.
+- Les trois `alert()` restants de la saisie remplacés par des toasts maison
+
+### Modifié
+- 🔧 Bump cache SW caca-v23 → caca-v24
+
 ## [2.11.0] — 2026-07-15
 
 ### Ajouté

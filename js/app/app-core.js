@@ -9,6 +9,22 @@
 //  UTILS
 // ===================================================
 const $id = id => document.getElementById(id);
+
+// Charge un script à la demande, une seule fois même si appelé plusieurs fois.
+// Sert aux dépendances lourdes qui ne concernent qu'un écran précis (QRCode).
+const _scriptPromises = {};
+window.loadScriptOnce = function(src) {
+  if (!_scriptPromises[src]) {
+    _scriptPromises[src] = new Promise((resolve, reject) => {
+      const el = document.createElement('script');
+      el.src = src;
+      el.onload  = () => resolve();
+      el.onerror = () => { delete _scriptPromises[src]; reject(new Error('Chargement impossible : ' + src)); };
+      document.head.appendChild(el);
+    });
+  }
+  return _scriptPromises[src];
+};
 const $debug = msg => {
   const el = $id('debug-box');
   if (!el) return;
