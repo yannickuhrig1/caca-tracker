@@ -996,7 +996,7 @@ const SocialModule = (() => {
   // ============================================================
   //  QR CODE MODAL
   // ============================================================
-  function showGroupQR(group) {
+  async function showGroupQR(group) {
     const modal = document.getElementById('qr-modal');
     if (!modal) return;
 
@@ -1004,19 +1004,27 @@ const SocialModule = (() => {
     document.getElementById('qr-group-name').textContent = `Groupe : ${group.name}`;
     document.getElementById('qr-code-text').textContent  = group.invite_code;
 
+    // Le code reste lisible et copiable même si le QR ne se dessine pas :
+    // on ouvre la modale d'abord.
+    modal.classList.remove('hidden');
+
     const canvas = document.getElementById('qr-canvas');
-    if (canvas && typeof QRCode !== 'undefined') {
+    if (!canvas) return;
+
+    // qrcode n'est pas chargé au démarrage (24 Ko) : il ne sert qu'ici.
+    try {
+      if (typeof QRCode === 'undefined') await window.loadScriptOnce('vendor/qrcode.min.js');
       QRCode.toCanvas(canvas, joinUrl, { width: 200, margin: 2, color: { dark: '#0f172a', light: '#ffffff' } },
         err => { if (err) console.warn('QR error', err); });
-    } else if (canvas) {
-      // Fallback: use free API
-      const img = document.createElement('img');
-      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(joinUrl)}`;
-      img.style.cssText = 'width:200px;height:200px;border-radius:12px';
-      canvas.replaceWith(img);
+    } catch (e) {
+      // Pas de repli vers un service tiers : l'URL contient le code d'invitation,
+      // l'envoyer à un générateur externe reviendrait à le divulguer.
+      console.warn('QR indisponible :', e.message);
+      canvas.replaceWith(Object.assign(document.createElement('div'), {
+        className: 'text-sm opacity-70 text-center py-6',
+        textContent: 'QR indisponible hors ligne — partage le code ci-dessous.'
+      }));
     }
-
-    modal.classList.remove('hidden');
   }
   window.showGroupQR = showGroupQR;
 

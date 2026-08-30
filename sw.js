@@ -1,4 +1,4 @@
-const CACHE = 'caca-v23';
+const CACHE = 'caca-v25';
 const ASSETS = [
   './',
   './index.html',
@@ -11,6 +11,7 @@ const ASSETS = [
   './icons/apple-touch-icon.png',
   './css/fonts.css',
   './css/tailwind.css',
+  './css/app.css',
   './css/styles.css',
   './fonts/fredoka-latin.woff2',
   './fonts/fredoka-latin-ext.woff2',
