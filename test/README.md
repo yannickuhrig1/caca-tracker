@@ -4,7 +4,8 @@
 npm test
 ```
 
-Aucune dépendance : le lanceur `node --test` intégré (Node 20+) suffit.
+Aucune dépendance : le lanceur `node --test` intégré suffit.
+**Node 22 minimum** — les motifs glob de `--test` sont arrivés en v21.
 La CI les exécute sur chaque PR et sur `main`.
 
 ## Comment ça marche
