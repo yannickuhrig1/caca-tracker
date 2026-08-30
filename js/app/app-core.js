@@ -170,5 +170,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1500);
   }
 
+  // Présentation de bienvenue — en dernier, pour ne rien retarder au démarrage
+  maybeShowOnboarding();
+
   $debug('✅ ready. logs=' + state.logs.length);
 });

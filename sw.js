@@ -1,4 +1,4 @@
-const CACHE = 'caca-v26';
+const CACHE = 'caca-v27';
 const ASSETS = [
   './',
   './index.html',
@@ -33,6 +33,7 @@ const ASSETS = [
   './js/app/app-render.js',
   './js/app/app-badges.js',
   './js/app/app-sync.js',
+  './js/app/app-onboarding.js',
   './js/jokes.js',
   './js/achievements.js',
   './js/predictions.js',

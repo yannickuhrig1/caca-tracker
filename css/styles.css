@@ -782,3 +782,16 @@
 }
 .icon-fill { fill: currentColor; stroke: none; }
 .icon-5    { width: 1.25rem; height: 1.25rem; }
+
+/* === ONBOARDING (première ouverture) === */
+.onb-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 99px;
+    background: color-mix(in srgb, var(--text-secondary) 30%, transparent);
+    transition: width .2s ease, background .2s ease;
+}
+.onb-dot.active {
+    width: 22px;
+    background: var(--accent);
+}
