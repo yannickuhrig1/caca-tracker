@@ -98,7 +98,10 @@ function renderHistory() {
         ${note}
         <div class="text-xs opacity-40 mt-1">${dt}</div>
       </div>
-      <button class="p-2 text-red-400 hover:text-red-600 transition-colors" onclick="deleteLog('${log.id || i}')">
+      <button class="p-2 opacity-50 hover:opacity-100 transition-opacity" onclick="editLog('${log.id || i}')" aria-label="Modifier">
+        <svg class="icon text-sm"><use href="#i-edit"/></svg>
+      </button>
+      <button class="p-2 text-red-400 hover:text-red-600 transition-colors" onclick="deleteLog('${log.id || i}')" aria-label="Supprimer">
         <svg class="icon text-sm"><use href="#i-trash"/></svg>
       </button>
     </div>`;
