@@ -4,9 +4,14 @@
 --  (codes d'invitation). Voir supabase/SECURITE-RLS.md.
 --
 --  ⚠️  NON APPLIQUÉ. À relire, puis à jouer manuellement.
---  ⚠️  L'ÉTAPE 3 EXIGE une modification de js/supabase-client.js
---      (joinGroup doit appeler find_group_by_invite). Sans elle,
---      rejoindre un groupe par code cesse de fonctionner.
+--
+--  ORDRE DE DÉPLOIEMENT — le code applicatif d'abord, ce fichier ensuite.
+--  findGroupByInvite() (js/supabase-client.js) essaie la fonction SQL puis
+--  retombe sur la lecture directe de `groups` si elle n'existe pas encore
+--  (erreur PGRST202). Le JS fonctionne donc AVANT comme APRÈS cette migration,
+--  et rejoindre un groupe ne casse à aucun moment.
+--  Une fois ce fichier appliqué, le repli devient inatteignable (la policy
+--  permissive disparaît) et pourra être retiré du JS.
 --
 --  À passer dans une transaction pour pouvoir tout annuler :
 --      BEGIN;  \i 12_rls-durcissement.sql   -- puis vérifier, puis COMMIT;

@@ -232,6 +232,38 @@ async function createGroup(name) {
   return data;
 }
 
+// Retrouve un groupe à partir de son code d'invitation.
+//
+// Deux chemins, volontairement :
+//  1. la fonction SQL find_group_by_invite (SECURITY DEFINER) — elle ne rend
+//     que l'id et le nom, et n'existe qu'une fois la migration 12 appliquée ;
+//  2. à défaut, la lecture directe de `groups`, qui n'est possible que tant
+//     que la policy permissive `USING (true)` est en place.
+//
+// Ce double chemin rend l'ordre de déploiement indifférent : ce code
+// fonctionne avant comme après l'exécution de la migration. Une fois celle-ci
+// passée en production, le repli devient inatteignable et pourra disparaître.
+async function findGroupByInvite(sb, inviteCode) {
+  const code = String(inviteCode || '').trim().toUpperCase();
+  if (!code) return null;
+
+  const { data, error } = await sb.rpc('find_group_by_invite', { code });
+  if (!error) {
+    // La fonction renvoie une table : 0 ou 1 ligne.
+    const row = Array.isArray(data) ? data[0] : data;
+    return row || null;
+  }
+
+  // PGRST202 = fonction absente du schéma exposé -> migration pas encore jouée.
+  if (error.code !== 'PGRST202') {
+    logSbError('findGroupByInvite (rpc)', error);
+  }
+  const { data: group, error: gErr } = await sb.from('groups')
+    .select('id, name').eq('invite_code', code).maybeSingle();
+  logSbError('findGroupByInvite (repli)', gErr);
+  return group || null;
+}
+
 async function joinGroup(inviteCode) {
   const sb = getSB(); if (!sb) throw new Error('Supabase non disponible');
   // Forcer un refresh de session pour s'assurer que le JWT est valide
@@ -240,9 +272,8 @@ async function joinGroup(inviteCode) {
   _currentUser = sess.session.user;
   const uid = _currentUser.id;
 
-  const { data: group, error: gErr } = await sb.from('groups')
-    .select('id, name').eq('invite_code', inviteCode.toUpperCase()).single();
-  if (gErr || !group) throw new Error('Code invalide ou groupe introuvable');
+  const group = await findGroupByInvite(sb, inviteCode);
+  if (!group) throw new Error('Code invalide ou groupe introuvable');
   const { error } = await sb.from('group_members')
     .insert({ group_id: group.id, user_id: uid });
   if (error && error.code !== '23505') throw new Error(error.message);

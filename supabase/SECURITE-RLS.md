@@ -75,13 +75,36 @@ manuellement. Il :
    utilisateurs authentifiés ;
 4. recrée les policies de `profiles` (soi-même, membres du même groupe, admin).
 
-⚠️ Le point 3 **nécessite une modification de `js/supabase-client.js`** :
-`joinGroup()` doit appeler la fonction au lieu de requêter `groups` directement.
-Les deux doivent partir ensemble, sinon rejoindre un groupe casse.
+### Côté application — déjà en place
 
-## À faire aussi
+`findGroupByInvite()` (`js/supabase-client.js`) appelle d'abord la fonction SQL,
+et retombe sur la lecture directe de `groups` si elle n'existe pas encore
+(erreur PostgREST `PGRST202`). Le JS fonctionne donc **avant comme après** la
+migration : rejoindre un groupe ne casse à aucun moment, quel que soit l'ordre.
 
-- **Prévenir les 10 personnes concernées** que leur adresse email a été
-  accessible publiquement, et pendant combien de temps.
+Une fois la migration appliquée, le repli devient inatteignable — la policy
+permissive ayant disparu — et pourra être retiré.
+
+Couvert par `test/join-group.test.js` : chemin nominal, repli sur `PGRST202`,
+double échec, code vide, normalisation du code.
+
+## Marche à suivre
+
+1. ✅ Déployer le code applicatif (fait — il gère les deux états)
+2. ⬜ Relire puis jouer `migrations/12_rls-durcissement.sql` sur le Postgres du NAS,
+   dans une transaction
+3. ⬜ Rejouer la sonde anonyme ci-dessous : elle doit renvoyer `[]`
+4. ⬜ Vérifier dans l'app qu'on peut toujours rejoindre un groupe par code
+5. ⬜ Prévenir les 10 personnes concernées
+
+```bash
+curl -s -H "apikey: <clé anon>" \
+  "https://caca-api.yannick-uhrig.com/rest/v1/profiles?select=id"   # attendu : []
+curl -s -H "apikey: <clé anon>" \
+  "https://caca-api.yannick-uhrig.com/rest/v1/groups?select=id"     # attendu : []
+```
+
+## Au-delà du correctif
+
 - Vérifier si le dépôt GitHub doit rester public : la clé `anon` y est, ce qui
   est par conception, mais cela suppose que la RLS soit irréprochable.
