@@ -29,6 +29,9 @@
     .badge-user  { background:#1e293b; color:#64748b; border:1px solid #334155; }
     details summary::-webkit-details-marker { display:none; }
     details summary { list-style:none; }
+    .tnum { font-variant-numeric: tabular-nums; }
+    /* capitalize mettrait une majuscule a chaque mot (« Arc-En-Ciel ») */
+    .cap1::first-letter { text-transform: uppercase; }
   </style>
 </head>
 <body class="min-h-screen">
@@ -69,24 +72,53 @@
     <!-- Admin content -->
     <div id="admin-content" class="hidden space-y-6">
 
-      <!-- ── Stats ── -->
+      <!-- ── Comptes ── -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div class="card rounded-2xl p-4">
-          <div class="text-3xl font-bold" id="stat-total">—</div>
-          <div class="text-xs text-slate-400 mt-1">Utilisateurs</div>
+          <div class="text-3xl font-bold tnum" id="stat-total">—</div>
+          <div class="text-xs text-slate-400 mt-1">Comptes</div>
         </div>
         <div class="card rounded-2xl p-4">
-          <div class="text-3xl font-bold text-purple-400" id="stat-admins">—</div>
+          <div class="text-3xl font-bold text-purple-400 tnum" id="stat-admins">—</div>
           <div class="text-xs text-slate-400 mt-1">Admins</div>
         </div>
         <div class="card rounded-2xl p-4">
-          <div class="text-3xl font-bold text-green-400" id="stat-active">—</div>
-          <div class="text-xs text-slate-400 mt-1">Actifs (7 j)</div>
+          <div class="text-3xl font-bold text-green-400 tnum" id="stat-active">—</div>
+          <!-- last_login, donc des connexions — pas de l'usage. Le libellé le dit. -->
+          <div class="text-xs text-slate-400 mt-1">Connectés (7 j)</div>
         </div>
         <div class="card rounded-2xl p-4">
-          <div class="text-3xl font-bold text-blue-400" id="stat-today">—</div>
-          <div class="text-xs text-slate-400 mt-1">Aujourd'hui</div>
+          <div class="text-3xl font-bold text-blue-400 tnum" id="stat-today">—</div>
+          <div class="text-xs text-slate-400 mt-1">Connectés aujourd'hui</div>
         </div>
+      </div>
+
+      <!-- ── Inscriptions + groupes : aucune requête supplémentaire ── -->
+      <div class="grid gap-4 lg:grid-cols-2">
+        <div class="card rounded-2xl p-5">
+          <h2 class="font-bold text-lg mb-1">📈 Inscriptions</h2>
+          <p class="text-xs text-slate-500 mb-4">Nouveaux comptes par mois, 12 derniers mois</p>
+          <div id="signups-chart"></div>
+        </div>
+        <div class="card rounded-2xl p-5">
+          <h2 class="font-bold text-lg mb-1">👥 Groupes</h2>
+          <p class="text-xs text-slate-500 mb-4">Effectif de chaque groupe</p>
+          <div id="groups-chart"></div>
+        </div>
+      </div>
+
+      <!-- ── Activité réelle : coûte une requête par compte, donc à la demande ── -->
+      <div class="card rounded-2xl p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-1">
+          <h2 class="font-bold text-lg">💩 Activité</h2>
+          <button id="load-activity-btn" class="btn-primary px-4 py-2 rounded-xl text-sm font-bold">
+            Charger l'activité
+          </button>
+        </div>
+        <p class="text-xs text-slate-500" id="activity-hint">
+          Nécessite une requête par compte — non chargé automatiquement.
+        </p>
+        <div id="activity-panel" class="hidden mt-5 space-y-6"></div>
       </div>
 
       <!-- ── Les opérations sensibles passent par le proxy admin du NAS (v2.10.0) :
@@ -338,6 +370,206 @@
       p.last_login && new Date(p.last_login).toDateString() === today).length;
   }
 
+  // ── Graphiques maison ────────────────────────────────────────
+  // Pas de Chart.js ici : 200 Ko pour quelques barres sur une page
+  // d'administration, ça ne se justifie pas. SVG/CSS à la main, zéro dépendance.
+
+  const PALETTE = {
+    marron: '#8a5a3b', jaune: '#d9a441', vert: '#4c7a34',
+    noir: '#52525b', 'arc-en-ciel': '#a855f7', rouge: '#dc2626'
+  };
+
+  /** Barres verticales. data = [{ label, value, title? }] */
+  function barChart(data, { color = '#7c3aed', height = 90 } = {}) {
+    if (!data.length) return '<p class="text-sm text-slate-500">Aucune donnée.</p>';
+    const max = Math.max(...data.map(d => d.value), 1);
+    const bars = data.map(d => {
+      const h = Math.round((d.value / max) * height);
+      return '<div class="flex flex-col items-center gap-1 flex-1 min-w-0" title="' +
+        esc(d.title || (d.label + ' : ' + d.value)) + '">' +
+        '<div class="w-full flex items-end justify-center" style="height:' + height + 'px">' +
+        '<div class="w-full rounded-t" style="height:' + Math.max(h, d.value ? 2 : 1) +
+        'px;background:' + color + ';opacity:' + (d.value ? 1 : 0.2) + '"></div></div>' +
+        '<div class="text-[9px] text-slate-500 truncate w-full text-center">' + esc(d.label) + '</div>' +
+        '</div>';
+    }).join('');
+    return '<div class="flex items-end gap-1">' + bars + '</div>';
+  }
+
+  /** Barres horizontales classées, valeur à droite. */
+  function rankChart(data, { color = '#7c3aed', unit = '' } = {}) {
+    if (!data.length) return '<p class="text-sm text-slate-500">Aucune donnée.</p>';
+    const max = Math.max(...data.map(d => d.value), 1);
+    return '<div class="space-y-2">' + data.map(d =>
+      '<div class="flex items-center gap-3 text-sm">' +
+        '<div class="w-28 shrink-0 truncate cap1">' + esc(d.label) + '</div>' +
+        '<div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#0f172a">' +
+          '<div class="h-full rounded-full" style="width:' + ((d.value / max) * 100) +
+          '%;background:' + (d.color || color) + '"></div>' +
+        '</div>' +
+        '<div class="w-16 text-right tnum text-slate-400">' + d.value + unit + '</div>' +
+      '</div>').join('') + '</div>';
+  }
+
+  // ── Inscriptions et groupes : données déjà en mémoire, zéro requête ──
+  function renderSignups() {
+    const el = document.getElementById('signups-chart');
+    if (!el) return;
+    const mois = [];
+    const base = new Date(); base.setDate(1); base.setHours(0, 0, 0, 0);
+    for (let i = 11; i >= 0; i--) {
+      const m = new Date(base); m.setMonth(m.getMonth() - i);
+      const fin = new Date(m); fin.setMonth(fin.getMonth() + 1);
+      const n = _profiles.filter(p => {
+        const c = p.created_at ? new Date(p.created_at).getTime() : 0;
+        return c >= m.getTime() && c < fin.getTime();
+      }).length;
+      mois.push({
+        label: m.toLocaleDateString('fr-FR', { month: 'narrow' }),
+        value: n,
+        title: m.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) +
+               ' : ' + n + ' inscription' + (n > 1 ? 's' : '')
+      });
+    }
+    const total = mois.reduce((a, b) => a + b.value, 0);
+    el.innerHTML = barChart(mois, { color: '#7c3aed' }) +
+      '<p class="text-xs text-slate-500 mt-3">' + total +
+      ' inscription' + (total > 1 ? 's' : '') + ' sur 12 mois</p>';
+  }
+
+  function renderGroups() {
+    const el = document.getElementById('groups-chart');
+    if (!el) return;
+    const tailles = {};
+    Object.values(_userGroups).forEach(noms => noms.forEach(n => {
+      tailles[n] = (tailles[n] || 0) + 1;
+    }));
+    const data = Object.entries(tailles)
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value);
+    if (!data.length) {
+      el.innerHTML = '<p class="text-sm text-slate-500">Aucun groupe, ou proxy admin indisponible.</p>';
+      return;
+    }
+    const sansGroupe = _profiles.filter(p => !(_userGroups[p.id] || []).length).length;
+    el.innerHTML = rankChart(data, { color: '#0ea5e9', unit: ' 👤' }) +
+      '<p class="text-xs text-slate-500 mt-3">' + data.length + ' groupe' + (data.length > 1 ? 's' : '') +
+      (sansGroupe ? ' · ' + sansGroupe + ' compte' + (sansGroupe > 1 ? 's' : '') + ' sans groupe' : '') +
+      '</p>';
+  }
+
+  // ── Activité : une requête par compte, donc jamais automatique ──
+  let _activite = null;
+
+  async function loadActivity() {
+    const btn   = document.getElementById('load-activity-btn');
+    const hint  = document.getElementById('activity-hint');
+    const panel = document.getElementById('activity-panel');
+    btn.disabled = true;
+
+    const parUser = {};
+    let echecs = 0;
+    for (let i = 0; i < _profiles.length; i++) {
+      const p = _profiles[i];
+      hint.textContent = 'Chargement… ' + (i + 1) + '/' + _profiles.length;
+      try {
+        parUser[p.id] = (await adminApi('/users/' + p.id + '/poops')) || [];
+      } catch (e) {
+        parUser[p.id] = [];
+        echecs++;
+      }
+    }
+
+    _activite = parUser;
+    btn.textContent = 'Actualiser';
+    btn.disabled = false;
+    // Un échec partiel doit se voir : sinon les chiffres mentent en silence.
+    hint.textContent = echecs
+      ? echecs + ' compte' + (echecs > 1 ? 's' : '') + ' n\'a pas pu être chargé — chiffres partiels.'
+      : 'Chargé pour les ' + _profiles.length + ' comptes.';
+    panel.classList.remove('hidden');
+    renderActivity();
+  }
+
+  function renderActivity() {
+    const panel = document.getElementById('activity-panel');
+    const now   = Date.now();
+    const tous  = Object.values(_activite).flat();
+
+    if (!tous.length) {
+      panel.innerHTML = '<p class="text-sm text-slate-500">Aucune entrée enregistrée.</p>';
+      return;
+    }
+
+    const ts     = p => new Date(p.date).getTime();
+    const depuis = j => tous.filter(p => ts(p) > now - j * 86400000).length;
+    const actifs = j => _profiles.filter(p =>
+      (_activite[p.id] || []).some(x => ts(x) > now - j * 86400000)).length;
+
+    const jours = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
+      const fin = d.getTime() + 86400000;
+      const n = tous.filter(p => ts(p) >= d.getTime() && ts(p) < fin).length;
+      jours.push({
+        label: i % 5 === 0 ? String(d.getDate()) : '',
+        value: n,
+        title: d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) + ' : ' + n
+      });
+    }
+
+    const repartition = cle => {
+      const m = {};
+      tous.forEach(p => { const k = p[cle] || 'inconnu'; m[k] = (m[k] || 0) + 1; });
+      return Object.entries(m).map(([label, value]) => ({ label, value }))
+                   .sort((a, b) => b.value - a.value);
+    };
+
+    const parHeure = Array.from({ length: 24 }, (_, h) => {
+      const n = tous.filter(p => new Date(p.date).getHours() === h).length;
+      return { label: h % 6 === 0 ? String(h) : '', value: n, title: h + 'h — ' + (h + 1) + 'h : ' + n };
+    });
+
+    const top = _profiles
+      .map(p => ({ label: p.username || '—', value: (_activite[p.id] || []).length }))
+      .filter(d => d.value)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8);
+
+    const moyenne = actifs(30) ? (depuis(30) / actifs(30)).toFixed(1) : '0';
+
+    const tuile = (val, lbl, couleur) =>
+      '<div class="rounded-xl p-3" style="background:#0f172a">' +
+        '<div class="text-2xl font-bold tnum" style="color:' + couleur + '">' + val + '</div>' +
+        '<div class="text-[11px] text-slate-400 mt-0.5">' + lbl + '</div>' +
+      '</div>';
+
+    panel.innerHTML =
+      '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">' +
+        tuile(tous.length, 'Entrées au total', '#e2e8f0') +
+        tuile(depuis(7), 'Ces 7 jours', '#22c55e') +
+        tuile(actifs(7), 'Actives (7 j)', '#0ea5e9') +
+        tuile(moyenne, 'Entrées / active / 30 j', '#a78bfa') +
+      '</div>' +
+
+      '<div><h3 class="font-semibold text-sm mb-3">30 derniers jours</h3>' +
+        barChart(jours, { color: '#22c55e', height: 70 }) + '</div>' +
+
+      '<div class="grid gap-6 lg:grid-cols-2">' +
+        '<div><h3 class="font-semibold text-sm mb-3">Heure de la journée</h3>' +
+          barChart(parHeure, { color: '#0ea5e9', height: 60 }) + '</div>' +
+        '<div><h3 class="font-semibold text-sm mb-3">Contributrices</h3>' +
+          rankChart(top, { color: '#7c3aed' }) + '</div>' +
+      '</div>' +
+
+      '<div class="grid gap-6 lg:grid-cols-2">' +
+        '<div><h3 class="font-semibold text-sm mb-3">Textures</h3>' +
+          rankChart(repartition('texture'), { color: '#8a5a3b' }) + '</div>' +
+        '<div><h3 class="font-semibold text-sm mb-3">Couleurs</h3>' +
+          rankChart(repartition('color').map(d => ({ ...d, color: PALETTE[d.label] })), {}) + '</div>' +
+      '</div>';
+  }
+
   // ── Load users ───────────────────────────────────────────────
   async function loadUsers() {
     const tbody = document.getElementById('users-tbody');
@@ -359,6 +591,8 @@
       } catch (e) { console.warn('Groupes indisponibles :', e.message); }
       updateStats();
       renderTable();
+      renderSignups();
+      renderGroups();
     } catch (e) {
       tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-red-400">❌ ${esc(e.message)}</td></tr>`;
     }
@@ -554,6 +788,7 @@
     // Table
     document.getElementById('search-input')?.addEventListener('input', renderTable);
     document.getElementById('refresh-btn')?.addEventListener('click', loadUsers);
+    document.getElementById('load-activity-btn')?.addEventListener('click', loadActivity);
 
     // Signout
     document.getElementById('signout-btn')?.addEventListener('click', async () => {
