@@ -6,7 +6,8 @@
     "build:css": "tailwindcss -i ./src/tailwind.css -o ./css/tailwind.css --minify",
     "watch:css": "tailwindcss -i ./src/tailwind.css -o ./css/tailwind.css --watch",
     "build:qrcode": "esbuild src/qrcode-entry.js --bundle --minify --platform=browser --format=iife --global-name=QRCode --outfile=vendor/qrcode.min.js",
-    "fetch:fonts": "python scripts/fetch-fonts.py"
+    "fetch:fonts": "python scripts/fetch-fonts.py",
+    "test": "node --test \"test/*.test.js\""
   },
   "repository": {
     "type": "git",
@@ -19,5 +20,8 @@
     "qrcode": "^1.5.3",
     "tailwindcss": "^3.4.17"
   },
-  "private": "true"
+  "private": "true",
+  "engines": {
+    "node": ">=22"
+  }
 }
