@@ -119,11 +119,7 @@ window.deleteLog = function(idOrIndex) {
     if (navigator.onLine) {
       window.SupabaseClient.deletePoopCloud(deleted.id).catch(e => $debug('cloud del err: ' + e.message));
     } else {
-      try {
-        const queue = JSON.parse(localStorage.getItem('cacaTracker.offlineQueue') || '[]');
-        queue.push({ type: 'del', id: deleted.id });
-        localStorage.setItem('cacaTracker.offlineQueue', JSON.stringify(queue));
-      } catch(e) { $debug('queue del err: ' + e.message); }
+      enqueueOffline({ type: 'del', id: deleted.id });
     }
   }
   $debug('🗑️ deleted');

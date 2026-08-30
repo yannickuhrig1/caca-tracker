@@ -227,7 +227,7 @@ function checkCustomReminder() {
 //  EXPORT iCal 📅
 // ===================================================
 function exportIcal() {
-  if (!state.logs.length) { alert('Aucun caca à exporter !'); return; }
+  if (!state.logs.length) { window.UI.toast('Aucun caca à exporter.', 'error'); return; }
   const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Caca-Tracker//FR','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
   state.logs.forEach((log, i) => {
     const dt = new Date(log.date);

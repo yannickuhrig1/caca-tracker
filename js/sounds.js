@@ -72,7 +72,7 @@ class SoundManager {
 
     setCustomSound(texture, dataUrl) {
         try { localStorage.setItem('customSound_' + texture, dataUrl); }
-        catch(e) { alert('Son trop volumineux pour être sauvegardé (max ~2MB)'); }
+        catch(e) { window.UI?.toast('Son trop volumineux (max ~2 Mo).', 'error'); }
     }
 
     clearCustomSound(texture) {
@@ -137,9 +137,9 @@ function createSoundControl() {
         <label class="text-lg cursor-pointer" title="Son personnalisé" style="position:relative">
           📁
           <input type="file" accept="audio/*" class="hidden"
-            onchange="(function(f,t){if(!f)return;const r=new FileReader();r.onload=e=>{soundManager.setCustomSound(t,e.target.result);alert('Son personnalisé sauvegardé !')};r.readAsDataURL(f)})(this.files[0],'${tex}')">
+            onchange="(function(f,t){if(!f)return;const r=new FileReader();r.onload=e=>{soundManager.setCustomSound(t,e.target.result);window.UI?.toast('Son personnalisé enregistré','success')};r.readAsDataURL(f)})(this.files[0],'${tex}')">
         </label>
-        ${soundManager.getCustomSound(tex) ? `<button onclick="soundManager.clearCustomSound('${tex}');alert('Son personnalisé supprimé')" class="text-xs text-red-400" title="Supprimer son custom">✕</button>` : ''}
+        ${soundManager.getCustomSound(tex) ? `<button onclick="soundManager.clearCustomSound('${tex}');window.UI?.toast('Son personnalisé supprimé','info')" class="text-xs text-red-400" title="Supprimer son custom">✕</button>` : ''}
         </div>`;
     }).join('');
 

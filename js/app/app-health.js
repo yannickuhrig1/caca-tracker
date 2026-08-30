@@ -207,7 +207,7 @@ function exportMedicalPDF() {
 
   const now = new Date();
   const logs = state.logs;
-  if (!logs.length) { alert('Aucune donnée à exporter !'); return; }
+  if (!logs.length) { window.UI.toast('Aucune donnée à exporter.', 'error'); return; }
 
   const total = logs.length;
   const sorted = [...logs].sort((a, b) => a.date - b.date);
