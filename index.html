@@ -113,7 +113,7 @@
               style="font-size:1.05rem;text-shadow:0 2px 12px rgba(0,0,0,0.3);letter-spacing:0.03em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
             Les cacas de Clémence 💖
           </h1>
-          <span class="text-[8px] tracking-[0.18em] uppercase font-medium opacity-55">Caca‑Tracker · v2.12.0</span>
+          <span id="app-version-short" class="text-[8px] tracking-[0.18em] uppercase font-medium opacity-55">Caca‑Tracker · v2.12.0</span>
         </div>
       </div>
       <!-- Ligne 2 / desktop droite : boutons -->
@@ -749,12 +749,16 @@
                 style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">
           👋 Revoir la présentation
         </button>
+        <button id="replay-whatsnew-btn" class="w-full mt-2 py-3 rounded-[1.25rem] font-bold text-sm"
+                style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">
+          🎉 Quoi de neuf ?
+        </button>
       </div>
 
       <!-- ℹ️ À propos -->
       <div class="card p-4 rounded-[1.5rem] text-xs text-center opacity-50 space-y-1">
         <div>💩 Les cacas de Clémence</div>
-        <div>Version 2.12.0 — Août 2026</div>
+        <div id="app-version-long">Version 2.12.0 — Août 2026</div>
         <div>Fait avec ❤️ par Papa</div>
       </div>
     </section>
@@ -964,6 +968,24 @@
     </div>
   </div>
 
+  <!-- QUOI DE NEUF (après une mise à jour) -->
+  <div id="whatsnew" class="fixed inset-0 z-[90] hidden" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(8px)"
+       role="dialog" aria-modal="true" aria-labelledby="whatsnew-title">
+    <div class="flex items-center justify-center h-full p-4">
+      <div class="rounded-[2rem] p-7 w-full max-w-sm space-y-4 shadow-2xl"
+           style="background:var(--bg-via);border:1px solid var(--card-border);color:var(--text-primary)">
+        <div class="text-center space-y-1">
+          <div class="text-5xl" aria-hidden="true">🎉</div>
+          <h3 id="whatsnew-title" class="font-extrabold text-2xl">Quoi de neuf ?</h3>
+          <div id="whatsnew-version" class="text-xs uppercase tracking-widest opacity-40"></div>
+        </div>
+        <div id="whatsnew-body" class="space-y-2 max-h-[45vh] overflow-y-auto"></div>
+        <button id="whatsnew-close" class="w-full py-3.5 rounded-[1.25rem] font-bold text-white"
+                style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">Super !</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ONBOARDING (première ouverture) -->
   <div id="onboarding" class="fixed inset-0 z-[90] hidden" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(8px)"
        role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
@@ -1147,6 +1169,7 @@
   <script src="js/app/app-badges.js"></script>
   <script src="js/app/app-sync.js"></script>
   <script src="js/app/app-onboarding.js"></script>
+  <script src="js/app/app-whatsnew.js"></script>
 
     <!-- Nouveaux modules JS -->
     <script src="vendor/supabase.min.js"></script>

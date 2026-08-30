@@ -264,6 +264,10 @@ function setupEvents() {
   $id('onboarding-next')?.addEventListener('click', nextOnboardingSlide);
   $id('onboarding-skip')?.addEventListener('click', closeOnboarding);
   $id('replay-onboarding-btn')?.addEventListener('click', () => window.replayOnboarding());
+
+  // Quoi de neuf
+  $id('whatsnew-close')?.addEventListener('click', closeWhatsNew);
+  $id('replay-whatsnew-btn')?.addEventListener('click', () => window.replayWhatsNew());
   $id('qr-modal')?.addEventListener('click', e => { if (e.target === $id('qr-modal')) $id('qr-modal').classList.add('hidden'); });
 
   // ── Avatar picker (profile modal) ────────────────────────
