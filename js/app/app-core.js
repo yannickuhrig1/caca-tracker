@@ -156,15 +156,15 @@ document.addEventListener('DOMContentLoaded', () => {
         switchTab('social');
         const inp = $id('invite-code-input');
         if (inp) inp.value = urlJoinCode.toUpperCase();
-        alert('Connecte-toi pour rejoindre le groupe avec le code : ' + urlJoinCode.toUpperCase());
+        window.UI.toast('Connecte-toi pour rejoindre le groupe — le code ' + urlJoinCode.toUpperCase() + ' est déjà saisi.', 'info', 7000);
       } else {
         try {
           const g = await window.SupabaseClient.joinGroup(urlJoinCode);
-          alert(`🎉 Tu as rejoint le groupe "${g.name}" !`);
+          window.UI.toast(`Tu as rejoint le groupe « ${g.name} »`, 'party');
           switchTab('social');
           window.SocialModule?.renderSocialTab();
         } catch(e) {
-          alert('Impossible de rejoindre : ' + e.message);
+          window.UI.toast('Impossible de rejoindre : ' + e.message, 'error', 6000);
         }
       }
     }, 1500);

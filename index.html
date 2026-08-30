@@ -97,7 +97,7 @@
       <div class="font-bold">Installer l'app</div>
       <div class="opacity-75 text-xs">Appuie sur <svg class="icon"><use href="#i-share"/></svg> puis "Sur l'écran d'accueil"</div>
     </div>
-    <button id="dismiss-banner" class="text-white/60 text-xl px-2">✕</button>
+    <button id="dismiss-banner" aria-label="Fermer la bannière d'installation" class="text-white/60 text-xl px-2">✕</button>
   </div>
 
   <!-- HEADER -->
@@ -181,7 +181,7 @@
       </div>
 
       <div class="flex justify-center mb-4">
-        <button id="poop-btn" class="poop-btn w-36 h-36 rounded-full text-6xl flex items-center justify-center"
+        <button id="poop-btn" aria-label="Enregistrer un caca" class="poop-btn w-36 h-36 rounded-full text-6xl flex items-center justify-center"
           style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">
           💩
         </button>
@@ -446,7 +446,7 @@
             </button>
             <button id="manage-group-btn" class="p-3 rounded-[1rem]"
               style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)"
-              title="Gérer le groupe">
+              title="Gérer le groupe" aria-label="Gérer le groupe">
               ⚙️
             </button>
           </div>
@@ -455,7 +455,7 @@
           <div id="group-management" class="hidden card p-4 rounded-[1.5rem]">
             <div class="flex items-center justify-between mb-3">
               <span class="font-bold text-sm">⚙️ Gestion du groupe</span>
-              <button id="close-management-btn" class="text-xs opacity-60 px-2 py-1">✕</button>
+              <button id="close-management-btn" aria-label="Fermer la gestion du groupe" class="text-xs opacity-60 px-2 py-1">✕</button>
             </div>
             <div id="members-management-list" class="space-y-2 mb-4"></div>
             <div class="space-y-2">
@@ -858,12 +858,12 @@
             <div>
               <div class="text-xs font-bold mb-2 opacity-70">Avatar</div>
               <div id="avatar-picker" class="flex gap-2 flex-wrap">
-                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400 selected" data-avatar="💩">💩</button>
-                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="🦄">🦄</button>
-                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="🌸">🌸</button>
-                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="🔥">🔥</button>
-                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="⭐">⭐</button>
-                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="🎀">🎀</button>
+                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400 selected" data-avatar="💩" aria-label="Choisir l'avatar 💩">💩</button>
+                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="🦄" aria-label="Choisir l'avatar 🦄">🦄</button>
+                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="🌸" aria-label="Choisir l'avatar 🌸">🌸</button>
+                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="🔥" aria-label="Choisir l'avatar 🔥">🔥</button>
+                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="⭐" aria-label="Choisir l'avatar ⭐">⭐</button>
+                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="🎀" aria-label="Choisir l'avatar 🎀">🎀</button>
               </div>
             </div>
             <div id="signup-error" class="hidden text-xs text-red-500 font-bold px-1"></div>
@@ -1026,7 +1026,7 @@
     <div class="flex flex-col h-full p-4 max-w-sm mx-auto">
       <div class="flex items-center justify-between mb-4 pt-2">
         <h2 id="day-detail-title" class="font-bold text-xl text-white">📅</h2>
-        <button id="close-day-detail-btn" class="text-white opacity-60 text-2xl">✕</button>
+        <button id="close-day-detail-btn" aria-label="Fermer le détail du jour" class="text-white opacity-60 text-2xl">✕</button>
       </div>
       <div id="day-detail-content" class="flex-1 overflow-y-auto space-y-2 pb-4"></div>
     </div>
@@ -1037,7 +1037,7 @@
     <div class="flex flex-col h-full p-4 max-w-sm mx-auto">
       <div class="flex items-center justify-between mb-4 pt-2">
         <h2 class="font-bold text-xl text-white">🎬 Mon année en review</h2>
-        <button id="close-wrapped-btn" class="text-white opacity-60 text-2xl">✕</button>
+        <button id="close-wrapped-btn" aria-label="Fermer le récapitulatif" class="text-white opacity-60 text-2xl">✕</button>
       </div>
       <div id="wrapped-content" class="flex-1 overflow-y-auto space-y-3 pb-4"></div>
     </div>
@@ -1119,12 +1119,12 @@
           <div>
             <div class="text-sm font-bold mb-3 text-slate-800">Couleur <span id="color-err" class="text-red-500 text-xs hidden">← obligatoire</span></div>
             <div class="flex gap-3 flex-wrap">
-              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:#8B4513" data-color="marron" title="Marron"></button>
-              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:#FFD700" data-color="jaune" title="Jaune"></button>
-              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:#228B22" data-color="vert" title="Vert"></button>
-              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:#111" data-color="noir" title="Noir"></button>
-              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:linear-gradient(45deg,#ff69b4,#ffd700,#00ced1,#9370db)" data-color="arc-en-ciel" title="Arc-en-ciel"></button>
-              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:#ef4444" data-color="rouge" title="Rouge"></button>
+              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:#8B4513" data-color="marron" title="Marron" aria-label="Couleur : marron"></button>
+              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:#FFD700" data-color="jaune" title="Jaune" aria-label="Couleur : jaune"></button>
+              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:#228B22" data-color="vert" title="Vert" aria-label="Couleur : vert"></button>
+              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:#111" data-color="noir" title="Noir" aria-label="Couleur : noir"></button>
+              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:linear-gradient(45deg,#ff69b4,#ffd700,#00ced1,#9370db)" data-color="arc-en-ciel" title="Arc-en-ciel" aria-label="Couleur : arc-en-ciel"></button>
+              <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:#ef4444" data-color="rouge" title="Rouge" aria-label="Couleur : rouge"></button>
             </div>
           </div>
 
@@ -1171,18 +1171,20 @@
   <script src="js/app/app-onboarding.js"></script>
   <script src="js/app/app-whatsnew.js"></script>
 
-    <!-- Nouveaux modules JS -->
-    <script src="vendor/supabase.min.js"></script>
-    <script src="js/supabase-client.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/social.js"></script>
-    <script src="js/push.js"></script>
-    <script src="js/sounds.js"></script>
-    <script src="js/jokes.js"></script>
-    <script src="js/achievements.js"></script>
-    <script src="js/predictions.js"></script>
-    <script src="js/charts.js"></script>
-    <script src="js/animations.js"></script>
+    <!-- Modules JS — defer : ils gardent leur ordre relatif et s'exécutent tous
+         avant DOMContentLoaded, donc avant le code d'amorçage d'app-core.js.
+         Les 208 Ko du SDK Supabase ne bloquent plus l'analyse du document. -->
+    <script src="vendor/supabase.min.js" defer></script>
+    <script src="js/supabase-client.js" defer></script>
+    <script src="js/ui.js" defer></script>
+    <script src="js/social.js" defer></script>
+    <script src="js/push.js" defer></script>
+    <script src="js/sounds.js" defer></script>
+    <script src="js/jokes.js" defer></script>
+    <script src="js/achievements.js" defer></script>
+    <script src="js/predictions.js" defer></script>
+    <script src="js/charts.js" defer></script>
+    <script src="js/animations.js" defer></script>
 
   <!-- Rapport médical (caché, imprimé via @media print) -->
   <div id="print-report"></div>

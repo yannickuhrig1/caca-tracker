@@ -79,12 +79,9 @@ function addPoop() {
       window.SupabaseClient.savePoopCloud(poop).catch(e => $debug('cloud save err: ' + e.message));
     } else {
       // Hors ligne → mettre en queue
-      try {
-        const queue = JSON.parse(localStorage.getItem('cacaTracker.offlineQueue') || '[]');
-        queue.push({ type: 'add', poop });
-        localStorage.setItem('cacaTracker.offlineQueue', JSON.stringify(queue));
+      if (enqueueOffline({ type: 'add', poop })) {
         $debug('📥 Hors ligne — caca mis en queue (sync au retour)');
-      } catch(e) { $debug('queue err: ' + e.message); }
+      }
     }
   }
 
@@ -180,12 +177,10 @@ function saveEditedPoop() {
     if (navigator.onLine) {
       window.SupabaseClient.savePoopCloud(log).catch(e => $debug('cloud edit err: ' + e.message));
     } else {
-      try {
-        const queue = JSON.parse(localStorage.getItem('cacaTracker.offlineQueue') || '[]');
-        queue.push({ type: 'add', poop: log });   // 'add' = upsert, donc vaut aussi pour une édition
-        localStorage.setItem('cacaTracker.offlineQueue', JSON.stringify(queue));
+      // 'add' = upsert, donc vaut aussi pour une édition
+      if (enqueueOffline({ type: 'add', poop: log })) {
         $debug('📥 Hors ligne — modification mise en queue');
-      } catch (e) { $debug('queue edit err: ' + e.message); }
+      }
     }
   }
 

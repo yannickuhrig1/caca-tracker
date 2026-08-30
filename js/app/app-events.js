@@ -137,16 +137,16 @@ function setupEvents() {
   // Forgot password
   $id('forgot-password-btn')?.addEventListener('click', async () => {
     const email = $id('auth-email').value.trim();
-    if (!email) { alert('Entre ton adresse email d\'abord.'); return; }
+    if (!email) { window.UI.toast("Entre d'abord ton adresse email.", 'error'); return; }
     const btn = $id('forgot-password-btn');
     btn.textContent = '⏳ Envoi…';
     btn.disabled = true;
     try {
       await window.SupabaseClient.resetPassword(email);
-      alert('📧 Email envoyé ! Vérifie ta boîte mail pour réinitialiser ton mot de passe.');
+      window.UI.toast('Email envoyé — vérifie ta boîte mail pour réinitialiser ton mot de passe.', 'success', 6000);
       closeAuthModal();
     } catch(e) {
-      alert('Erreur : ' + e.message);
+      window.UI.toast('Erreur : ' + e.message, 'error');
     } finally {
       btn.textContent = 'Mot de passe oublié ?';
       btn.disabled = false;
@@ -172,7 +172,7 @@ function setupEvents() {
     try {
       await window.SupabaseClient.updatePassword(pwd);
       $id('new-password-modal').classList.add('hidden');
-      alert('✅ Mot de passe modifié avec succès !');
+      window.UI.toast('Mot de passe modifié', 'success');
     } catch(e) {
       errEl.textContent = 'Erreur : ' + e.message;
       errEl.classList.remove('hidden');
@@ -276,7 +276,8 @@ function setupEvents() {
   if (avatarGrid) {
     avatarGrid.innerHTML = AVATARS.map(a => `
       <button class="profile-avatar-opt w-10 h-10 rounded-[0.75rem] flex items-center justify-center text-xl hover:scale-110 transition-transform"
-        data-av="${a}" style="background:color-mix(in srgb,var(--accent) 8%,transparent)">${a}</button>`
+        data-av="${a}" aria-label="Choisir l'avatar ${a}"
+        style="background:color-mix(in srgb,var(--accent) 8%,transparent)">${a}</button>`
     ).join('');
     avatarGrid.querySelectorAll('.profile-avatar-opt').forEach(btn => {
       btn.addEventListener('click', async () => {

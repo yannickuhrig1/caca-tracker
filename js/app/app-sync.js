@@ -132,34 +132,99 @@ window.syncCloudData = syncCloudData;
 // ===================================================
 //  OFFLINE QUEUE  (feature 14)
 // ===================================================
+// Un item qui échoue pour une raison définitive (compte supprimé, donnée
+// rejetée) était jusqu'ici remis en file à chaque tentative, donc réessayé
+// indéfiniment. La file n'avait par ailleurs aucun plafond : un long passage
+// hors ligne pouvait saturer le localStorage et faire perdre en silence les
+// entrées suivantes.
+const QUEUE_KEY          = 'cacaTracker.offlineQueue';
+const QUEUE_MAX          = 500;   // au-delà, on écarte les plus anciens
+const QUEUE_MAX_ESSAIS    = 5;    // au-delà, l'item est abandonné
+
+/** Lit la file, en tolérant un contenu corrompu. */
+function readQueue() {
+  try {
+    const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+    return Array.isArray(q) ? q : [];
+  } catch { return []; }
+}
+
+/**
+ * Ajoute un item en respectant le plafond.
+ * Fonction pure : rend la nouvelle file et ce qui a été écarté, pour que
+ * l'appelant décide quoi en dire à l'utilisatrice.
+ */
+function pushToQueue(queue, item, max = QUEUE_MAX) {
+  const suivante = [...queue, { ...item, essais: 0 }];
+  if (suivante.length <= max) return { queue: suivante, ecartes: [] };
+  const trop = suivante.length - max;
+  return { queue: suivante.slice(trop), ecartes: suivante.slice(0, trop) };
+}
+
+/**
+ * Trie le résultat d'une passe de synchronisation.
+ * Fonction pure, testable sans réseau : à partir des items et de leur issue,
+ * rend ceux à réessayer et ceux à abandonner définitivement.
+ */
+function triageQueue(resultats, maxEssais = QUEUE_MAX_ESSAIS) {
+  const aReessayer = [], abandonnes = [];
+  for (const { item, ok } of resultats) {
+    if (ok) continue;
+    const essais = (item.essais || 0) + 1;
+    (essais >= maxEssais ? abandonnes : aReessayer).push({ ...item, essais });
+  }
+  return { aReessayer, abandonnes };
+}
+
+function enqueueOffline(item) {
+  try {
+    const { queue, ecartes } = pushToQueue(readQueue(), item);
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+    if (ecartes.length) {
+      $debug(`⚠️ File offline pleine — ${ecartes.length} en attente écarté(s)`);
+      window.UI?.toast(`File d'attente pleine : ${ecartes.length} modification(s) hors ligne perdue(s).`, 'error');
+    }
+    return true;
+  } catch (e) {
+    $debug('queue err: ' + e.message);
+    return false;
+  }
+}
+window.enqueueOffline = enqueueOffline;
+
 async function processOfflineQueue() {
   if (!window.SupabaseClient?.isLoggedIn()) return;
-  const raw = localStorage.getItem('cacaTracker.offlineQueue');
-  if (!raw) return;
-  let queue;
-  try { queue = JSON.parse(raw); } catch { return; }
+  const queue = readQueue();
   if (!queue.length) return;
 
-  const remaining = [];
+  const resultats = [];
   for (const item of queue) {
     try {
-      if (item.type === 'add') {
-        await window.SupabaseClient.savePoopCloud(item.poop);
-      } else if (item.type === 'del') {
-        await window.SupabaseClient.deletePoopCloud(item.id);
-      }
-      $debug(`☁️ Queue: ${item.type} envoyé`);
-    } catch(e) {
+      if (item.type === 'add')      await window.SupabaseClient.savePoopCloud(item.poop);
+      else if (item.type === 'del') await window.SupabaseClient.deletePoopCloud(item.id);
+      resultats.push({ item, ok: true });
+    } catch (e) {
       $debug('queue flush err: ' + e.message);
-      remaining.push(item); // réessayer plus tard
+      resultats.push({ item, ok: false });
     }
   }
 
-  if (remaining.length) {
-    localStorage.setItem('cacaTracker.offlineQueue', JSON.stringify(remaining));
+  const { aReessayer, abandonnes } = triageQueue(resultats);
+
+  // Un abandon doit se voir : sinon une entrée disparaît du cloud sans que
+  // personne ne le sache, alors qu'elle reste visible en local.
+  if (abandonnes.length) {
+    $debug(`❌ ${abandonnes.length} élément(s) abandonné(s) après ${QUEUE_MAX_ESSAIS} tentatives`);
+    window.UI?.toast(
+      `${abandonnes.length} modification(s) n'ont pas pu être synchronisée(s) et ont été abandonnées.`,
+      'error', 6000);
+  }
+
+  if (aReessayer.length) {
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(aReessayer));
   } else {
-    localStorage.removeItem('cacaTracker.offlineQueue');
-    $debug('✅ File offline vidée — tout synchronisé');
+    localStorage.removeItem(QUEUE_KEY);
+    if (resultats.length) $debug('✅ File offline vidée — tout synchronisé');
   }
 }
 window.processOfflineQueue = processOfflineQueue;
@@ -186,7 +251,7 @@ function importData() {
     try {
       const imported = JSON.parse(e.target.result);
       if (!imported.logs || !Array.isArray(imported.logs)) {
-        alert('Fichier invalide : aucun log trouvé.');
+        window.UI.toast('Fichier invalide : aucune entrée trouvée.', 'error');
         return;
       }
       const existingIds = new Set(state.logs.map(l => String(l.id)));
@@ -194,9 +259,9 @@ function importData() {
       state.logs = [...state.logs, ...newLogs].sort((a, b) => b.date - a.date);
       saveState(state);
       renderAll();
-      alert(`✅ ${newLogs.length} entrée(s) importée(s) !`);
+      window.UI.toast(`${newLogs.length} entrée(s) importée(s)`, 'success');
     } catch(err) {
-      alert('Erreur import : ' + err.message);
+      window.UI.toast("Erreur d'import : " + err.message, 'error');
     }
   };
   reader.readAsText(file);
