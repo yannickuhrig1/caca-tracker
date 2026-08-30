@@ -3,7 +3,7 @@
 --  Corrige la lecture anonyme de `profiles` (emails) et `groups`
 --  (codes d'invitation). Voir supabase/SECURITE-RLS.md.
 --
---  ⚠️  NON APPLIQUÉ. À relire, puis à jouer manuellement.
+--  ✅ APPLIQUÉ en production le 2026-08-30 sur caca-db (NAS Unraid).
 --
 --  ORDRE DE DÉPLOIEMENT — le code applicatif d'abord, ce fichier ensuite.
 --  findGroupByInvite() (js/supabase-client.js) essaie la fonction SQL puis
@@ -48,6 +48,7 @@ ALTER TABLE public.push_reminder_state ENABLE ROW LEVEL SECURITY;
 --    On repart de zéro : toute policy SELECT permissive ajoutée
 --    à la main hors dépôt est supprimée ici.
 -- ------------------------------------------------------------
+DROP POLICY IF EXISTS "Profiles visibles par tous"           ON public.profiles;
 DROP POLICY IF EXISTS "Voir son propre profil"              ON public.profiles;
 DROP POLICY IF EXISTS "Voir profils des membres du groupe"  ON public.profiles;
 DROP POLICY IF EXISTS "Profils publics"                     ON public.profiles;
