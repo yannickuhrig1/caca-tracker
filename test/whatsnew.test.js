@@ -51,7 +51,10 @@ test('changelogSince — plusieurs versions sautées : toutes remontent', () => 
 });
 
 test('changelogSince — une seule version de retard', () => {
-  const e = changelogSince('2.12.0');
+  // L'avant-dernière entrée publiée, quelle qu'elle soit : écrire la version en
+  // dur ferait échouer ce test à chaque nouvelle version ajoutée au changelog.
+  const precedente = APP_CHANGELOG[1].version;
+  const e = changelogSince(precedente);
   assert.strictEqual(e.length, 1);
   assert.strictEqual(e[0].version, APP_VERSION);
 });

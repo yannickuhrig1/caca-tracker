@@ -86,6 +86,47 @@ window.toggleStickyHeader = function() {
 };
 
 // ===================================================
+//  POOPMAP 🗺️ (reglages)
+// ===================================================
+function refreshPoopMapSettings() {
+  const on   = !!window.PoopMapModule?.geoEnabled();
+  const btn  = $id('poopmap-geo-toggle');
+  const knob = $id('poopmap-geo-knob');
+  if (btn)  btn.style.background  = on ? '#4f46e5' : 'rgba(0,0,0,0.15)';
+  if (knob) knob.style.transform  = on ? 'translateX(20px)' : 'translateX(0)';
+}
+
+window.togglePoopMapGeo = function() {
+  const on = !!window.PoopMapModule?.geoEnabled();
+  window.PoopMapModule?.setGeoEnabled(!on);
+  refreshPoopMapSettings();
+  refreshGeoButton();
+};
+
+// Efface les coordonnees de toutes les entrees — les lieux, eux, restent.
+window.forgetPoopMapPositions = async function() {
+  const concernes = state.logs.filter(l => window.PoopMapModule?.hasGeo(l));
+  if (!concernes.length) { window.UI.toast('Aucune position enregistrée.', 'info'); return; }
+  const ok = await window.UI.confirm(
+    `Effacer la position de ${concernes.length} caca${concernes.length > 1 ? 's' : ''} ? Les lieux sont conservés.`,
+    { title: '🧹 Effacer les positions', okLabel: 'Effacer', danger: true });
+  if (!ok) return;
+
+  const n = window.PoopMapModule.forgetAllPositions(state.logs);
+  saveState(state);
+  renderAll();
+  if ($id('poopmap-container')) window.PoopMapModule.renderCard(state.logs, $id('poopmap-container'));
+
+  // Le cloud garde une copie : on repousse les entrees vidées.
+  if (window.SupabaseClient?.isLoggedIn() && navigator.onLine) {
+    await Promise.allSettled(concernes.map(l => window.SupabaseClient.savePoopCloud(l)));
+  } else if (window.SupabaseClient?.isLoggedIn()) {
+    concernes.forEach(l => enqueueOffline({ type: 'add', poop: l }));
+  }
+  window.UI.toast(`${n} position${n > 1 ? 's' : ''} effacée${n > 1 ? 's' : ''}`, 'success');
+};
+
+// ===================================================
 //  TABS
 // ===================================================
 function switchTab(name) {
@@ -99,7 +140,7 @@ function switchTab(name) {
   if (name === 'admin') renderHistory();
   if (name === 'dashboard') renderDashboard();
   if (name === 'social') window.SocialModule?.renderSocialTab();
-  if (name === 'settings') { setupNotifications(); setupCustomReminder(); applyStickyHeader(); }
+  if (name === 'settings') { setupNotifications(); setupCustomReminder(); applyStickyHeader(); refreshPoopMapSettings(); }
 }
 
 // ===================================================
@@ -107,8 +148,36 @@ function switchTab(name) {
 // ===================================================
 function openDrawer() {
   refreshRetroMax();
+  refreshGeoButton();
   $id('drawer').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+}
+
+// Les lieux viennent de PoopMapModule.PLACES : une seule liste à maintenir.
+function buildPlaceGrid() {
+  const grid = $id('place-grid');
+  if (!grid || !window.PoopMapModule) return;
+  grid.innerHTML = window.PoopMapModule.PLACES.map(p => `
+    <button type="button" class="place-btn p-2 rounded-[1rem] border-2 border-gray-200 text-center text-slate-800" data-place="${p.id}">
+      ${p.emoji}<div class="text-xs mt-0.5">${p.label}</div>
+    </button>`).join('');
+}
+
+// Le bouton 📍 n'existe que si la position est autorisée dans les Réglages.
+function refreshGeoButton() {
+  const btn = $id('geo-btn');
+  if (!btn) return;
+  btn.classList.toggle('hidden', !window.PoopMapModule?.geoEnabled());
+  const status = $id('geo-status');
+  if (status && !pendingGeo) status.textContent = '';
+}
+
+function selectPlace(id) {
+  selectedPlace = id;
+  document.querySelectorAll('.place-btn').forEach(b => {
+    b.classList.toggle('border-amber-400', b.dataset.place === id);
+    b.classList.toggle('bg-amber-50', b.dataset.place === id);
+  });
 }
 
 function closeDrawer() {
@@ -123,7 +192,12 @@ function closeDrawer() {
   selectedTexture = null;
   selectedColor   = null;
   selectedMood    = null;
+  selectedPlace   = null;
+  pendingGeo      = null;
   document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('border-amber-400','bg-amber-50'));
+  document.querySelectorAll('.place-btn').forEach(b => b.classList.remove('border-amber-400','bg-amber-50'));
+  const geoStatus = $id('geo-status');
+  if (geoStatus) geoStatus.textContent = '';
   $id('retro-chk').checked = false;
   $id('retro-date-wrap').classList.add('hidden');
   $id('retro-toggle-row').classList.remove('hidden');

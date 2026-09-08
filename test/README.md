@@ -27,6 +27,7 @@ remarque.
 |---|---|---|
 | `challenges.test.js` | `weeklyChallengeType`, `scoreChallenge`, `getChallengeMeta` | décident du classement d'un groupe : une erreur fausse le Hall of Fame et les couronnes |
 | `streak.test.js` | `calculateStreak` | logique du joker 🃏, la plus subtile de l'app, affichée en permanence dans le header |
+| `poopmap.test.js` | `placeStats`, `clusterPoints`, `geoStats`, `fitView`, projection slippy map | cadrent la carte et classent les lieux : un cadrage faux sort les pastilles de l'écran sans rien signaler |
 
 ## La suite détecte-t-elle vraiment les régressions ?
 
@@ -42,6 +43,10 @@ attend du rouge.
 | `streak` : `=== 86400000` → `<= 86400000` | ⚪️ non détectée — **mutant équivalent** : les jours sont dédupliqués puis triés, l'écart ne vaut donc jamais 0 et `<=` se comporte exactement comme `===` |
 
 ## Ajouter un test
+
+Attention aux valeurs qui traversent `node:vm` : elles viennent d'un autre
+realm, donc `deepStrictEqual` refuse deux tableaux pourtant identiques. Comparer
+des valeurs simples (longueur, `join('|')`) comme dans `poopmap.test.js`.
 
 Viser les fonctions **pures** — celles qui prennent des données et rendent une
 valeur, sans toucher au DOM. Les bons candidats restants : `getDailyJoke`

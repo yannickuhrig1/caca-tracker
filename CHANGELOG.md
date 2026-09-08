@@ -5,6 +5,41 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.14.0] — 2026-09-08
+
+### Ajouté
+- **🗺️ PoopMap** — deux niveaux indépendants, le second entièrement facultatif :
+  - **Lieu** : 8 étiquettes (🏠 Maison, 💼 Boulot, 🏫 École, 🍽️ Resto, 👯 Chez une
+    copine, 🚆 Transport, 🌳 Nature, 🚻 Ailleurs) proposées à la saisie, affichées
+    dans l'historique et classées dans un nouveau bloc de l'onglet Stats. Aucune
+    autorisation à demander, fonctionne hors ligne.
+  - **Position GPS** : **désactivée par défaut**, à activer dans ⚙️ Réglages. Elle
+    n'est lue que sur clic explicite du bouton 📍 dans la fiche de saisie, arrondie
+    à 4 décimales (~11 m) et jamais partagée avec le groupe. Bouton
+    « 🧹 Effacer toutes mes positions » qui conserve les lieux.
+  - **Carte** dessinée à la main : tuiles OpenStreetMap en `<img>` + calcul slippy
+    map, déplacement au doigt/souris, zoom, recadrage, pastilles regroupées par
+    endroit. **Aucune bibliothèque ajoutée** (pas de Leaflet). Hors ligne les tuiles
+    ne chargent pas, les pastilles restent positionnées entre elles.
+  - Stats associées : nombre de spots, cacas géolocalisés, distance du plus lointain
+    au « QG » (l'endroit le plus fréquenté).
+- **3 badges** : 🧭 Exploratrice (3 lieux), 🌍 Globe-trotteuse (les 8 lieux),
+  🏠 Casanière (20 cacas à la maison) — le total passe de 58 à 61.
+- `UI.info()` — modale de lecture seule, utilisée par le détail d'une pastille.
+- Migration `13_20260908_poopmap.sql` : colonnes `place`, `lat`, `lon` sur `poops`.
+  **Non appliquée en production à ce jour** ; `savePoopCloud()` / `getMyPoops()`
+  détectent leur absence (PGRST204 / 42703) et rejouent la requête sans elles, donc
+  l'app fonctionne avant comme après. Sans la migration, lieu et position restent
+  locaux à l'appareil.
+
+### Corrigé
+- Sync cloud → local : `isRetro` était relu sous le nom `p.is_retro`, que
+  `getMyPoops()` ne renvoie pas (il mappe déjà vers `isRetro`). Les entrées
+  récupérées depuis le cloud perdaient donc leur marque « ⏪ retard ».
+
+### Modifié
+- 🔧 Bump cache SW caca-v31 → caca-v32
+
 ## [2.13.0] — 2026-08-30
 
 ### Ajouté

@@ -87,16 +87,16 @@ async function syncCloudData() {
     for (const p of cloudPoops) {
       const key = String(p.id); // p.id = local_id (timestamp) tel que mappé par getMyPoops()
       if (!localMap.has(key)) {
-        state.logs.push({
+        state.logs.push(applyPoopMapFields({
           id:        p.id,
           date:      p.date,
           texture:   p.texture,
           color:     p.color,
           comment:   p.comment || '',
-          isRetro:   p.is_retro,
+          isRetro:   p.isRetro,
           mood:      p.mood || null,
           updated_at: p.updated_at
-        });
+        }, p));
         changed++;
       } else {
         const local = localMap.get(key);
@@ -108,10 +108,11 @@ async function syncCloudData() {
             texture:   p.texture,
             color:     p.color,
             comment:   p.comment || '',
-            isRetro:   p.is_retro,
+            isRetro:   p.isRetro,
             mood:      p.mood || null,
             updated_at: p.updated_at
           });
+          applyPoopMapFields(local, p);
           changed++;
         }
       }
@@ -127,6 +128,21 @@ async function syncCloudData() {
     $debug('cloud sync err: ' + e.message);
   }
 }
+// Champs PoopMap d'une entrée cloud. Une position effacée ailleurs doit
+// disparaître ici aussi : on supprime lat/lon plutôt que de les laisser à null,
+// car `hasGeo` teste la présence de nombres.
+function applyPoopMapFields(target, cloud) {
+  target.place = cloud.place || null;
+  if (typeof cloud.lat === 'number' && typeof cloud.lon === 'number') {
+    target.lat = cloud.lat;
+    target.lon = cloud.lon;
+  } else {
+    delete target.lat;
+    delete target.lon;
+  }
+  return target;
+}
+
 window.syncCloudData = syncCloudData;
 
 // ===================================================

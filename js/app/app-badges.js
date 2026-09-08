@@ -79,6 +79,10 @@ const BADGE_DEFS = [
   { id:'lucky7',       icon:'🎲', label:'Lucky 7',                 desc:'7 cacas un 7 du mois',              color:'#16a34a' },
   { id:'midnight',     icon:'🕛', label:'Minuit',                  desc:'Caca entre 23h et 1h',              color:'#312e81' },
   { id:'allWeekDays',  icon:'🗓️', label:'Toute la Semaine',       desc:'Caca chaque jour lun→dim',          color:'#0891b2' },
+  // ── PoopMap 🗺️ ────────────────────────────────────────────
+  { id:'explorer',     icon:'🧭', label:'Exploratrice',            desc:'3 lieux différents utilisés',       color:'#0ea5e9' },
+  { id:'globetrotter', icon:'🌍', label:'Globe-trotteuse',         desc:'Les 8 lieux utilisés',              color:'#7c3aed' },
+  { id:'casaniere',    icon:'🏠', label:'Casanière',               desc:'20 cacas à la maison',              color:'#f59e0b' },
 ];
 
 function buildBadgesGrid() {
@@ -148,6 +152,11 @@ function updateBadges() {
   const commentCount = logs.filter(l => l.comment?.trim()).length;
   const moodsUsed    = new Set(logs.map(l => l.mood).filter(Boolean));
   const allMoodsList = ['normal','douloureux','urgent','difficile'];
+
+  // Lieux (PoopMap)
+  const placesUsed = new Set(logs.map(l => l.place).filter(Boolean));
+  const nbPlaces   = window.PoopMapModule?.PLACES.length || 8;
+  const atHome     = logs.filter(l => l.place === 'maison').length;
 
   // Colors & textures
   const colorsUsed   = new Set(logs.map(l => l.color).filter(Boolean));
@@ -285,6 +294,10 @@ function updateBadges() {
     midnight:     { pct: logs.some(l=>{const h=new Date(l.date).getHours();return h>=23||h<1;})?100:0,
                     done: logs.some(l=>{const h=new Date(l.date).getHours();return h>=23||h<1;}) },
     allWeekDays:  { pct: allWeekDaysDone?100:0,                       done: allWeekDaysDone },
+    // PoopMap
+    explorer:     { pct: Math.min(100,(placesUsed.size/3)*100),       done: placesUsed.size>=3 },
+    globetrotter: { pct: Math.min(100,(placesUsed.size/nbPlaces)*100),done: placesUsed.size>=nbPlaces },
+    casaniere:    { pct: Math.min(100,(atHome/20)*100),               done: atHome>=20 },
   };
 
   Object.entries(badges).forEach(([id, {pct, done}]) => {

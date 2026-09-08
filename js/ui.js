@@ -95,5 +95,18 @@ window.UI = (() => {
     });
   }
 
-  return { toast, confirm, prompt };
+  // ---- Info (modale de lecture seule ; bodyHTML est construit par l'appelant) ----
+  function info({ title = '', bodyHTML = '', okLabel = 'Fermer' } = {}) {
+    const overlay = buildModal({
+      title,
+      bodyHTML,
+      buttonsHTML: `<button class="ui-btn ui-btn-primary" data-act="ok">${esc(okLabel)}</button>`
+    });
+    const done = () => closeModal(overlay);
+    overlay.querySelector('[data-act="ok"]').addEventListener('click', done);
+    overlay.addEventListener('click', e => { if (e.target === overlay) done(); });
+    return overlay;
+  }
+
+  return { toast, confirm, prompt, info };
 })();

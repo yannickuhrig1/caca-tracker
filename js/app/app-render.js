@@ -88,7 +88,11 @@ function renderHistory() {
     const dt = new Date(log.date).toLocaleString('fr-FR', {weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
     const icon = textureEmoji(log.texture);
     const retroTag = log.isRetro ? `<span class="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full ml-1 font-bold">⏪ retard</span>` : '';
-    const note = (log.mood ? `<span class="text-xs px-2 py-0.5 rounded-full mr-1" style="background:color-mix(in srgb,var(--accent) 12%,transparent)">${{normal:'😊',douloureux:'😫',urgent:'⚡',difficile:'😴'}[log.mood] || ''} ${log.mood}</span>` : '') + (log.comment ? `<div class="text-xs mt-1 bg-amber-100 text-amber-800 px-2 py-1 rounded-xl">${esc(log.comment)}</div>` : '');
+    const placeMeta = window.PoopMapModule?.placeMeta(log.place);
+    const placeTag = placeMeta
+      ? `<span class="text-xs px-2 py-0.5 rounded-full mr-1" style="background:color-mix(in srgb,var(--accent) 12%,transparent)">${placeMeta.emoji} ${esc(placeMeta.label)}${window.PoopMapModule.hasGeo(log) ? ' 📍' : ''}</span>`
+      : '';
+    const note = placeTag + (log.mood ? `<span class="text-xs px-2 py-0.5 rounded-full mr-1" style="background:color-mix(in srgb,var(--accent) 12%,transparent)">${{normal:'😊',douloureux:'😫',urgent:'⚡',difficile:'😴'}[log.mood] || ''} ${log.mood}</span>` : '') + (log.comment ? `<div class="text-xs mt-1 bg-amber-100 text-amber-800 px-2 py-1 rounded-xl">${esc(log.comment)}</div>` : '');
     return `<div class="card flex items-center gap-3 p-4 rounded-[1.5rem] shadow">
       <div class="w-12 h-12 rounded-[1rem] flex items-center justify-center text-2xl flex-shrink-0"
         style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">${icon}</div>
@@ -209,6 +213,10 @@ function renderStats() {
 
   // Bristol Scale (feature 17)
   renderBristolScale();
+
+  // PoopMap (poopmap.js)
+  const poopmapEl = $id('poopmap-container');
+  if (poopmapEl && window.PoopMapModule) window.PoopMapModule.renderCard(state.logs, poopmapEl);
 
   // Heatmap calendrier (charts.js)
   if (typeof createHeatmap === 'function') {

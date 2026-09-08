@@ -343,6 +343,9 @@
       <!-- Bristol Scale -->
       <div id="bristol-container" class="mb-4"></div>
 
+      <!-- PoopMap (injectée par js/poopmap.js) -->
+      <div id="poopmap-container" class="mb-4"></div>
+
       <!-- Heatmap calendrier (injectée par charts.js) -->
       <div id="heatmap-container" class="mb-4"></div>
 
@@ -615,6 +618,29 @@
         <div id="notif-status" class="text-xs opacity-60 text-center"></div>
       </div>
 
+      <!-- 🗺️ PoopMap -->
+      <div class="card p-4 rounded-[1.5rem] mb-4">
+        <div class="font-bold mb-3 text-sm">🗺️ PoopMap</div>
+        <div class="flex items-center justify-between text-sm mb-3">
+          <div>
+            <div class="font-medium">Enregistrer la position</div>
+            <div class="text-xs opacity-60">Un bouton 📍 apparaît à la saisie. Rien n'est envoyé sans ton clic.</div>
+          </div>
+          <button id="poopmap-geo-toggle" onclick="togglePoopMapGeo()"
+            class="relative w-11 h-6 rounded-full transition-colors duration-300 focus:outline-none"
+            style="background:rgba(0,0,0,0.15)" aria-label="Enregistrer la position GPS">
+            <span id="poopmap-geo-knob"
+              class="absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow transition-transform duration-300"
+              style="transform:translateX(0)"></span>
+          </button>
+        </div>
+        <button id="poopmap-forget-btn" class="w-full py-2 text-sm rounded-[1rem] font-bold"
+          style="background:color-mix(in srgb,#ef4444 12%,transparent);color:#ef4444;border:1.5px solid color-mix(in srgb,#ef4444 30%,transparent)">
+          🧹 Effacer toutes mes positions
+        </button>
+        <div class="text-xs opacity-50 text-center mt-2">Les lieux (🏠 💼 🍽️…) sont conservés.</div>
+      </div>
+
       <!-- 📤 Export -->
       <div class="card p-4 rounded-[1.5rem] mb-4">
         <div class="font-bold mb-3 text-sm">📤 Export</div>
@@ -680,6 +706,7 @@
             <p><strong>🏆 Records personnels</strong> — Meilleur streak, meilleur jour, meilleure semaine, meilleur mois.</p>
             <p><strong>🔬 Échelle de Bristol</strong> — Répartition de tes cacas sur les 7 niveaux de l'échelle médicale de Bristol.</p>
             <p><strong>📅 Carte thermique annuelle</strong> — Vue d'ensemble de l'année entière : chaque case = un jour, plus c'est foncé, plus tu as cacé.</p>
+            <p><strong>🗺️ PoopMap</strong> — Carte de tes cacas géolocalisés + classement de tes lieux (🏠 Maison, 💼 Boulot, 🍽️ Resto…). La position est facultative et s'active dans les Réglages.</p>
             <p><strong>🏥 PDF médical</strong> — Génère un rapport imprimable avec toutes tes stats pour ton médecin.</p>
           </div>
         </details>
@@ -704,6 +731,7 @@
           <div class="px-4 pb-4 space-y-2 text-sm opacity-80 leading-relaxed">
             <p><strong>Liste des 20 derniers cacas</strong> — Date, texture, couleur, humeur et commentaire.</p>
             <p><strong>⏪ Date rétroactive</strong> — Lors de l'enregistrement, tu peux indiquer une heure passée si tu as oublié de noter.</p>
+            <p><strong>📍 Lieu</strong> — Indique où ça s'est passé (🏠 💼 🏫 🍽️ 👯 🚆 🌳 🚻). Alimente la PoopMap dans les Stats.</p>
             <p><strong>🗑️ Supprimer</strong> — Bouton poubelle pour effacer une entrée. Si tu es connectée, la suppression se synchronise dans le cloud.</p>
           </div>
         </details>
@@ -734,6 +762,7 @@
             <p><strong>🔊 Sons</strong> — Active/désactive les bruitages et règle le volume.</p>
             <p><strong>🔔 Rappel automatique</strong> — Reçois une notification si tu n'as pas cacé depuis X heures (12h, 24h, 36h ou 48h).</p>
             <p><strong>⏰ Rappel à heure fixe</strong> — Notif quotidienne à une heure choisie si aucun caca ce jour-là.</p>
+            <p><strong>🗺️ PoopMap</strong> — Autorise (ou non) l'enregistrement de la position GPS avec tes cacas, et efface d'un coup toutes les positions déjà enregistrées.</p>
             <p><strong>📅 Export iCal</strong> — Télécharge un fichier .ics avec tous tes cacas comme événements de calendrier (compatible iPhone, Google Calendar).</p>
             <p><strong>🎨 Thème</strong> — 16 thèmes disponibles dans ton profil (clic sur ton avatar en haut). Dont 🌙 mode nuit automatique de 22h à 7h.</p>
             <p><strong>🖼️ Avatar</strong> — 30 emojis disponibles comme photo de profil.</p>
@@ -1145,6 +1174,17 @@
             </div>
           </div>
 
+          <!-- Lieu (optionnel) — PoopMap -->
+          <div>
+            <div class="text-sm font-bold mb-2 text-slate-800">Lieu (optionnel)</div>
+            <div class="grid grid-cols-4 gap-2" id="place-grid"></div>
+            <button type="button" id="geo-btn"
+              class="hidden w-full mt-2 py-2 rounded-[1rem] border-2 border-gray-200 text-sm font-bold text-slate-800">
+              📍 Ajouter ma position
+            </button>
+            <div id="geo-status" class="text-xs text-slate-500 mt-1 text-center"></div>
+          </div>
+
           <!-- Boutons -->
           <div class="flex gap-3 pb-2">
             <button id="cancel-drawer" class="flex-1 bg-gray-100 text-slate-700 py-4 rounded-[1.25rem] font-bold">Annuler</button>
@@ -1184,6 +1224,7 @@
     <script src="js/achievements.js" defer></script>
     <script src="js/predictions.js" defer></script>
     <script src="js/charts.js" defer></script>
+    <script src="js/poopmap.js" defer></script>
     <script src="js/animations.js" defer></script>
 
   <!-- Rapport médical (caché, imprimé via @media print) -->

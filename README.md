@@ -4,7 +4,7 @@
 
 [![PWA](https://img.shields.io/badge/PWA-compatible-brightgreen)](#)
 [![Vanilla JS](https://img.shields.io/badge/Vanilla%20JS-no%20framework-yellow)](#)
-[![Version](https://img.shields.io/badge/version-2.13.0-orange)](#)
+[![Version](https://img.shields.io/badge/version-2.14.0-orange)](#)
 [![Supabase](https://img.shields.io/badge/Backend-Supabase%20self--hosted%20(NAS)-3ECF8E)](#)
 
 ---
@@ -22,6 +22,8 @@
 ### Saisie d'un caca
 - **6 textures** : Normal, Dur, Mou, Spray, Liquide, Explosif
 - **6 couleurs** : Marron, Jaune, Vert, Noir, Arc-en-ciel, Rouge
+- **Lieu** (optionnel) : 🏠 Maison, 💼 Boulot, 🏫 École, 🍽️ Resto, 👯 Chez une copine, 🚆 Transport, 🌳 Nature, 🚻 Ailleurs
+- **Position** (optionnelle, désactivée par défaut) : bouton 📍 pour géolocaliser le caca
 - **Note** libre (optionnel)
 - **Mode rétro** : saisir une date/heure passée
 - **Son personnalisé** par texture 🔊
@@ -31,6 +33,7 @@
 - Transit intestinal moyen
 - Répartition des textures et couleurs
 - Graphiques avancés : horaire, par jour, tendance mensuelle
+- **🗺️ PoopMap** : carte des cacas géolocalisés (tuiles OpenStreetMap, sans bibliothèque) + classement de tes lieux
 - Fun facts médicaux
 
 ### Badges 🏆
@@ -44,6 +47,9 @@
 | 🇫🇷 À la Française | ≥ 1.1/j sur 7 jours |
 | 💯 Centenaire | 100 cacas |
 | 🌙 Caca de nuit | Caca entre minuit et 5h |
+| 🧭 Exploratrice | 3 lieux différents utilisés |
+| 🌍 Globe-trotteuse | Les 8 lieux utilisés |
+| 🏠 Casanière | 20 cacas à la maison |
 | + 10 achievements | Régularité, Streak, Hibou, Lève-tôt… |
 
 ### Social ☁️ (Supabase)

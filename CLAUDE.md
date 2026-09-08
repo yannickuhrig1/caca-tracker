@@ -1,4 +1,4 @@
-# 💩 Caca-Tracker 3000 Deluxe - v2.11.0
+# 💩 Caca-Tracker 3000 Deluxe - v2.14.0
 
 > ☁️ **Backend** : Supabase **auto-hébergé sur le NAS Unraid** depuis v2.9.0 (2026-07-14) — API `https://caca-api.yannick-uhrig.com` (Traefik + Cloudflare Tunnel → Postgres/GoTrue/PostgREST, stack `compose-stacks/caca-supabase`). L'ancien projet cloud `fnljhknjmmteawwomehb` est en pause.
 
@@ -230,6 +230,17 @@ function shakeAchievement(id)
 - Poids total : ~50KB
 
 ## 🆗 Changelog
+
+### v2.14.0 (Septembre 2026) - 🗺️ POOPMAP
+
+- ➕ **Lieu d'un caca** : 8 étiquettes (🏠 💼 🏫 🍽️ 👯 🚆 🌳 🚻) à la saisie, visibles dans l'historique, classées dans les Stats
+- ➕ **Position GPS optionnelle** (désactivée par défaut, `poopmap.geoEnabled`) : lue seulement sur clic du bouton 📍, arrondie à 4 décimales, effaçable en un bouton
+- ➕ **Carte maison** (`js/poopmap.js`) : tuiles OpenStreetMap + maths slippy map, pan/zoom/recadrage, pastilles regroupées — **aucune dépendance ajoutée**
+- ➕ 3 badges : 🧭 Exploratrice, 🌍 Globe-trotteuse, 🏠 Casanière (58 → 61)
+- ➕ `UI.info()` : modale de lecture seule
+- ➕ Migration `13_20260908_poopmap.sql` (`place`, `lat`, `lon`) — **pas encore appliquée** ; le client se replie sur un enregistrement sans ces colonnes
+- 🔧 Fix sync cloud→local : `isRetro` était relu sous `p.is_retro` et se perdait
+- 🔧 Bump cache SW caca-v31 → caca-v32
 
 ### v2.11.0 (Juillet 2026) - 💬 SOCIAL BOOST
 
