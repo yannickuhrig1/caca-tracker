@@ -151,6 +151,49 @@ function applyPoopMapFields(target, cloud) {
 window.syncCloudData = syncCloudData;
 
 // ===================================================
+//  RATTRAPAGE POOPMAP (v2.15.1)
+// ===================================================
+// Le lieu et la position sont arrivés après coup (migrations 13 et 14) : les
+// cacas enregistrés avant existent dans le cloud sans ces colonnes. Le
+// démarrage ne fait qu'un pull (cloud → local) ; seul afterLogin() pousse
+// dans l'autre sens. Sans ça, il fallait se déconnecter/reconnecter à la
+// main pour que la carte suive d'un appareil à l'autre.
+const POOPMAP_BACKFILL_KEY = 'poopmap.cloudBackfill.v1';
+
+// Fonction pure : les entrées qui portent quelque chose à repousser.
+function poopMapEntriesToPush(logs) {
+  const mod = window.PoopMapModule;
+  return (logs || []).filter(l => l.place || mod?.hasGeo(l) || mod?.hasZone(l));
+}
+
+async function maybeBackfillPoopMapCloud() {
+  if (!LS_OK || localStorage.getItem(POOPMAP_BACKFILL_KEY)) return;
+  if (!window.SupabaseClient?.isLoggedIn() || !navigator.onLine) return;
+
+  const aPousser = poopMapEntriesToPush(state.logs);
+  if (!aPousser.length) {
+    localStorage.setItem(POOPMAP_BACKFILL_KEY, '1');   // rien à rattraper
+    return;
+  }
+
+  try {
+    await window.SupabaseClient.syncLocalToCloud(aPousser);
+    // Si la base n'a pas encore les colonnes, la requête est rejouée sans
+    // elles : le rattrapage n'a rien rattrapé, on réessaiera au prochain
+    // lancement plutôt que de le marquer fait.
+    if (window.SupabaseClient.geoColumnsAvailable?.() === false) {
+      $debug('☁️ rattrapage reporté : colonnes PoopMap absentes en base');
+      return;
+    }
+    localStorage.setItem(POOPMAP_BACKFILL_KEY, '1');
+    $debug(`☁️ ${aPousser.length} entrée(s) repoussée(s) avec lieu/position`);
+  } catch (e) {
+    $debug('backfill err: ' + e.message);   // sans marquer : nouvelle tentative au prochain lancement
+  }
+}
+window.maybeBackfillPoopMapCloud = maybeBackfillPoopMapCloud;
+
+// ===================================================
 //  OFFLINE QUEUE  (feature 14)
 // ===================================================
 // Un item qui échoue pour une raison définitive (compte supprimé, donnée

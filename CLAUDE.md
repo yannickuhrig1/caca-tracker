@@ -1,4 +1,4 @@
-# 💩 Caca-Tracker 3000 Deluxe - v2.15.0
+# 💩 Caca-Tracker 3000 Deluxe - v2.15.1
 
 > ☁️ **Backend** : Supabase **auto-hébergé sur le NAS Unraid** depuis v2.9.0 (2026-07-14) — API `https://caca-api.yannick-uhrig.com` (Traefik + Cloudflare Tunnel → Postgres/GoTrue/PostgREST, stack `compose-stacks/caca-supabase`). L'ancien projet cloud `fnljhknjmmteawwomehb` est en pause.
 
@@ -230,6 +230,14 @@ function shakeAchievement(id)
 - Poids total : ~50KB
 
 ## 🆗 Changelog
+
+### v2.15.1 (Septembre 2026) - ☁️ RATTRAPAGE AUTO
+
+- ➕ `maybeBackfillPoopMapCloud()` (`js/app/app-sync.js`) : au premier démarrage suivant la mise à jour, repousse une fois les entrées portant un lieu ou une position — le démarrage ne faisait qu'un pull, seul `afterLogin()` poussait, d'où la déco/reco manuelle
+- ➕ Marqueur `poopmap.cloudBackfill.v1` ; non posé si la base n'a pas les colonnes (repli PGRST204), donc nouvelle tentative au lancement suivant
+- ➕ `SupabaseClient.geoColumnsAvailable()`
+- ➕ « Quoi de neuf » : où activer la position et la conquête dans les Réglages
+- 🔧 Bump cache SW caca-v33 → caca-v34
 
 ### v2.15.0 (Septembre 2026) - 🏴 CONQUÊTE + HISTORIQUE FOUILLABLE
 

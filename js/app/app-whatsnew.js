@@ -7,12 +7,21 @@
 
 // Source de vérité unique de la version. L'en-tête et les Réglages sont
 // remplis à partir d'ici, ce qui évite qu'ils divergent comme par le passé.
-const APP_VERSION = '2.15.0';
+const APP_VERSION = '2.15.1';
 const APP_VERSION_DATE = 'Septembre 2026';
 
 // De la plus récente à la plus ancienne. `items` reste court et écrit pour
 // Clémence, pas pour un développeur : ce que ça change pour elle, pas comment.
 const APP_CHANGELOG = [
+  {
+    version: '2.15.1',
+    date: 'Septembre 2026',
+    items: [
+      ['📍', 'Pour que ta carte se remplisse : active **« Enregistrer la position »** dans ⚙️ Réglages, puis touche le bouton 📍 en ajoutant un caca.'],
+      ['🏴', 'Et « **Retrouver commune et pays** », juste en dessous, pour débloquer les territoires conquis et leurs drapeaux.'],
+      ['☁️', 'Tes anciens cacas remontent maintenant tout seuls dans le cloud avec leur lieu — plus besoin de te déconnecter puis reconnecter.'],
+    ]
+  },
   {
     version: '2.15.0',
     date: 'Septembre 2026',

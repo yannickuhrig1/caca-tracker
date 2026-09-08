@@ -950,6 +950,8 @@ window.SupabaseClient = {
   deletePoopCloud,
   getMyPoops,
   syncLocalToCloud,
+  // Les colonnes PoopMap sont-elles disponibles côté base ? (cf. migrations 13/14)
+  geoColumnsAvailable: () => _geoColumns,
   createGroup,
   joinGroup,
   leaveGroup,
