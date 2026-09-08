@@ -242,6 +242,7 @@ function shakeAchievement(id)
 - ➕ **Export CSV** (séparateur `;` + BOM, pour Excel FR) et **bilan année par année**
 - 🔧 `computeBadges(logs, streak)` extrait de `updateBadges()` (fonction pure) ; `calculateStreak(logs)` accepte une liste
 - ➕ Migration `14_20260908_poopmap-conquete.sql` (`city`, `region`, `country`, `country_code`) — **pas encore appliquée**, repli automatique côté client
+- ➕ `scripts/apply-migrations.sh` : applique les migrations 13 et 14 sur le NAS (transaction par fichier + `NOTIFY pgrst, 'reload schema'`, sans quoi PostgREST garde son ancien schéma en cache)
 - 🔧 Bump cache SW caca-v32 → caca-v33
 
 ### v2.14.0 (Septembre 2026) - 🗺️ POOPMAP

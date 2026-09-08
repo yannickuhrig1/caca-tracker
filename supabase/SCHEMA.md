@@ -53,6 +53,10 @@ production.** Il manquerait les 6 tables ci-dessus. Pour repartir de zéro,
 il faut d'abord faire un `pg_dump --schema-only` de la base du NAS et en
 faire une migration `00_baseline.sql`.
 
+Pour les appliquer : `scripts/apply-migrations.sh` depuis le NAS (une
+transaction par fichier, vérification des colonnes, rechargement du cache de
+schéma PostgREST).
+
 Enfin, `13_20260908_poopmap.sql` (`place`, `lat`, `lon`) et
 `14_20260908_poopmap-conquete.sql` (`city`, `region`, `country`,
 `country_code`) sont **au dépôt mais pas encore appliquées**. Le client sait
@@ -65,4 +69,6 @@ conquis restent locaux à l'appareil.
 - Un fichier par changement, préfixé d'un numéro d'ordre et de sa date :
   `NN_AAAAMMJJ_sujet.sql`
 - **Jamais** modifier un fichier déjà appliqué en production : en ajouter un nouveau.
+- Toute migration se termine par `NOTIFY pgrst, 'reload schema';` — sans ce
+  signal, PostgREST continue de répondre PGRST204 sur les colonnes ajoutées.
 - Toute nouvelle table doit arriver par une migration, pas par l'éditeur SQL.

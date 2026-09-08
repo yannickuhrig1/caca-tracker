@@ -46,6 +46,16 @@ des trophées, export CSV, historique fouillable.
 - Migration `14_20260908_poopmap-conquete.sql` : `city`, `region`, `country`,
   `country_code` sur `poops`. **Non appliquée**, comme la `13` ; le repli
   PGRST204 / 42703 la rend facultative.
+- `scripts/apply-migrations.sh` — applique les migrations `13` et `14` sur la
+  base du NAS, une transaction par fichier, puis vérifie les colonnes et
+  recharge le cache de schéma PostgREST.
+- Les deux migrations se terminent par `NOTIFY pgrst, 'reload schema';` : sans
+  ce signal, PostgREST garde son ancienne image du schéma et continue de
+  répondre « colonne inconnue » alors que les colonnes existent — l'app
+  semblerait alors ne rien synchroniser malgré une migration réussie.
+  Vérifiées pour de bon sur un PostgreSQL 16 : application, garde-fous
+  (latitude 91 et code pays « france » refusés, bornes ±90/±180 acceptées),
+  idempotence du rejeu, et données existantes intactes.
 
 ### Modifié
 - `updateBadges()` est scindé : `computeBadges(logs, streak)` est désormais une

@@ -20,6 +20,7 @@
 --
 --  À passer dans une transaction, après la 13 :
 --      BEGIN;  \i 14_20260908_poopmap-conquete.sql   -- vérifier, puis COMMIT;
+--  ou, tout fait, depuis le dépôt : scripts/apply-migrations.sh
 -- ============================================================
 
 ALTER TABLE public.poops
@@ -40,6 +41,11 @@ COMMENT ON COLUMN public.poops.city         IS 'PoopMap : commune déduite de la
 COMMENT ON COLUMN public.poops.region       IS 'PoopMap : région / département déduit de lat/lon';
 COMMENT ON COLUMN public.poops.country      IS 'PoopMap : pays déduit de lat/lon, libellé en français';
 COMMENT ON COLUMN public.poops.country_code IS 'PoopMap : code ISO 3166-1 alpha-2 en majuscules (FR, BE…)';
+
+-- PostgREST garde en mémoire sa propre image du schéma : sans ce signal, il
+-- continue de répondre « colonne inconnue » (PGRST204) alors que les colonnes
+-- existent. Le NOTIFY est délivré au COMMIT, donc après les ALTER ci-dessus.
+NOTIFY pgrst, 'reload schema';
 
 -- Vérification :
 --   SELECT column_name FROM information_schema.columns
