@@ -10,7 +10,7 @@
 | Table | Colonnes | Rôle |
 |---|--:|---|
 | `profiles` | 7 | comptes : `username`, `avatar`, `email`, `is_admin`, `last_login` |
-| `poops` | 11 | les entrées : `date` (epoch ms), `texture`, `color`, `comment`, `is_retro`, `mood`, `local_id`, `updated_at` — + `place`, `lat`, `lon` (migration `13`) et `city`, `region`, `country`, `country_code` (migration `14`), aucune des deux appliquée à ce jour |
+| `poops` | 11 | les entrées : `date` (epoch ms), `texture`, `color`, `comment`, `is_retro`, `mood`, `local_id`, `updated_at` — + `place`, `lat`, `lon` (migration `13`) et `city`, `region`, `country`, `country_code` (migration `14`), appliquées le 2026-09-08 |
 | `groups` | 6 | groupes : `name`, `created_by`, `invite_code`, `allow_member_invite` |
 | `group_members` | 3 | appartenance (PK composite `group_id` + `user_id`) |
 | `comments` | 5 | commentaires sous une entrée du feed |
@@ -53,16 +53,15 @@ production.** Il manquerait les 6 tables ci-dessus. Pour repartir de zéro,
 il faut d'abord faire un `pg_dump --schema-only` de la base du NAS et en
 faire une migration `00_baseline.sql`.
 
-Pour les appliquer : `scripts/apply-migrations.sh` depuis le NAS (une
-transaction par fichier, vérification des colonnes, rechargement du cache de
-schéma PostgREST).
-
 Enfin, `13_20260908_poopmap.sql` (`place`, `lat`, `lon`) et
 `14_20260908_poopmap-conquete.sql` (`city`, `region`, `country`,
-`country_code`) sont **au dépôt mais pas encore appliquées**. Le client sait
-s'en passer : il détecte les colonnes manquantes et rejoue la requête sans
-elles. Tant qu'elles ne sont pas passées, lieu, position et territoires
-conquis restent locaux à l'appareil.
+`country_code`) ont été **appliquées le 2026-09-08** avec
+`scripts/apply-migrations.sh` (une transaction par fichier, vérification des
+colonnes, rechargement du cache de schéma PostgREST). Contrôlé côté API : la
+spec OpenAPI de `caca-api.yannick-uhrig.com` expose bien les sept colonnes.
+Le repli côté client (détection de PGRST204 / 42703, requête rejouée sans ces
+colonnes) reste en place comme filet de sécurité pour une base neuve ou
+restaurée depuis un vieux dump.
 
 ## Convention
 

@@ -8,12 +8,14 @@
 --                              OpenStreetMap en français ;
 --    country_code            — code ISO 2 lettres, sert au drapeau 🇫🇷.
 --
---  ⚠️ NON APPLIQUÉE en production à ce jour, pas plus que la 13.
+--  ✅ APPLIQUÉE en production le 2026-09-08 sur caca-db (NAS Unraid), en même
+--     temps que la 13. Contrôlée côté API : la spec OpenAPI de PostgREST
+--     expose bien city, region, country et country_code.
 --
 --  ORDRE DE DÉPLOIEMENT — indifférent, même mécanique qu'en 13 :
 --  savePoopCloud() / getMyPoops() détectent les colonnes manquantes
---  (PGRST204 / 42703) et rejouent la requête sans elles. Tant que rien
---  n'est appliqué, lieu, position et conquête restent locaux à l'appareil.
+--  (PGRST204 / 42703) et rejouent la requête sans elles. Ce repli reste
+--  en place comme filet de sécurité.
 --
 --  Aucune policy à ajouter : colonnes de `poops`, déjà couverte par ses
 --  policies RLS. Les territoires ne sont pas partagés avec le groupe.

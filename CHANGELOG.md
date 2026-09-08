@@ -44,8 +44,8 @@ des trophées, export CSV, historique fouillable.
 - **📅 Année par année** — total, moyenne par jour, jours actifs et meilleur
   mois. L'année en cours est ramenée aux jours écoulés, pas à 365.
 - Migration `14_20260908_poopmap-conquete.sql` : `city`, `region`, `country`,
-  `country_code` sur `poops`. **Non appliquée**, comme la `13` ; le repli
-  PGRST204 / 42703 la rend facultative.
+  `country_code` sur `poops`. **Appliquée en production le 2026-09-08** avec la
+  `13` ; le repli PGRST204 / 42703 reste en place comme filet de sécurité.
 - `scripts/apply-migrations.sh` — applique les migrations `13` et `14` sur la
   base du NAS, une transaction par fichier, puis vérifie les colonnes et
   recharge le cache de schéma PostgREST.
@@ -87,10 +87,10 @@ des trophées, export CSV, historique fouillable.
   🏠 Casanière (20 cacas à la maison) — le total passe de 58 à 61.
 - `UI.info()` — modale de lecture seule, utilisée par le détail d'une pastille.
 - Migration `13_20260908_poopmap.sql` : colonnes `place`, `lat`, `lon` sur `poops`.
-  **Non appliquée en production à ce jour** ; `savePoopCloud()` / `getMyPoops()`
-  détectent leur absence (PGRST204 / 42703) et rejouent la requête sans elles, donc
-  l'app fonctionne avant comme après. Sans la migration, lieu et position restent
-  locaux à l'appareil.
+  **Appliquée en production le 2026-09-08** ; `savePoopCloud()` / `getMyPoops()`
+  détectent l'absence des colonnes (PGRST204 / 42703) et rejouent la requête sans
+  elles, donc l'app fonctionnait avant comme après — ce repli reste en place comme
+  filet de sécurité.
 
 ### Corrigé
 - Sync cloud → local : `isRetro` était relu sous le nom `p.is_retro`, que

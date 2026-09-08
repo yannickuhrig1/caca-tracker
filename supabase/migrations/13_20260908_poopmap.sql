@@ -7,13 +7,15 @@
 --    lat/lon— coordonnées arrondies à 4 décimales (~11 m), écrites
 --             uniquement sur clic explicite du bouton 📍.
 --
---  ⚠️ NON APPLIQUÉ en production à ce jour.
+--  ✅ APPLIQUÉE en production le 2026-09-08 sur caca-db (NAS Unraid).
+--     Contrôlée côté API : la spec OpenAPI de PostgREST expose bien
+--     place, lat et lon.
 --
 --  ORDRE DE DÉPLOIEMENT — indifférent. savePoopCloud() / getMyPoops()
 --  (js/supabase-client.js) détectent l'absence des colonnes (PGRST204 /
---  42703) et rejouent la requête sans elles : le JS fonctionne AVANT
---  comme APRÈS. Tant que la migration n'est pas passée, lieu et position
---  restent locaux à l'appareil et ne se synchronisent pas.
+--  42703) et rejouent la requête sans elles : le JS fonctionnait AVANT
+--  comme APRÈS. Ce repli reste en place comme filet de sécurité (base
+--  neuve, restauration d'un vieux dump).
 --
 --  Aucune policy à ajouter : ce sont des colonnes de `poops`, déjà
 --  couverte par ses policies RLS existantes (une utilisatrice ne lit et

@@ -241,7 +241,7 @@ function shakeAchievement(id)
 - ➕ **Rareté des badges** : « 2/5 l'ont », recalculée depuis les entrées du groupe (aucune donnée nouvelle en base) ; badges liés aux notes et aux positions exclus, ces données ne sont pas lues chez les copines
 - ➕ **Export CSV** (séparateur `;` + BOM, pour Excel FR) et **bilan année par année**
 - 🔧 `computeBadges(logs, streak)` extrait de `updateBadges()` (fonction pure) ; `calculateStreak(logs)` accepte une liste
-- ➕ Migration `14_20260908_poopmap-conquete.sql` (`city`, `region`, `country`, `country_code`) — **pas encore appliquée**, repli automatique côté client
+- ➕ Migration `14_20260908_poopmap-conquete.sql` (`city`, `region`, `country`, `country_code`) — **appliquée en production le 2026-09-08** ; le repli côté client reste comme filet de sécurité
 - ➕ `scripts/apply-migrations.sh` : applique les migrations 13 et 14 sur le NAS (transaction par fichier + `NOTIFY pgrst, 'reload schema'`, sans quoi PostgREST garde son ancien schéma en cache)
 - 🔧 Bump cache SW caca-v32 → caca-v33
 
@@ -252,7 +252,7 @@ function shakeAchievement(id)
 - ➕ **Carte maison** (`js/poopmap.js`) : tuiles OpenStreetMap + maths slippy map, pan/zoom/recadrage, pastilles regroupées — **aucune dépendance ajoutée**
 - ➕ 3 badges : 🧭 Exploratrice, 🌍 Globe-trotteuse, 🏠 Casanière (58 → 61)
 - ➕ `UI.info()` : modale de lecture seule
-- ➕ Migration `13_20260908_poopmap.sql` (`place`, `lat`, `lon`) — **pas encore appliquée** ; le client se replie sur un enregistrement sans ces colonnes
+- ➕ Migration `13_20260908_poopmap.sql` (`place`, `lat`, `lon`) — **appliquée en production le 2026-09-08** ; le client garde son repli sans ces colonnes en filet de sécurité
 - 🔧 Fix sync cloud→local : `isRetro` était relu sous `p.is_retro` et se perdait
 - 🔧 Bump cache SW caca-v31 → caca-v32
 
