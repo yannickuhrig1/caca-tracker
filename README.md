@@ -4,7 +4,7 @@
 
 [![PWA](https://img.shields.io/badge/PWA-compatible-brightgreen)](#)
 [![Vanilla JS](https://img.shields.io/badge/Vanilla%20JS-no%20framework-yellow)](#)
-[![Version](https://img.shields.io/badge/version-2.16.0-orange)](#)
+[![Version](https://img.shields.io/badge/version-2.17.0-orange)](#)
 [![Supabase](https://img.shields.io/badge/Backend-Supabase%20self--hosted%20(NAS)-3ECF8E)](#)
 
 ---
@@ -32,7 +32,8 @@
 - Comparaison Clémence / France / Monde
 - Transit intestinal moyen
 - Répartition des textures et couleurs
-- Graphiques avancés : horaire, par jour, tendance mensuelle
+- Graphiques : heures par créneaux de 2 h, jours de la semaine, courbe 12 mois, textures, couleurs
+- **🔀 Blocs réorganisables** : bouton « Réorganiser » + flèches ↑ ↓, ordre mémorisé
 - **🗺️ PoopMap** : carte des cacas géolocalisés (tuiles OpenStreetMap, sans bibliothèque) + classement de tes lieux
 - **🏴 Territoires conquis** : communes, régions et pays, avec les drapeaux
 - **📅 Année par année** : total, moyenne/jour, jours actifs, meilleur mois

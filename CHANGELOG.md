@@ -5,6 +5,54 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.17.0] — 2026-09-08
+
+### Ajouté
+- **🔀 Ordre des blocs de l'onglet Stats** — bouton « Réorganiser », puis des
+  flèches ↑ ↓ sur chaque bloc ; l'ordre est mémorisé (`stats.tileOrder`) et
+  rejoué à chaque ouverture. Des boutons plutôt qu'un glisser-déposer : au doigt,
+  sur une page qui défile, le glisser rate une fois sur deux. Un bloc ajouté par
+  une version ultérieure vient se placer à la fin sans casser l'ordre existant.
+- **📅 Bilan année ↔ mois** — le bloc annuel bascule sur les 12 derniers mois,
+  le choix est mémorisé. Le mois en cours est ramené aux jours écoulés, comme
+  l'année en cours.
+
+### Modifié
+- **🕒 Heures de prédilection** — 24 barres de 14 px sans étiquette lisible sont
+  devenues 12 lignes horizontales par créneaux de 2 h, chacune étiquetée, avec le
+  pic en avant et sa part du total.
+- **📆 Fréquence par jour** — semaine du lundi au dimanche (elle commençait un
+  dimanche), valeur au-dessus de chaque colonne, jour record en accent plein.
+- **📈 Tendance mensuelle** — des barres détachées remplacées par une courbe +
+  aire sur 12 mois, avec un point par mois et son infobulle.
+- **🎨 Couleurs et textures** — même gabarit de barres horizontales, tri par
+  fréquence, pourcentages alignés.
+- **🎬 Année en review** — un grand chiffre porte le récap, six tuiles
+  l'accompagnent ; c'étaient sept cartes de même poids visuel.
+- Système visuel commun aux graphiques : une seule teinte (celle du thème) plus
+  de l'encre neutre, marques fines, extrémités arrondies, valeurs en texte et non
+  en couleur ; seule la donnée saillante passe en accent plein.
+
+### Corrigé
+- **🔬 Échelle de Bristol : chaque selle était comptée deux fois.** « dur »
+  alimentait les types 1 et 2, « normal » les types 3 et 4 ; le total de
+  référence était donc gonflé et **aucun pourcentage n'était juste**. Chaque
+  texture est désormais rattachée à un seul type, les pourcentages somment à
+  100 %, et les deux types qu'aucune texture de l'app ne peut produire (1 et 3)
+  sont grisés et annoncés comme tels.
+- **📈 Variation mensuelle trompeuse** — le mois en cours était comparé au mois
+  précédent *complet*, ce qui affichait une chute spectaculaire chaque début de
+  mois (−78 % sur un jeu de test au 8 du mois). La comparaison se fait
+  maintenant à la même portion du mois précédent (−20 % sur le même jeu), et le
+  libellé le dit : « vs le mois dernier à la même date ».
+
+### Supprimé
+- Les styles `.chart-container`, `.bar-chart`, `.pie-chart-legend` et le titre de
+  section « Statistiques Avancées », remplacés par le nouveau gabarit.
+
+### Modifié (technique)
+- 🔧 Bump cache SW caca-v35 → caca-v36
+
 ## [2.16.0] — 2026-09-08
 
 ### Modifié

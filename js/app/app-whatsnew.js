@@ -7,12 +7,23 @@
 
 // Source de vérité unique de la version. L'en-tête et les Réglages sont
 // remplis à partir d'ici, ce qui évite qu'ils divergent comme par le passé.
-const APP_VERSION = '2.16.0';
+const APP_VERSION = '2.17.0';
 const APP_VERSION_DATE = 'Septembre 2026';
 
 // De la plus récente à la plus ancienne. `items` reste court et écrit pour
 // Clémence, pas pour un développeur : ce que ça change pour elle, pas comment.
 const APP_CHANGELOG = [
+  {
+    version: '2.17.0',
+    date: 'Septembre 2026',
+    items: [
+      ['📊', 'Les graphiques des Stats sont refaits : heures **lisibles** par créneaux de 2 h, jours de la semaine, et une vraie courbe sur 12 mois.'],
+      ['🔀', 'Tu peux **réorganiser les blocs** de l\'onglet Stats : bouton « Réorganiser », puis les flèches ↑ ↓.'],
+      ['📅', 'Le bilan bascule entre **année par année** et **mois par mois**.'],
+      ['🔬', 'L\'échelle de Bristol comptait chaque caca deux fois : c\'est corrigé, les pourcentages sont enfin justes.'],
+      ['🎬', 'Ton année en review a droit à un grand chiffre et des tuiles claires.'],
+    ]
+  },
   {
     version: '2.16.0',
     date: 'Septembre 2026',

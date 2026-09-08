@@ -162,23 +162,51 @@ function openWrapped() {
   allLogs.forEach(l => { dowCounts[new Date(l.date).getDay()]++; });
   const bestDow = dowCounts.indexOf(Math.max(...dowCounts));
 
-  const cards = [
-    { emoji:'💩', label:'Total cette année',  value:`${yearLogs.length} cacas`, sub:`${(yearLogs.length*0.15).toFixed(1)} kg produits` },
-    { emoji:'📅', label:'Mois le plus actif', value: bestMonthIdx ? `${monthNames[bestMonthIdx[0]]} (${bestMonthIdx[1]})` : '—', sub:'Mois où t\'as le plus défié la gravité' },
-    { emoji: favTexture ? (textureEmoji[favTexture[0]] || '💩') : '💩', label:'Texture fav', value: favTexture ? `${favTexture[0]} (${favTexture[1]}×)` : '—', sub:'Ton style signature' },
-    { emoji:'🕐', label:'Heure de prédilection', value:`${String(peakHour).padStart(2,'0')}h`, sub:'Ton horloge intestinale' },
-    { emoji:'🔥', label:'Meilleur streak', value:`${maxStreak} jour${maxStreak>1?'s':''}`, sub:'Record de régularité' },
-    { emoji:'📆', label:'Jour préféré', value:dayNames[bestDow], sub:'Les intestins ont leurs habitudes' },
-    { emoji:'⚖️', label:'Tonnage total', value:`${(allLogs.length * 0.15).toFixed(1)} kg`, sub:`Depuis le début (${allLogs.length} cacas)` },
+  // Jours actifs et meilleure journée de l'année
+  const parJour = {};
+  yearLogs.forEach(l => { const k = new Date(l.date).toDateString(); parJour[k] = (parJour[k] || 0) + 1; });
+  const joursActifs = Object.keys(parJour).length;
+  const meilleurJour = Object.entries(parJour).sort((a, b) => b[1] - a[1])[0];
+
+  // Un chiffre porte le récap, les autres l'accompagnent : sept cartes de même
+  // poids visuel, c'était sept fois rien.
+  const total = yearLogs.length;
+  const tuiles = [
+    { emoji:'📅', label:'Mois le plus actif',
+      value: bestMonthIdx ? monthNames[bestMonthIdx[0]] : '—',
+      sub: bestMonthIdx ? `${bestMonthIdx[1]} cacas` : 'pas encore' },
+    { emoji:'🔥', label:'Meilleur streak', value:`${maxStreak} j`, sub:'record de régularité' },
+    { emoji:'🕐', label:'Heure de pointe', value:`${String(peakHour).padStart(2,'0')} h`, sub:'ton horloge interne' },
+    { emoji:'📆', label:'Jour préféré', value:dayNames[bestDow], sub:'les intestins ont leurs habitudes' },
+    { emoji: favTexture ? (textureEmoji[favTexture[0]] || '💩') : '💩', label:'Texture signature',
+      value: favTexture ? favTexture[0].charAt(0).toUpperCase() + favTexture[0].slice(1) : '—',
+      sub: favTexture ? `${favTexture[1]}× depuis le début` : '' },
+    { emoji:'🚀', label:'Meilleure journée',
+      value: meilleurJour ? `${meilleurJour[1]}×` : '—',
+      sub: meilleurJour ? new Date(meilleurJour[0]).toLocaleDateString('fr-FR', { day:'numeric', month:'long' }) : '' },
   ];
 
-  content.innerHTML = cards.map(c => `
-    <div class="rounded-[1.5rem] p-4 text-white" style="background:rgba(255,255,255,0.12);backdrop-filter:blur(4px)">
-      <div class="text-3xl mb-1">${c.emoji}</div>
-      <div class="text-xs opacity-70 uppercase tracking-widest mb-1">${c.label}</div>
-      <div class="text-2xl font-bold mb-1">${c.value}</div>
-      <div class="text-xs opacity-60">${c.sub}</div>
-    </div>`).join('');
+  content.innerHTML = `
+    <div class="wr-hero">
+      <div class="wr-hero-num">${total}</div>
+      <div class="wr-hero-label">caca${total > 1 ? 's' : ''} en ${now.getFullYear()}</div>
+      <div class="wr-hero-sub">
+        ${(total * 0.15).toFixed(1)} kg · ${joursActifs} jour${joursActifs > 1 ? 's' : ''} actif${joursActifs > 1 ? 's' : ''}
+        · ${(total / Math.max(1, joursActifs)).toFixed(1)} par jour actif
+      </div>
+    </div>
+
+    <div class="wr-grid">
+      ${tuiles.map(t => `
+        <div class="wr-tile">
+          <div class="wr-emoji" aria-hidden="true">${t.emoji}</div>
+          <div class="wr-label">${t.label}</div>
+          <div class="wr-value">${esc(String(t.value))}</div>
+          <div class="wr-sub">${esc(t.sub)}</div>
+        </div>`).join('')}
+    </div>
+
+    <div class="wr-foot">⚖️ ${(allLogs.length * 0.15).toFixed(1)} kg depuis le tout début, en ${allLogs.length} cacas</div>`;
 
   modal.classList.remove('hidden');
 }

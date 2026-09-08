@@ -172,6 +172,95 @@ window.forgetPoopMapPositions = async function() {
 };
 
 // ===================================================
+//  ORDRE DES TUILES DE L'ONGLET STATS
+// ===================================================
+// Chaque tuile porte un data-tile ; l'ordre choisi est mémorisé et rejoué en
+// déplaçant les éléments du DOM. Des boutons ↑ ↓ plutôt qu'un glisser-déposer :
+// au doigt, sur une page qui défile, le glisser rate une fois sur deux.
+const STATS_TILES = [
+  { id: 'freq',          label: '💩 Fréquence quotidienne' },
+  { id: 'transit',       label: '⏱️ Transit intestinal' },
+  { id: 'textures',      label: '🎨 Répartition des textures' },
+  { id: 'month-compare', label: '📆 Comparatif mensuel' },
+  { id: 'health',        label: '🏥 Score de santé' },
+  { id: 'records',       label: '🏆 Records personnels' },
+  { id: 'bristol',       label: '🔬 Échelle de Bristol' },
+  { id: 'yearly',        label: '📅 Bilan année / mois' },
+  { id: 'poopmap',       label: '🗺️ PoopMap' },
+  { id: 'calendar',      label: '📅 Calendrier mensuel' },
+  { id: 'charts',        label: '📈 Graphiques' },
+  { id: 'funfacts',      label: '🌟 Le saviez-vous ?' },
+];
+const STATS_ORDER_KEY = 'stats.tileOrder';
+let statsEditing = false;
+
+/** Ordre mémorisé, complété par les tuiles ajoutées depuis (nouvelles versions). */
+function statsOrder() {
+  let enregistre = [];
+  try { enregistre = JSON.parse(localStorage.getItem(STATS_ORDER_KEY) || '[]'); } catch {}
+  const connues = STATS_TILES.map(t => t.id);
+  const valide = enregistre.filter(id => connues.includes(id));
+  return [...valide, ...connues.filter(id => !valide.includes(id))];
+}
+
+function applyStatsOrder() {
+  const hote = $id('stats-tiles');
+  if (!hote) return;
+  statsOrder().forEach(id => {
+    const tuile = hote.querySelector(`[data-tile="${id}"]`);
+    if (tuile) hote.appendChild(tuile);   // appendChild déplace, il ne copie pas
+  });
+}
+
+window.moveStatsTile = function(id, delta) {
+  const ordre = statsOrder();
+  const i = ordre.indexOf(id);
+  const j = i + delta;
+  if (i === -1 || j < 0 || j >= ordre.length) return;
+  [ordre[i], ordre[j]] = [ordre[j], ordre[i]];
+  try { localStorage.setItem(STATS_ORDER_KEY, JSON.stringify(ordre)); } catch {}
+  applyStatsOrder();
+  renderStatsEditBars();
+};
+
+window.resetStatsOrder = function() {
+  try { localStorage.removeItem(STATS_ORDER_KEY); } catch {}
+  applyStatsOrder();
+  renderStatsEditBars();
+};
+
+window.toggleStatsEdit = function() {
+  statsEditing = !statsEditing;
+  const btn = $id('stats-reorder-btn');
+  if (btn) btn.textContent = statsEditing ? '✅ Terminé' : '🔀 Réorganiser';
+  document.querySelectorAll('#stats-tiles .stats-tile').forEach(t => t.classList.toggle('tile-editing', statsEditing));
+  renderStatsEditBars();
+};
+
+// Barres ↑ ↓ injectées en tête de chaque tuile pendant l'édition seulement :
+// hors édition, elles n'existent pas dans le DOM.
+function renderStatsEditBars() {
+  document.querySelectorAll('#stats-tiles .tile-bar').forEach(b => b.remove());
+  if (!statsEditing) return;
+
+  const ordre = statsOrder();
+  ordre.forEach((id, i) => {
+    const tuile = document.querySelector(`#stats-tiles [data-tile="${id}"]`);
+    if (!tuile) return;
+    const meta = STATS_TILES.find(t => t.id === id);
+    const barre = document.createElement('div');
+    barre.className = 'tile-bar';
+    barre.innerHTML = `
+      <span class="tile-name">${meta ? meta.label : id}</span>
+      <button type="button" class="tile-move" aria-label="Monter" ${i === 0 ? 'disabled' : ''}
+              onclick="moveStatsTile('${id}',-1)">↑</button>
+      <button type="button" class="tile-move" aria-label="Descendre" ${i === ordre.length - 1 ? 'disabled' : ''}
+              onclick="moveStatsTile('${id}',1)">↓</button>`;
+    tuile.prepend(barre);
+  });
+}
+
+// ===================================================
 //  TABS
 // ===================================================
 function switchTab(name) {
@@ -180,7 +269,7 @@ function switchTab(name) {
   $id(name + '-tab')?.classList.add('active');
   // Active tous les boutons correspondants (sidebar desktop + bottom nav mobile)
   document.querySelectorAll(`.tab-btn[data-tab="${name}"]`).forEach(b => b.classList.add('active'));
-  if (name === 'stats') renderStats();
+  if (name === 'stats') { renderStats(); applyStatsOrder(); if (statsEditing) renderStatsEditBars(); }
   if (name === 'badges') { updateBadges(); updateBadgeRarity(); }
   if (name === 'admin') renderHistory();
   if (name === 'dashboard') renderDashboard();

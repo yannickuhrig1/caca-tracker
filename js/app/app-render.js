@@ -322,28 +322,80 @@ function yearlyTotals(logs, now = Date.now()) {
 const MOIS_FR = ['janvier','février','mars','avril','mai','juin',
                  'juillet','août','septembre','octobre','novembre','décembre'];
 
+/** Fonction pure : un bilan par mois, du plus récent au plus ancien. */
+function monthlyTotals(logs, now = Date.now(), limite = 12) {
+  const mois = {};
+  (logs || []).forEach(l => {
+    const d = new Date(l.date);
+    const cle = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+    (mois[cle] = mois[cle] || { year: d.getFullYear(), month: d.getMonth(), total: 0, jours: new Set() });
+    mois[cle].total++;
+    mois[cle].jours.add(d.getDate());
+  });
+
+  const aujourdhui = new Date(now);
+  return Object.values(mois)
+    .sort((a, b) => b.year - a.year || b.month - a.month)
+    .slice(0, limite)
+    .map(m => {
+      const enCours = m.year === aujourdhui.getFullYear() && m.month === aujourdhui.getMonth();
+      // Comme pour l'année : le mois en cours se juge sur les jours écoulés.
+      const jours = enCours ? aujourdhui.getDate() : new Date(m.year, m.month + 1, 0).getDate();
+      return {
+        cle: `${MOIS_FR[m.month]} ${m.year}`,
+        total: m.total,
+        parJour: m.total / jours,
+        joursActifs: m.jours.size,
+        enCours,
+      };
+    });
+}
+
+// Vue courante du bloc bilan : 'annee' ou 'mois'.
+let bilanVue = (() => { try { return localStorage.getItem('stats.bilanVue') || 'annee'; } catch { return 'annee'; } })();
+
+window.setBilanVue = function(vue) {
+  bilanVue = vue;
+  try { localStorage.setItem('stats.bilanVue', vue); } catch {}
+  renderYearlyTotals();
+};
+
 function renderYearlyTotals() {
   const el = $id('yearly-container');
   if (!el) return;
-  const annees = yearlyTotals(state.logs);
-  if (!annees.length) { el.innerHTML = ''; return; }
 
-  const max = Math.max(...annees.map(a => a.total));
+  const parAnnee = bilanVue === 'annee';
+  const lignes = parAnnee
+    ? yearlyTotals(state.logs).map(a => ({
+        cle: String(a.year), total: a.total, parJour: a.parJour,
+        joursActifs: a.joursActifs, enCours: a.enCours,
+        detail: `meilleur mois : ${MOIS_FR[a.meilleurMois]} (${a.meilleurMoisTotal})`,
+      }))
+    : monthlyTotals(state.logs).map(m => ({ ...m, detail: '' }));
+
+  if (!lignes.length) { el.innerHTML = ''; return; }
+  const max = Math.max(...lignes.map(l => l.total));
+
   el.innerHTML = `
     <div class="card rounded-[2rem] p-5 shadow">
-      <h4 class="font-bold mb-1">📅 Année par année</h4>
-      <p class="text-xs opacity-60 mb-4">Ton bilan depuis le début</p>
+      <div class="flex items-center justify-between mb-1 gap-2">
+        <h4 class="font-bold">📅 Bilan</h4>
+        <div class="seg">
+          <button type="button" class="seg-btn${parAnnee ? ' seg-on' : ''}" onclick="setBilanVue('annee')">Année</button>
+          <button type="button" class="seg-btn${parAnnee ? '' : ' seg-on'}" onclick="setBilanVue('mois')">Mois</button>
+        </div>
+      </div>
+      <p class="text-xs opacity-60 mb-4">${parAnnee ? 'Ton bilan depuis le début' : 'Les 12 derniers mois où tu as cacé'}</p>
       <div class="space-y-3">
-        ${annees.map(a => `
+        ${lignes.map(l => `
           <div>
             <div class="flex items-center justify-between text-sm mb-1">
-              <span class="font-bold">${a.year}${a.enCours ? ' <span class="text-xs opacity-50">(en cours)</span>' : ''}</span>
-              <span class="font-bold">${a.total} caca${a.total > 1 ? 's' : ''}</span>
+              <span class="font-bold capitalize">${esc(l.cle)}${l.enCours ? ' <span class="text-xs opacity-50">(en cours)</span>' : ''}</span>
+              <span class="font-bold">${l.total} caca${l.total > 1 ? 's' : ''}</span>
             </div>
-            <div class="stat-bar mb-1"><div class="stat-fill" style="width:${(a.total / max * 100).toFixed(0)}%;background:var(--accent)"></div></div>
+            <div class="stat-bar mb-1"><div class="stat-fill" style="width:${(l.total / max * 100).toFixed(0)}%;background:var(--accent)"></div></div>
             <div class="text-xs opacity-60">
-              ${a.parJour.toFixed(2)}/jour · ${a.joursActifs} jour${a.joursActifs > 1 ? 's' : ''} actif${a.joursActifs > 1 ? 's' : ''} ·
-              meilleur mois : ${MOIS_FR[a.meilleurMois]} (${a.meilleurMoisTotal})
+              ${l.parJour.toFixed(2)}/jour · ${l.joursActifs} jour${l.joursActifs > 1 ? 's' : ''} actif${l.joursActifs > 1 ? 's' : ''}${l.detail ? ' · ' + l.detail : ''}
             </div>
           </div>`).join('')}
       </div>

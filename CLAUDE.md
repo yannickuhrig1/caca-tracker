@@ -1,4 +1,4 @@
-# 💩 Caca-Tracker 3000 Deluxe - v2.16.0
+# 💩 Caca-Tracker 3000 Deluxe - v2.17.0
 
 > ☁️ **Backend** : Supabase **auto-hébergé sur le NAS Unraid** depuis v2.9.0 (2026-07-14) — API `https://caca-api.yannick-uhrig.com` (Traefik + Cloudflare Tunnel → Postgres/GoTrue/PostgREST, stack `compose-stacks/caca-supabase`). L'ancien projet cloud `fnljhknjmmteawwomehb` est en pause.
 
@@ -230,6 +230,17 @@ function shakeAchievement(id)
 - Poids total : ~50KB
 
 ## 🆗 Changelog
+
+### v2.17.0 (Septembre 2026) - 📊 REFONTE DES STATS
+
+- 🔄 **Graphiques refaits** (`js/charts.js`) : heures par créneaux de 2 h en barres horizontales (`buildHourSlots`), jours lun→dim avec record en avant (`buildWeekdayBars`), courbe SVG 12 mois (`buildMonthlyTrend`), couleurs/textures sur le même gabarit (`buildShare`)
+- 🎨 Système visuel commun : une seule teinte (thème) + encre neutre, marques fines, valeurs en texte, accent plein réservé à la donnée saillante
+- ➕ **Réorganisation des blocs Stats** : `STATS_TILES` / `applyStatsOrder()` / `moveStatsTile()` dans `app-ui.js`, ordre dans `stats.tileOrder`, flèches ↑ ↓ (pas de glisser-déposer)
+- ➕ **Bilan année ↔ mois** (`monthlyTotals()` dans `app-render.js`, choix dans `stats.bilanVue`)
+- 🔧 **Fix Bristol** : « dur » comptait en types 1 ET 2, « normal » en 3 ET 4 — chaque selle comptée deux fois, aucun pourcentage juste. `bristolBreakdown()` rattache chaque texture à un seul type ; types 1 et 3 grisés (inatteignables avec 6 textures)
+- 🔧 **Fix variation mensuelle** : le mois en cours était comparé au mois précédent complet (fausse chute chaque 1er). Comparaison à la même portion du mois précédent
+- 🔄 **Année en review** : un grand chiffre + six tuiles, au lieu de sept cartes équivalentes
+- 🔧 Bump cache SW caca-v35 → caca-v36
 
 ### v2.16.0 (Septembre 2026) - 📅 CALENDRIER LISIBLE
 
