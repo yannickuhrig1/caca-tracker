@@ -1,63 +1,81 @@
 /* 🎨 Styles pour les nouvelles fonctionnalités */
 
-/* === HEATMAP CALENDRIER === */
-.hm-wrap {
-    display: grid;
-    grid-template-rows: auto 1fr;
-    grid-template-columns: 28px 1fr;
-    gap: 2px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-}
-.hm-months {
-    grid-column: 2;
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: 12px;
-    gap: 2px;
-    font-size: 9px;
-    opacity: 0.55;
-    margin-bottom: 2px;
-    height: 14px;
-}
-.hm-days-label {
-    grid-column: 1;
-    display: grid;
-    grid-template-rows: repeat(7, 12px);
-    gap: 2px;
-    font-size: 8px;
-    opacity: 0.45;
-    align-items: center;
-    line-height: 1;
-}
-.hm-grid {
-    grid-column: 2;
+/* === CALENDRIER MENSUEL === */
+.cal-head {
     display: flex;
-    gap: 2px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 2px;
 }
-.hm-col {
+.cal-title {
+    font-weight: 700;
+    text-transform: capitalize;
+}
+.cal-nav {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    border: none;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.cal-nav:disabled { opacity: .25; cursor: default; }
+.cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+.cal-dow {
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    opacity: .5;
+}
+.cal-cell {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 12px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    background: color-mix(in srgb, var(--text-secondary) 8%, transparent);
 }
-.hm-cell {
-    width: 12px;
-    height: 12px;
-    border-radius: 2px;
-    flex-shrink: 0;
+/* Jours des mois voisins : la grille garde sa forme, sans rien afficher. */
+.cal-out { background: transparent; }
+.cal-future { opacity: .35; }
+.cal-num {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
 }
-.hm-empty { background: transparent; }
-.hm-c0 { background: color-mix(in srgb, var(--accent) 8%, #e5e7eb); }
-.hm-c1 { background: color-mix(in srgb, var(--accent) 30%, #e5e7eb); }
-.hm-c2 { background: color-mix(in srgb, var(--accent) 55%, transparent); }
-.hm-c3 { background: color-mix(in srgb, var(--accent) 78%, transparent); }
-.hm-c4 { background: var(--accent); }
-.hm-legend {
+/* Un jour avec des cacas se voit d'un coup d'œil, sans dégradé à décoder. */
+.cal-done {
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    cursor: pointer;
+}
+.cal-done:hover { background: color-mix(in srgb, var(--accent) 30%, transparent); }
+.cal-today {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+}
+.cal-dots {
     display: flex;
     align-items: center;
-    gap: 4px;
-    margin-top: 8px;
-    font-size: 10px;
+    gap: 1px;
+    font-size: 8px;
+    line-height: 1;
+}
+.cal-x {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--accent);
 }
 
 /* === RÉACTIONS FEED === */

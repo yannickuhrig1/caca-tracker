@@ -274,18 +274,8 @@ function renderStats() {
   const poopmapEl = $id('poopmap-container');
   if (poopmapEl && window.PoopMapModule) window.PoopMapModule.renderCard(state.logs, poopmapEl);
 
-  // Heatmap calendrier (charts.js)
-  if (typeof createHeatmap === 'function') {
-    const hmEl = $id('heatmap-container');
-    if (hmEl) {
-      hmEl.innerHTML = state.logs.length > 0 ? createHeatmap(state.logs) : '';
-      // Clic sur un jour
-      hmEl.addEventListener('click', e => {
-        const cell = e.target.closest('[data-date]');
-        if (cell) showDayDetail(cell.dataset.date);
-      });
-    }
-  }
+  // Calendrier mensuel (charts.js) — pose ses propres écouteurs, une seule fois
+  if (typeof renderCalendar === 'function') renderCalendar(state.logs);
   // Graphiques avancés (charts.js)
   if (typeof createAllCharts === 'function' && state.logs.length > 0) {
     const chartsEl = $id('advanced-charts-container');

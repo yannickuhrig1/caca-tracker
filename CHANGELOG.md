@@ -5,6 +5,36 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.16.0] — 2026-09-08
+
+### Modifié
+- **📅 Calendrier mensuel** en remplacement de la carte thermique annuelle des
+  Stats. La grille façon « contributions GitHub » était jolie de loin, mais on
+  n'y lisait ni les dates ni les quantités : 365 carrés de 12 px sans un seul
+  chiffre.
+  - Un vrai calendrier : semaines du lundi au dimanche, numéro du jour, et les
+    💩 de la journée dans la case (au-delà de 3, un `💩 ×N`)
+  - Navigation ‹ › mois par mois, bornée au mois courant d'un côté et au tout
+    premier caca de l'autre — plus de mois vides à faire défiler
+  - Aujourd'hui est cerclé, les jours à venir sont estompés
+  - Résumé du mois : total, jours actifs, jour record
+  - Clic (ou Entrée au clavier) sur un jour rempli : le détail de la journée,
+    comme avant
+  - `buildMonthGrid()` est une fonction pure, testée — dont le cas du caca de
+    23 h, qui restait sur son jour uniquement parce que les clés sont calculées
+    en heure locale
+
+### Corrigé
+- L'écouteur de clic du calendrier était ré-attaché **à chaque affichage** de
+  l'onglet Stats : après quatre passages, un clic sur un jour ouvrait quatre
+  fois la modale. La délégation n'est désormais posée qu'une fois.
+
+### Supprimé
+- `createHeatmap()` et les styles `.hm-*`, devenus sans usage.
+
+### Modifié (technique)
+- 🔧 Bump cache SW caca-v34 → caca-v35
+
 ## [2.15.1] — 2026-09-08
 
 ### Ajouté

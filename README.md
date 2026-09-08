@@ -4,7 +4,7 @@
 
 [![PWA](https://img.shields.io/badge/PWA-compatible-brightgreen)](#)
 [![Vanilla JS](https://img.shields.io/badge/Vanilla%20JS-no%20framework-yellow)](#)
-[![Version](https://img.shields.io/badge/version-2.15.1-orange)](#)
+[![Version](https://img.shields.io/badge/version-2.16.0-orange)](#)
 [![Supabase](https://img.shields.io/badge/Backend-Supabase%20self--hosted%20(NAS)-3ECF8E)](#)
 
 ---
@@ -36,6 +36,7 @@
 - **🗺️ PoopMap** : carte des cacas géolocalisés (tuiles OpenStreetMap, sans bibliothèque) + classement de tes lieux
 - **🏴 Territoires conquis** : communes, régions et pays, avec les drapeaux
 - **📅 Année par année** : total, moyenne/jour, jours actifs, meilleur mois
+- **📅 Calendrier mensuel** : un jour = une case, avec ses 💩 ; clic pour le détail
 - Fun facts médicaux
 
 ### Historique 📜

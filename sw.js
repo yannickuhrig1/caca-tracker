@@ -1,4 +1,4 @@
-const CACHE = 'caca-v34';
+const CACHE = 'caca-v35';
 const ASSETS = [
   './',
   './index.html',

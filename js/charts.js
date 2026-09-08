@@ -214,100 +214,143 @@ function createMonthlyTrendChart(poops) {
 // ============================================================
 // 📅 Heatmap calendrier (12 derniers mois, style GitHub)
 // ============================================================
-function createHeatmap(poops) {
-    if (!poops || poops.length === 0) return '';
+// 📅 Calendrier mensuel — une case par jour, comme un vrai calendrier.
+// Remplace l'ancienne carte thermique annuelle : jolie de loin, mais on n'y
+// lisait ni les dates ni les quantités.
 
-    // Construire un dictionnaire { 'YYYY-MM-DD': count }
+const MOIS_LONGS = ['janvier','février','mars','avril','mai','juin',
+                    'juillet','août','septembre','octobre','novembre','décembre'];
+
+/** Clé 'AAAA-MM-JJ' en heure locale (toISOString décalerait d'un jour). */
+function cleJour(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/**
+ * Fonction pure : la grille d'un mois, décalé de `offset` mois par rapport à
+ * aujourd'hui (0 = mois courant, -1 = le mois dernier).
+ * Renvoie 6 semaines de 7 jours pour que la hauteur ne saute pas d'un mois
+ * à l'autre, les jours voisins étant marqués `inMonth: false`.
+ */
+function buildMonthGrid(poops, offset = 0, now = Date.now()) {
     const counts = {};
-    poops.forEach(p => {
-        const d = new Date(p.date);
-        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-        counts[key] = (counts[key] || 0) + 1;
+    (poops || []).forEach(p => {
+        const k = cleJour(new Date(p.date));
+        counts[k] = (counts[k] || 0) + 1;
     });
 
-    // Plage : 365 jours en arrière depuis aujourd'hui
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const startDay = new Date(today);
-    startDay.setDate(today.getDate() - 364);
-    // Reculer au lundi précédent
-    const dow = startDay.getDay(); // 0=Sun
-    startDay.setDate(startDay.getDate() - (dow === 0 ? 6 : dow - 1));
+    const today = new Date(now);
+    const ref   = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+    const annee = ref.getFullYear(), mois = ref.getMonth();
 
-    // Générer les semaines (colonnes) × 7 jours (lignes)
-    const weeks = [];
-    let cursor = new Date(startDay);
-    while (cursor <= today) {
-        const week = [];
-        for (let d = 0; d < 7; d++) {
-            if (cursor <= today) {
-                const key = `${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}-${String(cursor.getDate()).padStart(2,'0')}`;
-                week.push({ date: new Date(cursor), count: counts[key] || 0, key });
-            } else {
-                week.push(null);
-            }
-            cursor.setDate(cursor.getDate() + 1);
-        }
-        weeks.push(week);
+    // Lundi de la semaine contenant le 1er du mois (getDay : 0 = dimanche)
+    const premier = new Date(annee, mois, 1);
+    const debut = new Date(premier);
+    debut.setDate(1 - ((premier.getDay() + 6) % 7));
+
+    const cleAujourdhui = cleJour(today);
+    const cells = [];
+    for (let i = 0; i < 42; i++) {
+        const d = new Date(debut.getFullYear(), debut.getMonth(), debut.getDate() + i);
+        const key = cleJour(d);
+        cells.push({
+            key,
+            day: d.getDate(),
+            count: counts[key] || 0,
+            inMonth: d.getMonth() === mois && d.getFullYear() === annee,
+            isToday: key === cleAujourdhui,
+            isFuture: d > today,
+        });
     }
 
-    // Labels des mois (au-dessus des colonnes)
-    const monthNames = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
-    let monthLabels = '<div class="hm-months">';
-    let lastMonth = -1;
-    weeks.forEach((week, wi) => {
-        const firstDay = week.find(Boolean);
-        if (!firstDay) return;
-        const m = firstDay.date.getMonth();
-        if (m !== lastMonth) {
-            monthLabels += `<span style="grid-column:${wi+1}">${monthNames[m]}</span>`;
-            lastMonth = m;
-        }
-    });
-    monthLabels += '</div>';
+    const duMois = cells.filter(c => c.inMonth);
+    const total  = duMois.reduce((n, c) => n + c.count, 0);
+    const meilleur = duMois.reduce((best, c) => (c.count > (best?.count || 0) ? c : best), null);
 
-    // Grille de cellules
-    let cells = '';
-    const maxCount = Math.max(...Object.values(counts), 1);
-    weeks.forEach(week => {
-        cells += '<div class="hm-col">';
-        week.forEach(day => {
-            if (!day) { cells += '<div class="hm-cell hm-empty"></div>'; return; }
-            const intensity = day.count === 0 ? 0
-                : day.count === 1 ? 1
-                : day.count <= 2 ? 2
-                : day.count <= 3 ? 3 : 4;
-            const label = `${day.key} : ${day.count} caca${day.count > 1 ? 's' : ''}`;
-            const clickable = day.count > 0 ? `data-date="${day.key}" style="cursor:pointer"` : '';
-            cells += `<div class="hm-cell hm-c${intensity}" title="${label}" ${clickable}></div>`;
-        });
-        cells += '</div>';
-    });
+    // Bornes de navigation : ni dans le futur, ni avant le tout premier caca.
+    const premierCaca = (poops || []).length ? new Date(Math.min(...poops.map(p => p.date))) : today;
+    const moisEcoulesDepuisDebut =
+        (today.getFullYear() - premierCaca.getFullYear()) * 12 + (today.getMonth() - premierCaca.getMonth());
 
-    const total = poops.length;
-    const activeDays = Object.keys(counts).length;
+    return {
+        annee, mois, offset,
+        label: `${MOIS_LONGS[mois]} ${annee}`,
+        cells,
+        total,
+        joursActifs: duMois.filter(c => c.count > 0).length,
+        meilleur: meilleur && meilleur.count > 0 ? meilleur : null,
+        peutAvancer: offset < 0,
+        peutReculer: offset > -moisEcoulesDepuisDebut,
+    };
+}
+
+function createMonthCalendar(poops, offset = 0) {
+    const g = buildMonthGrid(poops, offset);
+    const jours = ['L','M','M','J','V','S','D'];
+
+    const cellules = g.cells.map(c => {
+        if (!c.inMonth) return '<div class="cal-cell cal-out"></div>';
+        const classes = ['cal-cell'];
+        if (c.isToday) classes.push('cal-today');
+        if (c.count > 0) classes.push('cal-done');
+        if (c.isFuture) classes.push('cal-future');
+        const attrs = c.count > 0
+            ? `data-date="${c.key}" role="button" tabindex="0" aria-label="${c.day} ${MOIS_LONGS[g.mois]} : ${c.count} caca${c.count > 1 ? 's' : ''}"`
+            : '';
+        const marque = c.count === 0 ? ''
+            : c.count <= 3 ? `<div class="cal-dots">${'💩'.repeat(c.count)}</div>`
+            : `<div class="cal-dots">💩<span class="cal-x">×${c.count}</span></div>`;
+        return `<div class="${classes.join(' ')}" ${attrs}>
+                  <span class="cal-num">${c.day}</span>${marque}
+                </div>`;
+    }).join('');
+
+    const resume = g.total === 0
+        ? 'Aucun caca ce mois-ci'
+        : `${g.total} caca${g.total > 1 ? 's' : ''} sur ${g.joursActifs} jour${g.joursActifs > 1 ? 's' : ''}` +
+          (g.meilleur ? ` · record le ${g.meilleur.day} (${g.meilleur.count})` : '');
 
     return `
       <div class="card p-4 rounded-[1.5rem] mb-4">
-        <div class="font-bold mb-1">📅 Calendrier des cacas</div>
-        <div class="text-xs opacity-60 mb-3">${total} cacas sur ${activeDays} jours actifs</div>
-        <div class="hm-wrap">
-          ${monthLabels}
-          <div class="hm-days-label">
-            <span>Lun</span><span></span><span>Mer</span><span></span><span>Ven</span><span></span><span>Dim</span>
-          </div>
-          <div class="hm-grid">${cells}</div>
+        <div class="cal-head">
+          <button type="button" class="cal-nav" data-cal="-1" ${g.peutReculer ? '' : 'disabled'} aria-label="Mois précédent">‹</button>
+          <div class="cal-title">📅 ${g.label}</div>
+          <button type="button" class="cal-nav" data-cal="1" ${g.peutAvancer ? '' : 'disabled'} aria-label="Mois suivant">›</button>
         </div>
-        <div class="hm-legend">
-          <span class="text-xs opacity-60">Moins</span>
-          <div class="hm-cell hm-c0"></div>
-          <div class="hm-cell hm-c1"></div>
-          <div class="hm-cell hm-c2"></div>
-          <div class="hm-cell hm-c3"></div>
-          <div class="hm-cell hm-c4"></div>
-          <span class="text-xs opacity-60">Plus</span>
-        </div>
+        <div class="text-xs opacity-60 text-center mb-3">${resume}</div>
+        <div class="cal-grid cal-dow">${jours.map(j => `<div>${j}</div>`).join('')}</div>
+        <div class="cal-grid">${cellules}</div>
       </div>`;
+}
+
+// Mois affiché et entrées à dessiner, conservés entre deux rendus de l'onglet
+// Stats. Les entrées sont passées explicitement : `state` est un `let` de
+// portée lexicale dans app-core.js, il n'existe pas sur `window`.
+let _calendarOffset = 0;
+let _calendarLogs = [];
+
+function renderCalendar(logs, offset) {
+    const el = document.getElementById('heatmap-container');
+    if (!el) return;
+    if (Array.isArray(logs)) _calendarLogs = logs;
+    if (typeof offset === 'number') _calendarOffset = offset;
+    el.innerHTML = createMonthCalendar(_calendarLogs, _calendarOffset);
+
+    // Délégation posée une seule fois : renderStats() repasse ici à chaque
+    // affichage de l'onglet, et empilait autrefois les écouteurs.
+    if (el.dataset.wired) return;
+    el.dataset.wired = '1';
+    el.addEventListener('click', e => {
+        const nav = e.target.closest('[data-cal]');
+        if (nav) { renderCalendar(null, _calendarOffset + Number(nav.dataset.cal)); return; }
+        const cell = e.target.closest('[data-date]');
+        if (cell && typeof showDayDetail === 'function') showDayDetail(cell.dataset.date);
+    });
+    el.addEventListener('keydown', e => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        const cell = e.target.closest('[data-date]');
+        if (cell && typeof showDayDetail === 'function') { e.preventDefault(); showDayDetail(cell.dataset.date); }
+    });
 }
 
 // Crée tous les graphiques

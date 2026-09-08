@@ -7,12 +7,20 @@
 
 // Source de vérité unique de la version. L'en-tête et les Réglages sont
 // remplis à partir d'ici, ce qui évite qu'ils divergent comme par le passé.
-const APP_VERSION = '2.15.1';
+const APP_VERSION = '2.16.0';
 const APP_VERSION_DATE = 'Septembre 2026';
 
 // De la plus récente à la plus ancienne. `items` reste court et écrit pour
 // Clémence, pas pour un développeur : ce que ça change pour elle, pas comment.
 const APP_CHANGELOG = [
+  {
+    version: '2.16.0',
+    date: 'Septembre 2026',
+    items: [
+      ['📅', 'Le calendrier des Stats devient un **vrai calendrier**, mois par mois : chaque jour affiche ses 💩, et un clic ouvre le détail.'],
+      ['‹ ›', 'Les flèches remontent dans le temps, jusqu\'à ton tout premier caca.'],
+    ]
+  },
   {
     version: '2.15.1',
     date: 'Septembre 2026',

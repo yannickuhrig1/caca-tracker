@@ -1,4 +1,4 @@
-# 💩 Caca-Tracker 3000 Deluxe - v2.15.1
+# 💩 Caca-Tracker 3000 Deluxe - v2.16.0
 
 > ☁️ **Backend** : Supabase **auto-hébergé sur le NAS Unraid** depuis v2.9.0 (2026-07-14) — API `https://caca-api.yannick-uhrig.com` (Traefik + Cloudflare Tunnel → Postgres/GoTrue/PostgREST, stack `compose-stacks/caca-supabase`). L'ancien projet cloud `fnljhknjmmteawwomehb` est en pause.
 
@@ -230,6 +230,13 @@ function shakeAchievement(id)
 - Poids total : ~50KB
 
 ## 🆗 Changelog
+
+### v2.16.0 (Septembre 2026) - 📅 CALENDRIER LISIBLE
+
+- 🔄 **Calendrier mensuel** (`buildMonthGrid` / `createMonthCalendar` / `renderCalendar` dans `js/charts.js`) à la place de la carte thermique annuelle : semaines lun→dim, numéros de jour, 💩 par case, navigation ‹ › bornée (mois courant ↔ premier caca), aujourd'hui cerclé, résumé du mois
+- 🔧 Fix : l'écouteur de clic était ré-attaché à chaque `renderStats()` — quatre passages dans l'onglet Stats, quatre ouvertures de la modale. Délégation posée une seule fois
+- 🗑️ `createHeatmap()` et les styles `.hm-*` supprimés
+- 🔧 Bump cache SW caca-v34 → caca-v35
 
 ### v2.15.1 (Septembre 2026) - ☁️ RATTRAPAGE AUTO
 

@@ -349,7 +349,7 @@
       <!-- PoopMap (injectée par js/poopmap.js) -->
       <div id="poopmap-container" class="mb-4"></div>
 
-      <!-- Heatmap calendrier (injectée par charts.js) -->
+      <!-- Calendrier mensuel (injecté par charts.js) -->
       <div id="heatmap-container" class="mb-4"></div>
 
       <!-- Graphiques avancés (injectés par charts.js) -->
@@ -784,7 +784,7 @@
             <p><strong>🏆 Records personnels</strong> — Meilleur streak, meilleur jour, meilleure semaine, meilleur mois.</p>
             <p><strong>🔬 Échelle de Bristol</strong> — Répartition de tes cacas sur les 7 niveaux de l'échelle médicale de Bristol.</p>
             <p><strong>📅 Année par année</strong> — Total, moyenne par jour, jours actifs et meilleur mois pour chaque année.</p>
-            <p><strong>📅 Carte thermique annuelle</strong> — Vue d'ensemble de l'année entière : chaque case = un jour, plus c'est foncé, plus tu as cacé.</p>
+            <p><strong>📅 Calendrier mensuel</strong> — Un vrai calendrier, mois par mois : chaque jour affiche ses 💩, et un clic ouvre le détail de la journée. Les flèches ‹ › remontent dans le temps.</p>
             <p><strong>🗺️ PoopMap</strong> — Carte de tes cacas géolocalisés + classement de tes lieux (🏠 Maison, 💼 Boulot, 🍽️ Resto…). La position est facultative et s'active dans les Réglages.</p>
             <p><strong>🏴 Territoires conquis</strong> — Les communes, régions et pays où tu as cacé, avec les drapeaux. Il faut activer « Retrouver commune et pays » dans les Réglages.</p>
             <p><strong>🏥 PDF médical</strong> — Génère un rapport imprimable avec toutes tes stats pour ton médecin.</p>
@@ -1133,7 +1133,7 @@
     </div>
   </div>
 
-  <!-- MODAL DÉTAIL DU JOUR (clic heatmap) -->
+  <!-- MODAL DÉTAIL DU JOUR (clic sur un jour du calendrier) -->
   <div id="day-detail-modal" class="fixed inset-0 z-[75] hidden" style="background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);">
     <div class="flex flex-col h-full p-4 max-w-sm mx-auto">
       <div class="flex items-center justify-between mb-4 pt-2">
