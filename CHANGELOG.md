@@ -5,6 +5,29 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.15.1] — 2026-09-08
+
+### Ajouté
+- **Rattrapage automatique du cloud** — les colonnes `place` / `lat` / `lon` /
+  `city` … sont arrivées après coup (migrations `13` et `14`) : les cacas
+  enregistrés avant existaient dans le cloud sans elles. Au démarrage, l'app ne
+  faisait qu'un pull (cloud → local) ; seul `afterLogin()` poussait dans l'autre
+  sens, ce qui obligeait à se **déconnecter puis reconnecter à la main** pour que
+  la carte suive d'un appareil à l'autre.
+  `maybeBackfillPoopMapCloud()` repousse désormais une fois, au premier démarrage
+  suivant la mise à jour, les seules entrées qui portent un lieu ou une position.
+  - Marqueur `poopmap.cloudBackfill.v1` : l'opération ne se répète pas
+  - Si la base n'a pas encore les colonnes (repli PGRST204), le marqueur **n'est
+    pas** posé et la tentative est refaite au lancement suivant
+  - `poopMapEntriesToPush()` est une fonction pure, testée
+- Le « Quoi de neuf » explique où activer la position et la conquête dans les
+  Réglages — sans ça, la carte reste vide et rien ne le dit.
+
+### Modifié
+- `SupabaseClient.geoColumnsAvailable()` expose si la base connaît les colonnes
+  PoopMap, ce qui permet au rattrapage de savoir s'il a réellement servi.
+- 🔧 Bump cache SW caca-v33 → caca-v34
+
 ## [2.15.0] — 2026-09-08
 
 Inspiré de ce que propose l'app **Poop Map** : conquête géographique, rareté

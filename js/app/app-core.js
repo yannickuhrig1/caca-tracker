@@ -127,6 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (profile) {
       updateUserBadge(profile);
       await syncCloudData();
+      // Une fois par appareil : repousser les lieux/positions que le cloud
+      // n'avait pas encore (colonnes arrivées avec les migrations 13 et 14).
+      await maybeBackfillPoopMapCloud();
       $debug('☁️ session restored via INITIAL_SESSION: ' + profile.username);
     }
   }, { once: true });
