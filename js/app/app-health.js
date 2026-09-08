@@ -317,58 +317,78 @@ function renderMonthCompare() {
 // ===================================================
 //  BRISTOL SCALE 🔬  (feature 17)
 // ===================================================
+// L'app propose 6 textures, l'échelle médicale compte 7 types : chaque texture
+// est rattachée à UN seul type. La version précédente comptait « dur » à la
+// fois en type 1 et en type 2, et « normal » en 3 et en 4 — chaque caca était
+// donc compté deux fois et les pourcentages ne tombaient jamais juste.
+const BRISTOL_TYPES = [
+  { num: 1, desc: 'Petites boules dures séparées', texture: null,       color: '#7c3aed', icon: '⚫' },
+  { num: 2, desc: 'Saucisse grumeleuse et dure',   texture: 'dur',      color: '#9c4221', icon: '🗿' },
+  { num: 3, desc: 'Saucisse avec craquelures',     texture: null,       color: '#d97706', icon: '🟫' },
+  { num: 4, desc: 'Saucisse lisse et molle',       texture: 'normal',   color: '#10b981', icon: '💩' },
+  { num: 5, desc: 'Morceaux mous aux bords nets',  texture: 'mou',      color: '#f59e0b', icon: '🍮' },
+  { num: 6, desc: 'Pâteux, morceaux effilochés',   texture: 'spray',    color: '#f97316', icon: '💦' },
+  { num: 7, desc: 'Entièrement liquide',           textures: ['liquide', 'explosif'], color: '#ef4444', icon: '🌊' },
+];
+
+/** Fonction pure : combien de selles par type, et la part « idéale ». */
+function bristolBreakdown(logs) {
+  const parTexture = {};
+  (logs || []).forEach(l => { if (l.texture) parTexture[l.texture] = (parTexture[l.texture] || 0) + 1; });
+
+  const total = Object.values(parTexture).reduce((a, b) => a + b, 0);
+  const rows = BRISTOL_TYPES.map(t => {
+    const textures = t.textures || (t.texture ? [t.texture] : []);
+    const count = textures.reduce((n, tex) => n + (parTexture[tex] || 0), 0);
+    return {
+      ...t,
+      textures,
+      count,
+      pct: total ? Math.round(count / total * 100) : 0,
+      // Un type qu'aucune texture de l'app ne peut produire : on le montre,
+      // grisé, plutôt que de laisser croire qu'il n'arrive jamais.
+      inatteignable: textures.length === 0,
+      ideal: t.num === 3 || t.num === 4,
+    };
+  });
+
+  const idealCount = rows.filter(r => r.ideal).reduce((n, r) => n + r.count, 0);
+  return { rows, total, idealCount, idealPct: total ? Math.round(idealCount / total * 100) : 0 };
+}
+
 function renderBristolScale() {
   const el = $id('bristol-container');
   if (!el || state.logs.length === 0) { if (el) el.innerHTML = ''; return; }
 
-  const bristolLevels = [
-    { num: 1, label: 'Type 1', desc: 'Petites boules dures séparées', textures: ['dur'], color: '#7c3aed', icon: '⚫⚫⚫' },
-    { num: 2, label: 'Type 2', desc: 'Saucisse grumeleuse et dure',   textures: ['dur'], color: '#9c4221', icon: '🟤🟤' },
-    { num: 3, label: 'Type 3', desc: 'Saucisse avec craquelures',     textures: ['normal'], color: '#d97706', icon: '🟫' },
-    { num: 4, label: 'Type 4', desc: 'Saucisse lisse et molle ✅',    textures: ['normal'], color: '#10b981', icon: '💩' },
-    { num: 5, label: 'Type 5', desc: 'Morceaux mous aux bords nets',  textures: ['mou'], color: '#f59e0b', icon: '🟡' },
-    { num: 6, label: 'Type 6', desc: 'Pâteux, morceaux effilochés',   textures: ['spray'], color: '#f97316', icon: '💦' },
-    { num: 7, label: 'Type 7', desc: 'Entièrement liquide',           textures: ['liquide','explosif'], color: '#ef4444', icon: '🌊' },
-  ];
+  const { rows, total, idealPct } = bristolBreakdown(state.logs);
+  const max = Math.max(...rows.map(r => r.count), 1);
 
-  // Compter par texture mappée sur Bristol
-  const textureCounts = {};
-  state.logs.forEach(l => { textureCounts[l.texture] = (textureCounts[l.texture] || 0) + 1; });
-
-  const totalMapped = bristolLevels.reduce((sum, lvl) => {
-    return sum + lvl.textures.reduce((s, t) => s + (textureCounts[t] || 0), 0);
-  }, 0) || 1;
-
-  const rows = bristolLevels.map(lvl => {
-    const count = lvl.textures.reduce((s, t) => s + (textureCounts[t] || 0), 0);
-    const pct   = Math.round((count / totalMapped) * 100);
-    const isIdeal = lvl.num === 3 || lvl.num === 4;
-    return `
-      <div class="flex items-center gap-2 py-1.5" style="border-bottom:1px solid rgba(0,0,0,0.05)">
-        <div class="w-6 text-center text-xs font-bold opacity-50">${lvl.num}</div>
-        <div class="text-lg w-10 shrink-0 text-center">${lvl.icon}</div>
-        <div class="flex-1 min-w-0">
-          <div class="text-xs font-bold flex items-center gap-1">
-            ${lvl.desc}
-            ${isIdeal ? '<span class="text-xs px-1 rounded" style="background:rgba(16,185,129,0.15);color:#10b981">idéal</span>' : ''}
-          </div>
-          <div class="w-full rounded-full overflow-hidden mt-1" style="height:4px;background:rgba(0,0,0,0.07)">
-            <div style="width:${pct}%;height:100%;border-radius:99px;background:${lvl.color};transition:width .5s"></div>
+  const lignes = rows.map(r => `
+      <div class="br-row${r.inatteignable ? ' br-off' : ''}${r.ideal ? ' br-ideal' : ''}"
+           title="Type ${r.num} — ${r.desc} : ${r.inatteignable ? 'non couvert par l\'app' : r.count + ' (' + r.pct + ' %)'}">
+        <div class="br-num">${r.num}</div>
+        <div class="br-icon" aria-hidden="true">${r.icon}</div>
+        <div class="br-body">
+          <div class="br-desc">${r.desc}${r.ideal ? ' <span class="br-tag">idéal</span>' : ''}</div>
+          <div class="br-track">
+            <div class="br-fill" style="width:${max ? r.count / max * 100 : 0}%;background:${r.color}"></div>
           </div>
         </div>
-        <div class="text-xs font-bold w-10 text-right" style="color:${count > 0 ? lvl.color : 'inherit'};opacity:${count > 0 ? 1 : 0.3}">
-          ${count > 0 ? count + ' (' + pct + '%)' : '—'}
-        </div>
-      </div>`;
-  }).join('');
+        <div class="br-value">${r.inatteignable ? '—' : r.count ? r.count + '<span class="br-pct"> · ' + r.pct + ' %</span>' : '0'}</div>
+      </div>`).join('');
 
   el.innerHTML = `
     <div class="card p-4 rounded-[1.5rem]">
-      <div class="font-bold mb-1 text-sm">🔬 Échelle de Bristol</div>
-      <div class="text-xs opacity-50 mb-3">Classification médicale de tes ${state.logs.length} selles</div>
-      ${rows}
-      <div class="mt-3 p-2 rounded-xl text-xs text-center font-bold" style="background:rgba(16,185,129,0.1);color:#10b981">
-        ✅ Types 3 et 4 = selles idéales selon la médecine
+      <div class="font-bold text-sm mb-1">🔬 Échelle de Bristol</div>
+      <div class="text-xs opacity-60 mb-3">
+        Classification médicale de tes ${total} selle${total > 1 ? 's' : ''} —
+        <strong>${idealPct} %</strong> dans la zone idéale
+      </div>
+      ${lignes}
+      <div class="mt-3 p-2 rounded-xl text-xs text-center"
+           style="background:rgba(16,185,129,0.1);color:#10b981">
+        ✅ Les types 3 et 4 sont les selles idéales.
+        Les types 1 et 3 sont grisés : aucune texture de l'app ne leur correspond.
       </div>
     </div>`;
 }

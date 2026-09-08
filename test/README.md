@@ -31,6 +31,9 @@ remarque.
 | `history-search.test.js` | `filterLogs`, `historyFiltersActive`, `yearlyTotals` | décident de ce qui s'affiche dans l'historique : une erreur masque des entrées sans que rien ne le signale |
 | `conquest.test.js` | `conquestStats`, `flagEmoji`, `computeBadges` | décernent (ou refusent) les trophées, et servent au calcul de la rareté dans le groupe |
 | `csv-export.test.js` | `toCSV` | le fichier part dans un tableur : un guillemet mal échappé décale les colonnes en silence |
+| `stats-charts.test.js` | `buildHourSlots`, `buildWeekdayBars`, `buildMonthlyTrend`, `buildShare` | créneaux horaires, semaine qui commence un lundi, fenêtre de 12 mois et variation comparée à la même portion du mois précédent |
+| `bristol.test.js` | `bristolBreakdown` | verrouille le comptage : chaque selle une seule fois, pourcentages à 100 % |
+| `calendar.test.js` | `buildMonthGrid` | place chaque caca sur sa case : un décalage d'un jour ne saute pas aux yeux sur un calendrier |
 | `backfill.test.js` | `poopMapEntriesToPush` | choisit ce qui remonte une fois vers le cloud : trop étroit, des lieux restent bloqués sur un seul téléphone |
 
 ## La suite détecte-t-elle vraiment les régressions ?

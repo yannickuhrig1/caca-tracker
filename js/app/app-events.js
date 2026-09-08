@@ -59,6 +59,10 @@ function setupEvents() {
     });
   });
 
+  // Ordre des tuiles de l'onglet Stats
+  $id('stats-reorder-btn')?.addEventListener('click', toggleStatsEdit);
+  applyStatsOrder();
+
   // Historique : recherche, filtres et pagination
   setupHistoryControls();
 

@@ -5,6 +5,84 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.17.0] — 2026-09-08
+
+### Ajouté
+- **🔀 Ordre des blocs de l'onglet Stats** — bouton « Réorganiser », puis des
+  flèches ↑ ↓ sur chaque bloc ; l'ordre est mémorisé (`stats.tileOrder`) et
+  rejoué à chaque ouverture. Des boutons plutôt qu'un glisser-déposer : au doigt,
+  sur une page qui défile, le glisser rate une fois sur deux. Un bloc ajouté par
+  une version ultérieure vient se placer à la fin sans casser l'ordre existant.
+- **📅 Bilan année ↔ mois** — le bloc annuel bascule sur les 12 derniers mois,
+  le choix est mémorisé. Le mois en cours est ramené aux jours écoulés, comme
+  l'année en cours.
+
+### Modifié
+- **🕒 Heures de prédilection** — 24 barres de 14 px sans étiquette lisible sont
+  devenues 12 lignes horizontales par créneaux de 2 h, chacune étiquetée, avec le
+  pic en avant et sa part du total.
+- **📆 Fréquence par jour** — semaine du lundi au dimanche (elle commençait un
+  dimanche), valeur au-dessus de chaque colonne, jour record en accent plein.
+- **📈 Tendance mensuelle** — des barres détachées remplacées par une courbe +
+  aire sur 12 mois, avec un point par mois et son infobulle.
+- **🎨 Couleurs et textures** — même gabarit de barres horizontales, tri par
+  fréquence, pourcentages alignés.
+- **🎬 Année en review** — un grand chiffre porte le récap, six tuiles
+  l'accompagnent ; c'étaient sept cartes de même poids visuel.
+- Système visuel commun aux graphiques : une seule teinte (celle du thème) plus
+  de l'encre neutre, marques fines, extrémités arrondies, valeurs en texte et non
+  en couleur ; seule la donnée saillante passe en accent plein.
+
+### Corrigé
+- **🔬 Échelle de Bristol : chaque selle était comptée deux fois.** « dur »
+  alimentait les types 1 et 2, « normal » les types 3 et 4 ; le total de
+  référence était donc gonflé et **aucun pourcentage n'était juste**. Chaque
+  texture est désormais rattachée à un seul type, les pourcentages somment à
+  100 %, et les deux types qu'aucune texture de l'app ne peut produire (1 et 3)
+  sont grisés et annoncés comme tels.
+- **📈 Variation mensuelle trompeuse** — le mois en cours était comparé au mois
+  précédent *complet*, ce qui affichait une chute spectaculaire chaque début de
+  mois (−78 % sur un jeu de test au 8 du mois). La comparaison se fait
+  maintenant à la même portion du mois précédent (−20 % sur le même jeu), et le
+  libellé le dit : « vs le mois dernier à la même date ».
+
+### Supprimé
+- Les styles `.chart-container`, `.bar-chart`, `.pie-chart-legend` et le titre de
+  section « Statistiques Avancées », remplacés par le nouveau gabarit.
+
+### Modifié (technique)
+- 🔧 Bump cache SW caca-v35 → caca-v36
+
+## [2.16.0] — 2026-09-08
+
+### Modifié
+- **📅 Calendrier mensuel** en remplacement de la carte thermique annuelle des
+  Stats. La grille façon « contributions GitHub » était jolie de loin, mais on
+  n'y lisait ni les dates ni les quantités : 365 carrés de 12 px sans un seul
+  chiffre.
+  - Un vrai calendrier : semaines du lundi au dimanche, numéro du jour, et les
+    💩 de la journée dans la case (au-delà de 3, un `💩 ×N`)
+  - Navigation ‹ › mois par mois, bornée au mois courant d'un côté et au tout
+    premier caca de l'autre — plus de mois vides à faire défiler
+  - Aujourd'hui est cerclé, les jours à venir sont estompés
+  - Résumé du mois : total, jours actifs, jour record
+  - Clic (ou Entrée au clavier) sur un jour rempli : le détail de la journée,
+    comme avant
+  - `buildMonthGrid()` est une fonction pure, testée — dont le cas du caca de
+    23 h, qui restait sur son jour uniquement parce que les clés sont calculées
+    en heure locale
+
+### Corrigé
+- L'écouteur de clic du calendrier était ré-attaché **à chaque affichage** de
+  l'onglet Stats : après quatre passages, un clic sur un jour ouvrait quatre
+  fois la modale. La délégation n'est désormais posée qu'une fois.
+
+### Supprimé
+- `createHeatmap()` et les styles `.hm-*`, devenus sans usage.
+
+### Modifié (technique)
+- 🔧 Bump cache SW caca-v34 → caca-v35
+
 ## [2.15.1] — 2026-09-08
 
 ### Ajouté
