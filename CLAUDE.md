@@ -1,4 +1,4 @@
-# 💩 Caca-Tracker 3000 Deluxe - v2.14.0
+# 💩 Caca-Tracker 3000 Deluxe - v2.15.0
 
 > ☁️ **Backend** : Supabase **auto-hébergé sur le NAS Unraid** depuis v2.9.0 (2026-07-14) — API `https://caca-api.yannick-uhrig.com` (Traefik + Cloudflare Tunnel → Postgres/GoTrue/PostgREST, stack `compose-stacks/caca-supabase`). L'ancien projet cloud `fnljhknjmmteawwomehb` est en pause.
 
@@ -230,6 +230,19 @@ function shakeAchievement(id)
 - Poids total : ~50KB
 
 ## 🆗 Changelog
+
+### v2.15.0 (Septembre 2026) - 🏴 CONQUÊTE + HISTORIQUE FOUILLABLE
+
+> Reprend ce que propose l'app **Poop Map** : conquête géographique, rareté des trophées, export CSV, historique cherchable.
+
+- ➕ **Historique complet** : recherche plein texte (note, lieu, texture, date en toutes lettres), filtres texture/couleur/lieu/période, pagination par 20 — la liste s'arrêtait aux 20 dernières entrées
+- ➕ **Territoires conquis** : commune / région / pays via Nominatim, drapeaux, réglage `poopmap.geocode` **distinct de la position et éteint par défaut** + bouton de rattrapage (1 req/s, lots de 25)
+- ➕ **8 trophées de conquête** (📍 🧭 🏙️ 🚗 🛂 🥾 ✈️ 🏕️) — 70 badges au total
+- ➕ **Rareté des badges** : « 2/5 l'ont », recalculée depuis les entrées du groupe (aucune donnée nouvelle en base) ; badges liés aux notes et aux positions exclus, ces données ne sont pas lues chez les copines
+- ➕ **Export CSV** (séparateur `;` + BOM, pour Excel FR) et **bilan année par année**
+- 🔧 `computeBadges(logs, streak)` extrait de `updateBadges()` (fonction pure) ; `calculateStreak(logs)` accepte une liste
+- ➕ Migration `14_20260908_poopmap-conquete.sql` (`city`, `region`, `country`, `country_code`) — **pas encore appliquée**, repli automatique côté client
+- 🔧 Bump cache SW caca-v32 → caca-v33
 
 ### v2.14.0 (Septembre 2026) - 🗺️ POOPMAP
 

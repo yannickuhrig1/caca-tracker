@@ -83,7 +83,25 @@ const BADGE_DEFS = [
   { id:'explorer',     icon:'🧭', label:'Exploratrice',            desc:'3 lieux différents utilisés',       color:'#0ea5e9' },
   { id:'globetrotter', icon:'🌍', label:'Globe-trotteuse',         desc:'Les 8 lieux utilisés',              color:'#7c3aed' },
   { id:'casaniere',    icon:'🏠', label:'Casanière',               desc:'20 cacas à la maison',              color:'#f59e0b' },
+  // ── Conquête 🏴 (dans l'esprit de PoopMap) ────────────────
+  { id:'firstDrop',    icon:'📍', label:'Première Conquête',       desc:'1er caca géolocalisé',              color:'#ef4444' },
+  { id:'cartographe',  icon:'🧭', label:'Cartographe',             desc:'10 spots différents sur la carte',  color:'#0ea5e9' },
+  { id:'touriste',     icon:'🏙️', label:'Touriste',                desc:'3 communes conquises',              color:'#8b5cf6' },
+  { id:'roadtrip',     icon:'🚗', label:'Roadtrip',                desc:'3 régions conquises',               color:'#f97316' },
+  { id:'passeport',    icon:'🛂', label:'Passeport Tamponné',      desc:'2 pays conquis',                    color:'#22c55e' },
+  { id:'aventuriere',  icon:'🥾', label:'Aventurière',             desc:'Un caca à plus de 50 km du QG',     color:'#a16207' },
+  { id:'longCourrier', icon:'✈️', label:'Long-Courrier',           desc:'Un caca à plus de 500 km du QG',    color:'#6366f1' },
+  { id:'pleineNature', icon:'🏕️', label:'Pleine Nature',           desc:'Un caca géolocalisé en pleine nature', color:'#16a34a' },
 ];
+
+// Badges que la rareté ne peut pas calculer honnêtement : ils dépendent de
+// données qu'on ne lit pas chez les copines — le contenu des notes et les
+// positions, qui restent privés. Mieux vaut ne rien afficher qu'un faux 0.
+const RARITY_SKIP = new Set([
+  'journaliste', 'philosopher', 'novelist',
+  'firstDrop', 'cartographe', 'touriste', 'roadtrip', 'passeport',
+  'aventuriere', 'longCourrier', 'pleineNature',
+]);
 
 function buildBadgesGrid() {
   const grid = $id('badges-grid');
@@ -96,13 +114,29 @@ function buildBadgesGrid() {
       <div class="w-full rounded-full overflow-hidden" style="height:6px;background:rgba(0,0,0,0.1)">
         <div class="badge-bar" style="height:100%;border-radius:99px;width:0%;background:${b.color};transition:width .5s ease"></div>
       </div>
+      <div class="badge-rarity text-xs mt-2 opacity-60"></div>
     </div>`).join('');
 }
 
 function updateBadges() {
-  const logs  = state.logs;
+  const badges = computeBadges(state.logs, calculateStreak());
+
+  Object.entries(badges).forEach(([id, {pct, done}]) => {
+    const card = document.querySelector(`[data-badge="${id}"]`);
+    if (!card) return;
+    const bar = card.querySelector('.badge-bar');
+    if (bar) bar.style.width = pct.toFixed(0) + '%';
+    const def = BADGE_DEFS.find(b => b.id === id);
+    card.style.borderColor = done ? (def?.color || '#f59e0b') : 'transparent';
+    card.style.opacity = done ? '1' : '0.65';
+  });
+}
+
+// Fonction pure : l'état de chaque badge pour une liste d'entrées donnée.
+// Extraite d'updateBadges pour pouvoir la rejouer sur les entrées d'une
+// copine et en déduire la rareté d'un badge.
+function computeBadges(logs, streak) {
   const total = logs.length;
-  const streak = calculateStreak();
   const now   = new Date();
 
   // ── Helpers ──────────────────────────────────────────────
@@ -157,6 +191,15 @@ function updateBadges() {
   const placesUsed = new Set(logs.map(l => l.place).filter(Boolean));
   const nbPlaces   = window.PoopMapModule?.PLACES.length || 8;
   const atHome     = logs.filter(l => l.place === 'maison').length;
+
+  // Conquête (PoopMap) — tout est à 0 tant que la position n'est pas activée
+  const pm         = window.PoopMapModule;
+  const geoloc     = pm ? logs.filter(l => pm.hasGeo(l)) : [];
+  const conquete   = pm ? pm.conquestStats(logs) : { cities: [], regions: [], countries: [] };
+  const geoInfos   = pm ? pm.geoStats(logs) : null;
+  const spots      = geoInfos?.spots || 0;
+  const plusLoinKm = geoInfos?.farthestKm || 0;
+  const natureGeo  = geoloc.filter(l => l.place === 'nature').length;
 
   // Colors & textures
   const colorsUsed   = new Set(logs.map(l => l.color).filter(Boolean));
@@ -298,15 +341,68 @@ function updateBadges() {
     explorer:     { pct: Math.min(100,(placesUsed.size/3)*100),       done: placesUsed.size>=3 },
     globetrotter: { pct: Math.min(100,(placesUsed.size/nbPlaces)*100),done: placesUsed.size>=nbPlaces },
     casaniere:    { pct: Math.min(100,(atHome/20)*100),               done: atHome>=20 },
+    // Conquête
+    firstDrop:    { pct: geoloc.length>=1?100:0,                      done: geoloc.length>=1 },
+    cartographe:  { pct: Math.min(100,(spots/10)*100),                done: spots>=10 },
+    touriste:     { pct: Math.min(100,(conquete.cities.length/3)*100),   done: conquete.cities.length>=3 },
+    roadtrip:     { pct: Math.min(100,(conquete.regions.length/3)*100),  done: conquete.regions.length>=3 },
+    passeport:    { pct: Math.min(100,(conquete.countries.length/2)*100),done: conquete.countries.length>=2 },
+    aventuriere:  { pct: Math.min(100,(plusLoinKm/50)*100),           done: plusLoinKm>=50 },
+    longCourrier: { pct: Math.min(100,(plusLoinKm/500)*100),          done: plusLoinKm>=500 },
+    pleineNature: { pct: natureGeo>=1?100:0,                          done: natureGeo>=1 },
   };
 
-  Object.entries(badges).forEach(([id, {pct, done}]) => {
-    const card = document.querySelector(`[data-badge="${id}"]`);
-    if (!card) return;
-    const bar = card.querySelector('.badge-bar');
-    if (bar) bar.style.width = pct.toFixed(0) + '%';
-    const def = BADGE_DEFS.find(b => b.id === id);
-    card.style.borderColor = done ? (def?.color || '#f59e0b') : 'transparent';
-    card.style.opacity = done ? '1' : '0.65';
+  return badges;
+}
+
+// ===================================================
+//  RARETÉ DES BADGES (dans l'esprit de PoopMap)
+// ===================================================
+// « Seules 2 copines sur 5 l'ont » : on rejoue les conditions sur les entrées
+// de chaque membre du groupe. Rien de nouveau à stocker côté base.
+let _rarityCache = { at: 0, groupId: null, data: null };
+const RARITY_TTL = 5 * 60 * 1000;
+
+async function updateBadgeRarity() {
+  if (!$id('badges-grid') || !window.SupabaseClient?.isLoggedIn() || !navigator.onLine) return;
+  // L'onglet Social n'a peut-être jamais été ouvert : on prend alors le
+  // premier groupe de l'utilisatrice.
+  let groupId = window.SocialModule?.currentGroupId?.();
+  if (!groupId) {
+    const groupes = await window.SupabaseClient.getMyGroups().catch(() => []);
+    groupId = groupes[0]?.id;
+  }
+  if (!groupId) return;
+
+  try {
+    const frais = _rarityCache.groupId === groupId && Date.now() - _rarityCache.at < RARITY_TTL;
+    if (!frais) {
+      const membres = await window.SupabaseClient.getGroupBadgeData(groupId);
+      _rarityCache = { at: Date.now(), groupId, data: membres };
+    }
+    renderBadgeRarity(_rarityCache.data);
+  } catch (e) {
+    $debug('rarity err: ' + e.message);
+  }
+}
+
+function renderBadgeRarity(membres) {
+  if (!membres?.length || membres.length < 2) return;   // seule, la rareté n'a pas de sens
+  const compte = {};
+  membres.forEach(m => {
+    const etats = computeBadges(m.logs, calculateStreak(m.logs));
+    Object.entries(etats).forEach(([id, { done }]) => {
+      if (done) compte[id] = (compte[id] || 0) + 1;
+    });
+  });
+
+  BADGE_DEFS.forEach(b => {
+    const el = document.querySelector(`[data-badge="${b.id}"] .badge-rarity`);
+    if (!el) return;
+    if (RARITY_SKIP.has(b.id)) { el.textContent = ''; return; }
+    const n = compte[b.id] || 0;
+    const pct = Math.round(n / membres.length * 100);
+    // En dessous d'un tiers du groupe, le badge vaut d'être frimé.
+    el.textContent = (pct <= 33 ? '💎 ' : '👯 ') + `${n}/${membres.length} l'${n > 1 ? 'ont' : 'a'}`;
   });
 }

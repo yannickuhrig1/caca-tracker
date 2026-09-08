@@ -10,7 +10,7 @@
 | Table | Colonnes | Rôle |
 |---|--:|---|
 | `profiles` | 7 | comptes : `username`, `avatar`, `email`, `is_admin`, `last_login` |
-| `poops` | 11 | les entrées : `date` (epoch ms), `texture`, `color`, `comment`, `is_retro`, `mood`, `local_id`, `updated_at` — + `place`, `lat`, `lon` après la migration `13` (non appliquée à ce jour) |
+| `poops` | 11 | les entrées : `date` (epoch ms), `texture`, `color`, `comment`, `is_retro`, `mood`, `local_id`, `updated_at` — + `place`, `lat`, `lon` (migration `13`) et `city`, `region`, `country`, `country_code` (migration `14`), aucune des deux appliquée à ce jour |
 | `groups` | 6 | groupes : `name`, `created_by`, `invite_code`, `allow_member_invite` |
 | `group_members` | 3 | appartenance (PK composite `group_id` + `user_id`) |
 | `comments` | 5 | commentaires sous une entrée du feed |
@@ -53,10 +53,12 @@ production.** Il manquerait les 6 tables ci-dessus. Pour repartir de zéro,
 il faut d'abord faire un `pg_dump --schema-only` de la base du NAS et en
 faire une migration `00_baseline.sql`.
 
-Enfin, `13_20260908_poopmap.sql` (colonnes `place`, `lat`, `lon`) est **au
-dépôt mais pas encore appliquée**. Le client sait s'en passer : il détecte les
-colonnes manquantes et rejoue la requête sans elles. Tant qu'elle n'est pas
-passée, lieu et position restent locaux à l'appareil.
+Enfin, `13_20260908_poopmap.sql` (`place`, `lat`, `lon`) et
+`14_20260908_poopmap-conquete.sql` (`city`, `region`, `country`,
+`country_code`) sont **au dépôt mais pas encore appliquées**. Le client sait
+s'en passer : il détecte les colonnes manquantes et rejoue la requête sans
+elles. Tant qu'elles ne sont pas passées, lieu, position et territoires
+conquis restent locaux à l'appareil.
 
 ## Convention
 

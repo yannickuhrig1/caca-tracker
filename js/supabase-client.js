@@ -152,15 +152,19 @@ async function fetchProfile(userId) {
 // réessaie alors sans ces colonnes plutôt que de perdre le caca, et on s'en
 // souvient pour le reste de la session.
 let _geoColumns = true;
-const GEO_COLS = ['place', 'lat', 'lon'];
+const GEO_COLS = ['place', 'lat', 'lon', 'city', 'region', 'country', 'country_code'];
 
 function withGeo(row, poop) {
   if (!_geoColumns) return row;
   return {
     ...row,
-    place: poop.place || null,
-    lat:   typeof poop.lat === 'number' ? poop.lat : null,
-    lon:   typeof poop.lon === 'number' ? poop.lon : null,
+    place:        poop.place || null,
+    lat:          typeof poop.lat === 'number' ? poop.lat : null,
+    lon:          typeof poop.lon === 'number' ? poop.lon : null,
+    city:         poop.city || null,
+    region:       poop.region || null,
+    country:      poop.country || null,
+    country_code: poop.countryCode || null,
   };
 }
 
@@ -173,7 +177,7 @@ function isMissingGeoColumn(error) {
 }
 
 const POOP_COLS     = 'id, local_id, date, texture, color, comment, is_retro, mood, updated_at';
-const POOP_COLS_GEO = POOP_COLS + ', place, lat, lon';
+const POOP_COLS_GEO = POOP_COLS + ', place, lat, lon, city, region, country, country_code';
 
 async function savePoopCloud(poop) {
   const sb = getSB(); if (!sb || !_currentUser) return;
@@ -229,6 +233,11 @@ async function getMyPoops() {
     };
     // lat/lon restent absents quand il n'y a pas de position : `hasGeo` s'y fie.
     if (typeof p.lat === 'number' && typeof p.lon === 'number') { log.lat = p.lat; log.lon = p.lon; }
+    // Idem pour la zone : absente plutôt que nulle, `hasZone` s'y fie.
+    if (p.city)         log.city        = p.city;
+    if (p.region)       log.region      = p.region;
+    if (p.country)      log.country     = p.country;
+    if (p.country_code) log.countryCode = p.country_code;
     return log;
   });
 }
@@ -756,6 +765,44 @@ async function getHallOfFame(groupId, limit = 12) {
 }
 
 // { userId: nbVictoires } — pour afficher 🏆×N à côté des noms
+/**
+ * Entrées des membres du groupe, réduites à ce que les conditions de badges
+ * savent lire. On ne récupère volontairement NI les notes NI les positions :
+ * la rareté n'a pas besoin de les connaître, et elles restent privées.
+ */
+async function getGroupBadgeData(groupId) {
+  const sb = getSB(); if (!sb) return [];
+  const members = await getGroupMembers(groupId);
+  if (members.length < 2) return [];
+
+  const memberIds = members.map(m => m.id);
+  const cols = 'user_id, date, texture, color, mood, is_retro' + (_geoColumns ? ', place' : '');
+  let { data, error } = await sb.from('poops').select(cols).in('user_id', memberIds);
+  if (isMissingGeoColumn(error)) {
+    _geoColumns = false;
+    ({ data, error } = await sb.from('poops')
+      .select('user_id, date, texture, color, mood, is_retro').in('user_id', memberIds));
+  }
+  logSbError('getGroupBadgeData', error);
+
+  const parMembre = Object.fromEntries(members.map(m => [m.id, []]));
+  (data || []).forEach(p => {
+    parMembre[p.user_id]?.push({
+      date:    p.date,
+      texture: p.texture || 'normal',
+      color:   p.color   || 'marron',
+      mood:    p.mood    || '',
+      isRetro: p.is_retro || false,
+      place:   p.place   || null,
+    });
+  });
+  return members.map(m => ({
+    id: m.id,
+    username: m.username,
+    logs: (parMembre[m.id] || []).sort((a, b) => b.date - a.date),
+  }));
+}
+
 async function getGroupTrophies(groupId) {
   const sb = getSB(); if (!sb) return {};
   const { data, error } = await sb.from('challenge_wins').select('user_id').eq('group_id', groupId);
@@ -924,6 +971,7 @@ window.SupabaseClient = {
   publishBadgeEvent,
   getHallOfFame,
   getGroupTrophies,
+  getGroupBadgeData,
   myMonthlyCrown,
   getWeeklyRecap,
   deleteGroup,

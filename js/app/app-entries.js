@@ -88,10 +88,31 @@ function addPoop() {
     }
   }
 
+  geocodeInBackground(poop);
+
   // Notifications : mettre à jour l'heure du dernier caca
   if (!isRetro) localStorage.setItem('notifLastPoopTime', Date.now());
 
   $debug('➕ ' + poop.texture + '/' + poop.color + (isRetro ? ' [rétro ' + new Date(timestamp).toLocaleString('fr') + ']' : ''));
+}
+
+// Nomme la position (commune / région / pays) après coup : la saisie ne doit
+// pas attendre le réseau, et l'entrée est déjà enregistrée si ça échoue.
+function geocodeInBackground(poop) {
+  const mod = window.PoopMapModule;
+  if (!mod?.hasGeo(poop) || mod.hasZone(poop)) return;
+  if (!mod.geocodeEnabled() || !navigator.onLine) return;
+
+  mod.reverseGeocode(poop.lat, poop.lon).then(zone => {
+    if (!zone) return;
+    Object.assign(poop, zone);
+    poop.updated_at = Date.now();
+    saveState(state);
+    renderAll();
+    if (window.SupabaseClient?.isLoggedIn()) {
+      window.SupabaseClient.savePoopCloud(poop).catch(e => $debug('cloud geo err: ' + e.message));
+    }
+  }).catch(e => $debug('geocode err: ' + e.message));
 }
 
 // ===================================================
@@ -171,8 +192,15 @@ function saveEditedPoop() {
   log.comment  = $id('comment').value.trim();
   log.mood     = selectedMood || null;
   log.place    = selectedPlace || null;
+  const geoAvant = window.PoopMapModule?.hasGeo(log) ? `${log.lat},${log.lon}` : '';
   if (pendingGeo) { log.lat = pendingGeo.lat; log.lon = pendingGeo.lon; }
   else { delete log.lat; delete log.lon; }
+  // La zone décrit une position précise : si celle-ci change ou disparaît, la
+  // commune enregistrée n'a plus de raison d'être.
+  const geoApres = window.PoopMapModule?.hasGeo(log) ? `${log.lat},${log.lon}` : '';
+  if (geoAvant !== geoApres) {
+    delete log.city; delete log.region; delete log.country; delete log.countryCode;
+  }
   // isRetro décrit la saisie d'origine, pas la modification : on n'y touche pas.
   log.updated_at = Date.now();   // arbitre la résolution de conflit multi-appareils
 
@@ -195,6 +223,8 @@ function saveEditedPoop() {
       }
     }
   }
+
+  geocodeInBackground(log);
 
   $debug('✏️ ' + log.texture + '/' + log.color);
 }

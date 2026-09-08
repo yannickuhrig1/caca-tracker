@@ -73,18 +73,71 @@ function renderDashboard() {
 // ===================================================
 //  HISTORY
 // ===================================================
+// L'historique s'arrêtait aux 20 dernières entrées, sans moyen de remonter
+// plus loin. Il est maintenant filtrable et se déplie par tranches de 20.
+const HISTORY_PAGE = 20;
+let historyShown = HISTORY_PAGE;
+let historyFilters = { q: '', texture: '', color: '', place: '', period: 'all' };
+
+// Un filtre actif change l'écran : on le dit, et on propose de l'annuler.
+function historyFiltersActive(f = historyFilters) {
+  return !!(f.q.trim() || f.texture || f.color || f.place || (f.period && f.period !== 'all'));
+}
+
+// Fonction pure : c'est elle qui décide de ce qui s'affiche, elle est testée.
+function filterLogs(logs, f = historyFilters, now = Date.now()) {
+  const q = (f.q || '').trim().toLowerCase();
+  const since = f.period === '7'    ? now - 7 * 86400000
+              : f.period === '30'   ? now - 30 * 86400000
+              : f.period === 'year' ? new Date(new Date(now).getFullYear(), 0, 1).getTime()
+              : null;
+
+  return (logs || []).filter(l => {
+    if (f.texture && l.texture !== f.texture) return false;
+    if (f.color   && l.color   !== f.color)   return false;
+    if (f.place   && (l.place || '') !== f.place) return false;
+    if (since !== null && l.date < since) return false;
+    if (!q) return true;
+    // La date est cherchable en toutes lettres : « janvier », « lundi », « 2026 ».
+    const place = window.PoopMapModule?.placeMeta(l.place)?.label || '';
+    const dt = new Date(l.date).toLocaleDateString('fr-FR',
+      { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    return [l.texture, l.color, l.mood, l.comment, place, dt]
+      .filter(Boolean).join(' ').toLowerCase().includes(q);
+  });
+}
+
 function renderHistory() {
   const list = $id('history-list');
-  const recent = state.logs.slice(0, 20);
+  if (!list) return;
+  const matches = filterLogs(state.logs);
+  const recent  = matches.slice(0, historyShown);
+
+  // Compteur, bouton « voir plus » et bouton de réinitialisation
+  const countEl = $id('history-count');
+  if (countEl) {
+    countEl.textContent = state.logs.length === 0 ? ''
+      : `${matches.length} caca${matches.length > 1 ? 's' : ''}` +
+        (matches.length > recent.length ? ` — ${recent.length} affiché${recent.length > 1 ? 's' : ''}` : '');
+  }
+  $id('history-more')?.classList.toggle('hidden', matches.length <= recent.length);
+  $id('history-reset')?.classList.toggle('hidden', !historyFiltersActive());
+
   if (!recent.length) {
-    list.innerHTML = `<div class="text-center py-12 opacity-60">
-      <div class="text-5xl mb-3">📭</div>
-      <div class="font-bold text-lg">Aucun caca enregistré</div>
-      <div class="text-sm">Clémence, c'est le moment !</div>
-    </div>`;
+    list.innerHTML = historyFiltersActive()
+      ? `<div class="text-center py-12 opacity-60">
+          <div class="text-5xl mb-3">🔎</div>
+          <div class="font-bold text-lg">Aucun résultat</div>
+          <div class="text-sm">Essaie avec moins de filtres.</div>
+        </div>`
+      : `<div class="text-center py-12 opacity-60">
+          <div class="text-5xl mb-3">📭</div>
+          <div class="font-bold text-lg">Aucun caca enregistré</div>
+          <div class="text-sm">Clémence, c'est le moment !</div>
+        </div>`;
     return;
   }
-  list.innerHTML = recent.map((log, i) => {
+  list.innerHTML = recent.map(log => {
     const dt = new Date(log.date).toLocaleString('fr-FR', {weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
     const icon = textureEmoji(log.texture);
     const retroTag = log.isRetro ? `<span class="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full ml-1 font-bold">⏪ retard</span>` : '';
@@ -102,10 +155,10 @@ function renderHistory() {
         ${note}
         <div class="text-xs opacity-40 mt-1">${dt}</div>
       </div>
-      <button class="p-2 opacity-50 hover:opacity-100 transition-opacity" onclick="editLog('${log.id || i}')" aria-label="Modifier">
+      <button class="p-2 opacity-50 hover:opacity-100 transition-opacity" onclick="editLog('${log.id || state.logs.indexOf(log)}')" aria-label="Modifier">
         <svg class="icon text-sm"><use href="#i-edit"/></svg>
       </button>
-      <button class="p-2 text-red-400 hover:text-red-600 transition-colors" onclick="deleteLog('${log.id || i}')" aria-label="Supprimer">
+      <button class="p-2 text-red-400 hover:text-red-600 transition-colors" onclick="deleteLog('${log.id || state.logs.indexOf(log)}')" aria-label="Supprimer">
         <svg class="icon text-sm"><use href="#i-trash"/></svg>
       </button>
     </div>`;
@@ -214,6 +267,9 @@ function renderStats() {
   // Bristol Scale (feature 17)
   renderBristolScale();
 
+  // Totaux par année
+  renderYearlyTotals();
+
   // PoopMap (poopmap.js)
   const poopmapEl = $id('poopmap-container');
   if (poopmapEl && window.PoopMapModule) window.PoopMapModule.renderCard(state.logs, poopmapEl);
@@ -238,13 +294,83 @@ function renderStats() {
 }
 
 // ===================================================
+//  TOTAUX PAR ANNÉE
+// ===================================================
+// Fonction pure : une ligne par année, de la plus récente à la plus ancienne.
+function yearlyTotals(logs, now = Date.now()) {
+  const annees = {};
+  (logs || []).forEach(l => {
+    const d = new Date(l.date);
+    const y = d.getFullYear();
+    (annees[y] = annees[y] || { year: y, total: 0, mois: {}, jours: new Set() });
+    annees[y].total++;
+    annees[y].mois[d.getMonth()] = (annees[y].mois[d.getMonth()] || 0) + 1;
+    annees[y].jours.add(d.toDateString());
+  });
+
+  const aujourdhui = new Date(now);
+  return Object.values(annees).sort((a, b) => b.year - a.year).map(a => {
+    // Moyenne rapportée aux jours écoulés : l'année en cours n'est pas divisée
+    // par 365, sinon elle paraîtrait toujours catastrophique en janvier.
+    const enCours = a.year === aujourdhui.getFullYear();
+    const jours = enCours
+      ? Math.max(1, Math.round((aujourdhui - new Date(a.year, 0, 1)) / 86400000) + 1)
+      : (a.year % 4 === 0 && (a.year % 100 !== 0 || a.year % 400 === 0)) ? 366 : 365;
+    const [moisIdx] = Object.entries(a.mois).sort((x, y) => y[1] - x[1])[0];
+    return {
+      year: a.year,
+      total: a.total,
+      parJour: a.total / jours,
+      joursActifs: a.jours.size,
+      meilleurMois: Number(moisIdx),
+      meilleurMoisTotal: a.mois[moisIdx],
+      enCours,
+    };
+  });
+}
+
+const MOIS_FR = ['janvier','février','mars','avril','mai','juin',
+                 'juillet','août','septembre','octobre','novembre','décembre'];
+
+function renderYearlyTotals() {
+  const el = $id('yearly-container');
+  if (!el) return;
+  const annees = yearlyTotals(state.logs);
+  if (!annees.length) { el.innerHTML = ''; return; }
+
+  const max = Math.max(...annees.map(a => a.total));
+  el.innerHTML = `
+    <div class="card rounded-[2rem] p-5 shadow">
+      <h4 class="font-bold mb-1">📅 Année par année</h4>
+      <p class="text-xs opacity-60 mb-4">Ton bilan depuis le début</p>
+      <div class="space-y-3">
+        ${annees.map(a => `
+          <div>
+            <div class="flex items-center justify-between text-sm mb-1">
+              <span class="font-bold">${a.year}${a.enCours ? ' <span class="text-xs opacity-50">(en cours)</span>' : ''}</span>
+              <span class="font-bold">${a.total} caca${a.total > 1 ? 's' : ''}</span>
+            </div>
+            <div class="stat-bar mb-1"><div class="stat-fill" style="width:${(a.total / max * 100).toFixed(0)}%;background:var(--accent)"></div></div>
+            <div class="text-xs opacity-60">
+              ${a.parJour.toFixed(2)}/jour · ${a.joursActifs} jour${a.joursActifs > 1 ? 's' : ''} actif${a.joursActifs > 1 ? 's' : ''} ·
+              meilleur mois : ${MOIS_FR[a.meilleurMois]} (${a.meilleurMoisTotal})
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ===================================================
 //  STREAK
 // ===================================================
-function calculateStreak() {
+function calculateStreak(logs) {
   // Streak "tolérant" (v2.10.0) : 1 jour raté est pardonné (joker 🃏),
   // dans la limite d'un joker par fenêtre de 7 jours, si le jour précédent
   // le trou a bien un caca. Le jour joker ne compte pas dans le total.
-  const hasDay = d => state.logs.some(l => new Date(l.date).toDateString() === d.toDateString());
+  // Le paramètre sert à calculer le streak d'une copine (rareté des badges) ;
+  // sans lui, c'est celui de l'utilisatrice.
+  const source = logs || state.logs;
+  const hasDay = d => source.some(l => new Date(l.date).toDateString() === d.toDateString());
   const today = new Date();
   if (!hasDay(today)) return 0;
   let streak = 1;

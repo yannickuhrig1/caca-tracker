@@ -5,6 +5,56 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.15.0] — 2026-09-08
+
+Inspiré de ce que propose l'app **Poop Map** : conquête géographique, rareté
+des trophées, export CSV, historique fouillable.
+
+### Ajouté
+- **🔎 Historique complet et fouillable** — l'écran s'arrêtait aux 20 dernières
+  entrées, sans aucun moyen de remonter plus loin.
+  - Recherche plein texte : note, lieu, texture, couleur, humeur et **date en
+    toutes lettres** (« lundi », « janvier », « 2026 »)
+  - Filtres texture / couleur / lieu / période (7 j, 30 j, cette année)
+  - Pagination par tranches de 20 (« ⬇️ Voir plus »), compteur de résultats et
+    bouton de réinitialisation
+  - `filterLogs()` est une fonction pure, testée
+- **🏴 Territoires conquis** — commune, région et pays de chaque caca
+  géolocalisé, avec les drapeaux, affichés sous la carte.
+  - **Second réglage, distinct de la position et éteint par défaut** : nommer
+    un lieu suppose d'envoyer les coordonnées à Nominatim (l'annuaire
+    d'OpenStreetMap), ça se décide séparément
+  - Résolution en tâche de fond après la saisie — jamais bloquante, et l'entrée
+    est enregistrée même si le réseau tombe
+  - Bouton « 🌍 Nommer les positions déjà enregistrées » pour rattraper
+    l'historique, une requête par seconde comme l'exige Nominatim, par lots de 25
+  - Modifier la position d'une entrée efface la commune qui n'y correspond plus
+- **8 trophées de conquête** : 📍 Première Conquête, 🧭 Cartographe (10 spots),
+  🏙️ Touriste (3 communes), 🚗 Roadtrip (3 régions), 🛂 Passeport Tamponné
+  (2 pays), 🥾 Aventurière (+50 km du QG), ✈️ Long-Courrier (+500 km),
+  🏕️ Pleine Nature — **70 badges au total**.
+- **💎 Rareté des badges** — « 2/5 l'ont » sous chaque badge, avec 💎 en dessous
+  d'un tiers du groupe. Calculée en rejouant les conditions sur les entrées des
+  membres : rien de nouveau à stocker. Les badges qui dépendent des **notes** ou
+  des **positions** en sont exclus — on ne lit pas ces données-là chez les
+  copines, et un faux « 0/5 » vaudrait moins que rien.
+- **📊 Export CSV** — toutes les entrées en tableau (date, heure, texture,
+  couleur, humeur, lieu, position, retard, note). Séparateur `;` et BOM UTF-8
+  pour qu'Excel FR l'ouvre correctement du premier coup.
+- **📅 Année par année** — total, moyenne par jour, jours actifs et meilleur
+  mois. L'année en cours est ramenée aux jours écoulés, pas à 365.
+- Migration `14_20260908_poopmap-conquete.sql` : `city`, `region`, `country`,
+  `country_code` sur `poops`. **Non appliquée**, comme la `13` ; le repli
+  PGRST204 / 42703 la rend facultative.
+
+### Modifié
+- `updateBadges()` est scindé : `computeBadges(logs, streak)` est désormais une
+  fonction pure (c'est elle qui permet de calculer la rareté), et `updateBadges()`
+  ne fait plus que peindre le résultat.
+- `calculateStreak(logs)` accepte une liste d'entrées, pour calculer le streak
+  d'une copine sans toucher à l'état global.
+- 🔧 Bump cache SW caca-v32 → caca-v33
+
 ## [2.14.0] — 2026-09-08
 
 ### Ajouté

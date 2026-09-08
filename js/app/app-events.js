@@ -14,6 +14,7 @@ function setupEvents() {
   $id('save-poop').addEventListener('click', addPoop);
   $id('export-btn').addEventListener('click', exportData);
   $id('export-pdf-btn')?.addEventListener('click', exportMedicalPDF);
+  $id('export-csv-btn')?.addEventListener('click', exportCSV);
 
   // Pull-to-refresh sur le social tab (feature 2)
   setupPullToRefresh();
@@ -58,6 +59,9 @@ function setupEvents() {
     });
   });
 
+  // Historique : recherche, filtres et pagination
+  setupHistoryControls();
+
   // Lieux (PoopMap) — grille construite depuis PoopMapModule.PLACES
   buildPlaceGrid();
   $id('place-grid')?.addEventListener('click', e => {
@@ -89,6 +93,7 @@ function setupEvents() {
   // Réglages PoopMap
   refreshPoopMapSettings();
   $id('poopmap-forget-btn')?.addEventListener('click', forgetPoopMapPositions);
+  $id('poopmap-fill-btn')?.addEventListener('click', fillPoopMapZones);
 
   // Retro toggle
   $id('retro-chk').addEventListener('change', e => {
@@ -355,4 +360,52 @@ function setupEvents() {
 
   // Notifications settings
   setupNotifications();
+}
+
+// ===================================================
+//  HISTORIQUE : recherche, filtres, pagination
+// ===================================================
+function setupHistoryControls() {
+  const search = $id('history-search');
+  if (!search) return;
+
+  // Le select des lieux se construit depuis PoopMapModule : une seule liste.
+  const placeSel = $id('history-place');
+  if (placeSel && window.PoopMapModule) {
+    placeSel.insertAdjacentHTML('beforeend', window.PoopMapModule.PLACES
+      .map(p => `<option value="${p.id}">${p.emoji} ${p.label}</option>`).join(''));
+  }
+
+  // Toute modification de filtre repart de la première page.
+  const apply = (champ, valeur) => {
+    historyFilters = { ...historyFilters, [champ]: valeur };
+    historyShown = HISTORY_PAGE;
+    renderHistory();
+  };
+
+  let debounce;
+  search.addEventListener('input', e => {
+    // Frapper au clavier ne doit pas re-rendre la liste à chaque lettre.
+    clearTimeout(debounce);
+    const v = e.target.value;
+    debounce = setTimeout(() => apply('q', v), 180);
+  });
+  $id('history-texture')?.addEventListener('change', e => apply('texture', e.target.value));
+  $id('history-color')  ?.addEventListener('change', e => apply('color',   e.target.value));
+  $id('history-place')  ?.addEventListener('change', e => apply('place',   e.target.value));
+  $id('history-period') ?.addEventListener('change', e => apply('period',  e.target.value));
+
+  $id('history-more')?.addEventListener('click', () => {
+    historyShown += HISTORY_PAGE;
+    renderHistory();
+  });
+
+  $id('history-reset')?.addEventListener('click', () => {
+    historyFilters = { q: '', texture: '', color: '', place: '', period: 'all' };
+    historyShown = HISTORY_PAGE;
+    search.value = '';
+    ['history-texture', 'history-color', 'history-place'].forEach(id => { const el = $id(id); if (el) el.value = ''; });
+    const per = $id('history-period'); if (per) per.value = 'all';
+    renderHistory();
+  });
 }

@@ -73,6 +73,76 @@ window.PoopMapModule = (() => {
   }
 
   // ===================================================
+  //  CONQUÊTE : commune, région, pays
+  // ===================================================
+  // Réglage distinct de la position : retrouver le nom d'un lieu suppose
+  // d'envoyer les coordonnées à un service tiers (Nominatim, l'annuaire
+  // d'OpenStreetMap). Ça se décide séparément, et c'est éteint par défaut.
+  const GEOCODE_KEY = 'poopmap.geocode';
+  const geocodeEnabled = () => { try { return localStorage.getItem(GEOCODE_KEY) === 'true'; } catch { return false; } };
+  const setGeocodeEnabled = on => { try { localStorage.setItem(GEOCODE_KEY, String(!!on)); } catch {} };
+
+  const hasZone = l => !!(l?.city || l?.region || l?.country);
+
+  /** Commune / région / pays pour une position. Null si rien n'est trouvé. */
+  async function reverseGeocode(lat, lon) {
+    const url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2'
+      + `&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`
+      + '&zoom=10&addressdetails=1&accept-language=fr';
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) throw new Error('Annuaire indisponible (' + res.status + ')');
+    const a = (await res.json())?.address;
+    if (!a) return null;
+    return {
+      city:        a.city || a.town || a.village || a.municipality || a.county || null,
+      region:      a.state || a.region || a.county || null,
+      country:     a.country || null,
+      countryCode: (a.country_code || '').toUpperCase() || null,
+    };
+  }
+
+  /** Drapeau à partir du code pays ISO (FR → 🇫🇷), sans table de 200 lignes. */
+  function flagEmoji(code) {
+    if (!code || code.length !== 2) return '🏳️';
+    return String.fromCodePoint(...[...code.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+  }
+
+  /** Ce qui a été « conquis » : communes, régions et pays distincts. */
+  function conquestStats(logs) {
+    const cities = new Set(), regions = new Set(), countries = new Map();
+    (logs || []).forEach(l => {
+      if (l.city)    cities.add(l.city);
+      if (l.region)  regions.add(l.region);
+      if (l.country) countries.set(l.country, l.countryCode || null);
+    });
+    return {
+      cities:    [...cities].sort((a, b) => a.localeCompare(b)),
+      regions:   [...regions].sort((a, b) => a.localeCompare(b)),
+      countries: [...countries.entries()].map(([name, code]) => ({ name, code }))
+                   .sort((a, b) => a.name.localeCompare(b.name)),
+    };
+  }
+
+  /**
+   * Complète les entrées géolocalisées dont la zone manque. Nominatim demande
+   * au plus une requête par seconde : on y va une par une, et par petits lots.
+   */
+  async function fillMissingZones(logs, { max = 25, onProgress } = {}) {
+    const aFaire = (logs || []).filter(l => hasGeo(l) && !hasZone(l)).slice(0, max);
+    let ok = 0;
+    for (let i = 0; i < aFaire.length; i++) {
+      const l = aFaire[i];
+      try {
+        const zone = await reverseGeocode(l.lat, l.lon);
+        if (zone) { Object.assign(l, zone); l.updated_at = Date.now(); ok++; }
+      } catch (_) { /* une zone manquante n'est pas une erreur bloquante */ }
+      onProgress?.(i + 1, aFaire.length);
+      if (i < aFaire.length - 1) await new Promise(r => setTimeout(r, 1100));
+    }
+    return { traites: aFaire.length, resolus: ok, restants: (logs || []).filter(l => hasGeo(l) && !hasZone(l)).length };
+  }
+
+  // ===================================================
   //  MATHS SLIPPY MAP (OSM / Web Mercator)
   // ===================================================
   const TILE = 256;
@@ -184,11 +254,40 @@ window.PoopMapModule = (() => {
         <h4 class="font-bold mb-1">🗺️ PoopMap</h4>
         <p class="text-xs opacity-60 mb-4">Où est-ce que ça se passe ?</p>
         <div id="poopmap-map"></div>
+        <div id="poopmap-conquest"></div>
         <div id="poopmap-places" class="mt-4"></div>
       </div>`;
 
     renderMap(logs, geo, container.querySelector('#poopmap-map'));
+    renderConquest(logs, container.querySelector('#poopmap-conquest'));
     renderPlaces(places, logs, container.querySelector('#poopmap-places'));
+  }
+
+  function renderConquest(logs, el) {
+    if (!el) return;
+    const c = conquestStats(logs);
+    const total = c.cities.length + c.regions.length + c.countries.length;
+    if (!total) { el.innerHTML = ''; return; }
+
+    // « pays » ne prend pas de s au pluriel : le mot porte déjà sa marque.
+    const pluriel = (mot, n) => n > 1 && !mot.endsWith('s') ? mot + 's' : mot;
+    const ligne = (emoji, libelle, valeurs) => valeurs.length ? `
+      <div class="flex items-start gap-2 text-sm">
+        <span aria-hidden="true">${emoji}</span>
+        <div class="min-w-0">
+          <span class="font-bold">${valeurs.length} ${escHtml(pluriel(libelle, valeurs.length))}</span>
+          <span class="opacity-60"> — ${escHtml(valeurs.slice(0, 4).join(', '))}${valeurs.length > 4 ? '…' : ''}</span>
+        </div>
+      </div>` : '';
+
+    el.innerHTML = `
+      <div class="mt-4 p-3 rounded-[1.25rem] space-y-1"
+           style="background:color-mix(in srgb,var(--accent) 8%,transparent)">
+        <div class="text-sm font-bold mb-1">🏴 Territoires conquis</div>
+        ${ligne('🌍', 'pays', c.countries.map(p => flagEmoji(p.code) + ' ' + p.name))}
+        ${ligne('🗺️', 'région', c.regions)}
+        ${ligne('🏙️', 'commune', c.cities)}
+      </div>`;
   }
 
   function renderPlaces(places, logs, el) {
@@ -401,7 +500,11 @@ window.PoopMapModule = (() => {
   function forgetAllPositions(logs) {
     let n = 0;
     (logs || []).forEach(l => {
-      if (hasGeo(l)) { delete l.lat; delete l.lon; l.updated_at = Date.now(); n++; }
+      if (hasGeo(l) || hasZone(l)) {
+        delete l.lat; delete l.lon;
+        delete l.city; delete l.region; delete l.country; delete l.countryCode;
+        l.updated_at = Date.now(); n++;
+      }
     });
     view = null; viewSignature = '';
     return n;
@@ -410,6 +513,8 @@ window.PoopMapModule = (() => {
   return {
     PLACES, placeMeta, placeEmoji, placeStats,
     geoEnabled, setGeoEnabled, capturePosition, roundCoord, hasGeo,
+    geocodeEnabled, setGeocodeEnabled, reverseGeocode, fillMissingZones,
+    hasZone, conquestStats, flagEmoji,
     lonToTileX, latToTileY, tileXToLon, tileYToLat, distanceKm,
     fitView, clusterPoints, geoStats, forgetAllPositions,
     renderCard,

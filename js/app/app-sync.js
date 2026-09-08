@@ -140,6 +140,11 @@ function applyPoopMapFields(target, cloud) {
     delete target.lat;
     delete target.lon;
   }
+  // Zone de conquête : même règle, absente plutôt que nulle.
+  ['city', 'region', 'country', 'countryCode'].forEach(champ => {
+    if (cloud[champ]) target[champ] = cloud[champ];
+    else delete target[champ];
+  });
   return target;
 }
 
@@ -257,6 +262,46 @@ function exportData() {
     URL.revokeObjectURL(url);
     $debug('📤 export ok');
   } catch(e) { $debug('export err: ' + e.message); }
+}
+
+// Export CSV — le tableur de la famille lit ça mieux que du JSON, et c'est
+// aussi ce que propose PoopMap. Séparateur « ; » : Excel FR et Sheets le
+// reconnaissent, la virgule ferait tout tomber dans une seule colonne.
+function toCSV(logs) {
+  const cols = ['date_iso', 'date', 'heure', 'texture', 'couleur', 'humeur',
+                'lieu', 'latitude', 'longitude', 'en_retard', 'note'];
+  const cell = v => {
+    const t = String(v ?? '');
+    return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+  };
+  const lignes = (logs || []).slice().sort((a, b) => b.date - a.date).map(l => {
+    const d = new Date(l.date);
+    return [
+      d.toISOString(),
+      d.toLocaleDateString('fr-FR'),
+      d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      l.texture || '', l.color || '', l.mood || '',
+      window.PoopMapModule?.placeMeta(l.place)?.label || '',
+      typeof l.lat === 'number' ? l.lat : '',
+      typeof l.lon === 'number' ? l.lon : '',
+      l.isRetro ? 'oui' : 'non',
+      l.comment || '',
+    ].map(cell).join(';');
+  });
+  return [cols.join(';'), ...lignes].join('\n');
+}
+
+function exportCSV() {
+  try {
+    if (!state.logs.length) { window.UI.toast('Aucun caca à exporter.', 'info'); return; }
+    // BOM : sans lui, Excel affiche « CafÃ© » à la place des accents.
+    const blob = new Blob(['\ufeff' + toCSV(state.logs)], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'clemence-caca-tracker.csv'; a.click();
+    URL.revokeObjectURL(url);
+    $debug('📤 export csv ok');
+  } catch(e) { $debug('export csv err: ' + e.message); }
 }
 
 function importData() {
