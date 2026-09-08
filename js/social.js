@@ -1034,7 +1034,10 @@ const SocialModule = (() => {
       ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   }
 
-  return { renderSocialTab, openProfileModal, afterLogin };
+  // Le groupe affiché — la rareté des badges (onglet Badges) en a besoin.
+  const currentGroupId = () => _activeGroupId;
+
+  return { renderSocialTab, openProfileModal, afterLogin, currentGroupId };
 
 })();
 

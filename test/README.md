@@ -28,6 +28,9 @@ remarque.
 | `challenges.test.js` | `weeklyChallengeType`, `scoreChallenge`, `getChallengeMeta` | décident du classement d'un groupe : une erreur fausse le Hall of Fame et les couronnes |
 | `streak.test.js` | `calculateStreak` | logique du joker 🃏, la plus subtile de l'app, affichée en permanence dans le header |
 | `poopmap.test.js` | `placeStats`, `clusterPoints`, `geoStats`, `fitView`, projection slippy map | cadrent la carte et classent les lieux : un cadrage faux sort les pastilles de l'écran sans rien signaler |
+| `history-search.test.js` | `filterLogs`, `historyFiltersActive`, `yearlyTotals` | décident de ce qui s'affiche dans l'historique : une erreur masque des entrées sans que rien ne le signale |
+| `conquest.test.js` | `conquestStats`, `flagEmoji`, `computeBadges` | décernent (ou refusent) les trophées, et servent au calcul de la rareté dans le groupe |
+| `csv-export.test.js` | `toCSV` | le fichier part dans un tableur : un guillemet mal échappé décale les colonnes en silence |
 
 ## La suite détecte-t-elle vraiment les régressions ?
 

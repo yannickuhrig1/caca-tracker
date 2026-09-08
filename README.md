@@ -4,7 +4,7 @@
 
 [![PWA](https://img.shields.io/badge/PWA-compatible-brightgreen)](#)
 [![Vanilla JS](https://img.shields.io/badge/Vanilla%20JS-no%20framework-yellow)](#)
-[![Version](https://img.shields.io/badge/version-2.14.0-orange)](#)
+[![Version](https://img.shields.io/badge/version-2.15.0-orange)](#)
 [![Supabase](https://img.shields.io/badge/Backend-Supabase%20self--hosted%20(NAS)-3ECF8E)](#)
 
 ---
@@ -34,7 +34,14 @@
 - Répartition des textures et couleurs
 - Graphiques avancés : horaire, par jour, tendance mensuelle
 - **🗺️ PoopMap** : carte des cacas géolocalisés (tuiles OpenStreetMap, sans bibliothèque) + classement de tes lieux
+- **🏴 Territoires conquis** : communes, régions et pays, avec les drapeaux
+- **📅 Année par année** : total, moyenne/jour, jours actifs, meilleur mois
 - Fun facts médicaux
+
+### Historique 📜
+- **Liste complète** chargée par tranches de 20
+- **Recherche** plein texte : note, lieu, texture, couleur, humeur, date en toutes lettres
+- **Filtres** texture / couleur / lieu / période
 
 ### Badges 🏆
 | Badge | Condition |
@@ -50,6 +57,14 @@
 | 🧭 Exploratrice | 3 lieux différents utilisés |
 | 🌍 Globe-trotteuse | Les 8 lieux utilisés |
 | 🏠 Casanière | 20 cacas à la maison |
+| 📍 Première Conquête | 1er caca géolocalisé |
+| 🧭 Cartographe | 10 spots différents |
+| 🏙️ Touriste | 3 communes conquises |
+| 🚗 Roadtrip | 3 régions conquises |
+| 🛂 Passeport Tamponné | 2 pays conquis |
+| 🥾 Aventurière | Un caca à +50 km du QG |
+| ✈️ Long-Courrier | Un caca à +500 km du QG |
+| 🏕️ Pleine Nature | Un caca géolocalisé en pleine nature |
 | + 10 achievements | Régularité, Streak, Hibou, Lève-tôt… |
 
 ### Social ☁️ (Supabase)

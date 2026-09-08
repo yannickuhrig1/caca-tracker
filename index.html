@@ -343,6 +343,9 @@
       <!-- Bristol Scale -->
       <div id="bristol-container" class="mb-4"></div>
 
+      <!-- Totaux par année -->
+      <div id="yearly-container" class="mb-4"></div>
+
       <!-- PoopMap (injectée par js/poopmap.js) -->
       <div id="poopmap-container" class="mb-4"></div>
 
@@ -543,7 +546,60 @@
     <!-- ====== HISTORIQUE ====== -->
     <section id="admin-tab" class="tab-content">
       <h3 class="font-bold text-xl mb-4">📜 Historique</h3>
+
+      <!-- 🔎 Recherche et filtres -->
+      <div class="card p-4 rounded-[1.5rem] mb-3">
+        <label class="sr-only" for="history-search">Rechercher dans l'historique</label>
+        <input type="search" id="history-search" placeholder="🔎 Chercher (note, lieu, texture, date…)"
+          class="w-full p-3 rounded-[1rem] text-sm"
+          style="background:var(--card-bg);color:var(--text-primary);border:1.5px solid var(--card-border)" />
+        <div class="grid grid-cols-2 gap-2 mt-2">
+          <select id="history-texture" aria-label="Filtrer par texture" class="p-2 rounded-[1rem] text-sm"
+            style="background:var(--card-bg);color:var(--text-primary);border:1.5px solid var(--card-border)">
+            <option value="">Toutes textures</option>
+            <option value="normal">💩 Normal</option>
+            <option value="dur">🗿 Dur</option>
+            <option value="mou">🍮 Mou</option>
+            <option value="spray">💦 Spray</option>
+            <option value="liquide">🌊 Liquide</option>
+            <option value="explosif">💥 Explosif</option>
+          </select>
+          <select id="history-color" aria-label="Filtrer par couleur" class="p-2 rounded-[1rem] text-sm"
+            style="background:var(--card-bg);color:var(--text-primary);border:1.5px solid var(--card-border)">
+            <option value="">Toutes couleurs</option>
+            <option value="marron">🟤 Marron</option>
+            <option value="jaune">🟡 Jaune</option>
+            <option value="vert">🟢 Vert</option>
+            <option value="noir">⚫ Noir</option>
+            <option value="rouge">🔴 Rouge</option>
+            <option value="arc-en-ciel">🌈 Arc-en-ciel</option>
+          </select>
+          <select id="history-place" aria-label="Filtrer par lieu" class="p-2 rounded-[1rem] text-sm"
+            style="background:var(--card-bg);color:var(--text-primary);border:1.5px solid var(--card-border)">
+            <option value="">Tous les lieux</option>
+          </select>
+          <select id="history-period" aria-label="Filtrer par période" class="p-2 rounded-[1rem] text-sm"
+            style="background:var(--card-bg);color:var(--text-primary);border:1.5px solid var(--card-border)">
+            <option value="all">Depuis toujours</option>
+            <option value="7">7 derniers jours</option>
+            <option value="30">30 derniers jours</option>
+            <option value="year">Cette année</option>
+          </select>
+        </div>
+        <div class="flex items-center justify-between mt-2">
+          <div id="history-count" class="text-xs opacity-60"></div>
+          <button id="history-reset" class="text-xs font-bold px-3 py-1 rounded-full hidden"
+            style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">
+            ✕ Réinitialiser
+          </button>
+        </div>
+      </div>
+
       <div id="history-list" class="space-y-3" style="max-height:72vh;overflow-y:auto;"></div>
+      <button id="history-more" class="w-full mt-3 py-3 rounded-[1.25rem] font-bold text-sm hidden"
+        style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">
+        ⬇️ Voir plus
+      </button>
     </section>
 
     <!-- ====== PARAMÈTRES ====== -->
@@ -634,6 +690,23 @@
               style="transform:translateX(0)"></span>
           </button>
         </div>
+        <div class="flex items-center justify-between text-sm mb-3">
+          <div>
+            <div class="font-medium">Retrouver commune et pays</div>
+            <div class="text-xs opacity-60">Envoie la position à OpenStreetMap pour nommer le lieu (conquête 🏴).</div>
+          </div>
+          <button id="poopmap-geocode-toggle" onclick="togglePoopMapGeocode()"
+            class="relative w-11 h-6 rounded-full transition-colors duration-300 focus:outline-none"
+            style="background:rgba(0,0,0,0.15)" aria-label="Retrouver la commune et le pays">
+            <span id="poopmap-geocode-knob"
+              class="absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow transition-transform duration-300"
+              style="transform:translateX(0)"></span>
+          </button>
+        </div>
+        <button id="poopmap-fill-btn" class="w-full mb-2 py-2 text-sm rounded-[1rem] font-bold"
+          style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">
+          🌍 Nommer les positions déjà enregistrées
+        </button>
         <button id="poopmap-forget-btn" class="w-full py-2 text-sm rounded-[1rem] font-bold"
           style="background:color-mix(in srgb,#ef4444 12%,transparent);color:#ef4444;border:1.5px solid color-mix(in srgb,#ef4444 30%,transparent)">
           🧹 Effacer toutes mes positions
@@ -649,6 +722,11 @@
           📅 Calendrier iCal (.ics)
         </button>
         <div class="text-xs opacity-50 text-center mt-2">Compatible iPhone Calendrier, Google Calendar…</div>
+        <button id="export-csv-btn" class="w-full mt-3 py-3 rounded-[1.25rem] font-bold text-sm flex items-center justify-center gap-2"
+          style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">
+          📊 Tableur (.csv)
+        </button>
+        <div class="text-xs opacity-50 text-center mt-2">S'ouvre dans Excel, Numbers ou Google Sheets</div>
       </div>
 
       <!-- 📌 Bandeau titre persistant -->
@@ -705,8 +783,10 @@
             <p><strong>🏥 Score de santé intestinale</strong> — Score calculé sur la régularité, la texture et la fréquence.</p>
             <p><strong>🏆 Records personnels</strong> — Meilleur streak, meilleur jour, meilleure semaine, meilleur mois.</p>
             <p><strong>🔬 Échelle de Bristol</strong> — Répartition de tes cacas sur les 7 niveaux de l'échelle médicale de Bristol.</p>
+            <p><strong>📅 Année par année</strong> — Total, moyenne par jour, jours actifs et meilleur mois pour chaque année.</p>
             <p><strong>📅 Carte thermique annuelle</strong> — Vue d'ensemble de l'année entière : chaque case = un jour, plus c'est foncé, plus tu as cacé.</p>
             <p><strong>🗺️ PoopMap</strong> — Carte de tes cacas géolocalisés + classement de tes lieux (🏠 Maison, 💼 Boulot, 🍽️ Resto…). La position est facultative et s'active dans les Réglages.</p>
+            <p><strong>🏴 Territoires conquis</strong> — Les communes, régions et pays où tu as cacé, avec les drapeaux. Il faut activer « Retrouver commune et pays » dans les Réglages.</p>
             <p><strong>🏥 PDF médical</strong> — Génère un rapport imprimable avec toutes tes stats pour ton médecin.</p>
           </div>
         </details>
@@ -729,7 +809,8 @@
             📜 Historique
           </summary>
           <div class="px-4 pb-4 space-y-2 text-sm opacity-80 leading-relaxed">
-            <p><strong>Liste des 20 derniers cacas</strong> — Date, texture, couleur, humeur et commentaire.</p>
+            <p><strong>Liste complète de tes cacas</strong> — Date, texture, couleur, humeur, lieu et commentaire. Chargée par tranches de 20 avec le bouton « ⬇️ Voir plus ».</p>
+            <p><strong>🔎 Recherche et filtres</strong> — Cherche dans les notes, les lieux, les textures ou les dates, et filtre par texture, couleur, lieu ou période.</p>
             <p><strong>⏪ Date rétroactive</strong> — Lors de l'enregistrement, tu peux indiquer une heure passée si tu as oublié de noter.</p>
             <p><strong>📍 Lieu</strong> — Indique où ça s'est passé (🏠 💼 🏫 🍽️ 👯 🚆 🌳 🚻). Alimente la PoopMap dans les Stats.</p>
             <p><strong>🗑️ Supprimer</strong> — Bouton poubelle pour effacer une entrée. Si tu es connectée, la suppression se synchronise dans le cloud.</p>
@@ -763,6 +844,8 @@
             <p><strong>🔔 Rappel automatique</strong> — Reçois une notification si tu n'as pas cacé depuis X heures (12h, 24h, 36h ou 48h).</p>
             <p><strong>⏰ Rappel à heure fixe</strong> — Notif quotidienne à une heure choisie si aucun caca ce jour-là.</p>
             <p><strong>🗺️ PoopMap</strong> — Autorise (ou non) l'enregistrement de la position GPS avec tes cacas, et efface d'un coup toutes les positions déjà enregistrées.</p>
+            <p><strong>🏴 Conquête</strong> — Second réglage, indépendant : retrouver la commune, la région et le pays d'une position (via OpenStreetMap) pour débloquer les trophées de conquête. Le bouton « 🌍 Nommer les positions » rattrape les anciennes entrées.</p>
+            <p><strong>📊 Export CSV</strong> — Toutes tes entrées en tableau (date, texture, couleur, humeur, lieu, position, note), à ouvrir dans Excel, Numbers ou Google Sheets.</p>
             <p><strong>📅 Export iCal</strong> — Télécharge un fichier .ics avec tous tes cacas comme événements de calendrier (compatible iPhone, Google Calendar).</p>
             <p><strong>🎨 Thème</strong> — 16 thèmes disponibles dans ton profil (clic sur ton avatar en haut). Dont 🌙 mode nuit automatique de 22h à 7h.</p>
             <p><strong>🖼️ Avatar</strong> — 30 emojis disponibles comme photo de profil.</p>

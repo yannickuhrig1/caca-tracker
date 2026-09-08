@@ -89,11 +89,16 @@ window.toggleStickyHeader = function() {
 //  POOPMAP 🗺️ (reglages)
 // ===================================================
 function refreshPoopMapSettings() {
-  const on   = !!window.PoopMapModule?.geoEnabled();
-  const btn  = $id('poopmap-geo-toggle');
-  const knob = $id('poopmap-geo-knob');
-  if (btn)  btn.style.background  = on ? '#4f46e5' : 'rgba(0,0,0,0.15)';
-  if (knob) knob.style.transform  = on ? 'translateX(20px)' : 'translateX(0)';
+  const paires = [
+    ['poopmap-geo-toggle',     'poopmap-geo-knob',     !!window.PoopMapModule?.geoEnabled()],
+    ['poopmap-geocode-toggle', 'poopmap-geocode-knob', !!window.PoopMapModule?.geocodeEnabled()],
+  ];
+  paires.forEach(([btnId, knobId, on]) => {
+    const btn  = $id(btnId);
+    const knob = $id(knobId);
+    if (btn)  btn.style.background = on ? '#4f46e5' : 'rgba(0,0,0,0.15)';
+    if (knob) knob.style.transform = on ? 'translateX(20px)' : 'translateX(0)';
+  });
 }
 
 window.togglePoopMapGeo = function() {
@@ -101,6 +106,46 @@ window.togglePoopMapGeo = function() {
   window.PoopMapModule?.setGeoEnabled(!on);
   refreshPoopMapSettings();
   refreshGeoButton();
+};
+
+window.togglePoopMapGeocode = function() {
+  const on = !!window.PoopMapModule?.geocodeEnabled();
+  window.PoopMapModule?.setGeocodeEnabled(!on);
+  refreshPoopMapSettings();
+};
+
+// Rattrape les positions enregistrees avant l'activation du geocodage.
+window.fillPoopMapZones = async function() {
+  const mod = window.PoopMapModule;
+  const btn = $id('poopmap-fill-btn');
+  if (!mod) return;
+  const manquantes = state.logs.filter(l => mod.hasGeo(l) && !mod.hasZone(l));
+  if (!manquantes.length) { window.UI.toast('Toutes tes positions sont déjà nommées.', 'info'); return; }
+  if (!navigator.onLine) { window.UI.toast('Il faut être connectée pour interroger OpenStreetMap.', 'error'); return; }
+
+  btn.disabled = true;
+  try {
+    // Une requête par seconde côté Nominatim : on annonce l'attente.
+    const res = await mod.fillMissingZones(state.logs, {
+      onProgress: (fait, total) => { btn.textContent = `🌍 ${fait}/${total}…`; }
+    });
+    saveState(state);
+    renderAll();
+    if ($id('poopmap-container')) mod.renderCard(state.logs, $id('poopmap-container'));
+    if (window.SupabaseClient?.isLoggedIn() && navigator.onLine) {
+      const modifiees = state.logs.filter(l => mod.hasZone(l));
+      await Promise.allSettled(modifiees.map(l => window.SupabaseClient.savePoopCloud(l)));
+    }
+    window.UI.toast(
+      `${res.resolus} position${res.resolus > 1 ? 's' : ''} nommée${res.resolus > 1 ? 's' : ''}` +
+      (res.restants ? ` — ${res.restants} restante${res.restants > 1 ? 's' : ''}, relance pour la suite` : ''),
+      'success', 5000);
+  } catch (e) {
+    window.UI.toast('Échec : ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🌍 Nommer les positions déjà enregistrées';
+  }
 };
 
 // Efface les coordonnees de toutes les entrees — les lieux, eux, restent.
@@ -136,7 +181,7 @@ function switchTab(name) {
   // Active tous les boutons correspondants (sidebar desktop + bottom nav mobile)
   document.querySelectorAll(`.tab-btn[data-tab="${name}"]`).forEach(b => b.classList.add('active'));
   if (name === 'stats') renderStats();
-  if (name === 'badges') updateBadges();
+  if (name === 'badges') { updateBadges(); updateBadgeRarity(); }
   if (name === 'admin') renderHistory();
   if (name === 'dashboard') renderDashboard();
   if (name === 'social') window.SocialModule?.renderSocialTab();
