@@ -65,6 +65,9 @@ let state = { logs: [], theme: 'default' };
 let selectedTexture = null;
 let selectedColor   = null;
 let selectedMood    = null;
+// PoopMap : lieu choisi dans le drawer et position captée (null tant qu'aucune)
+let selectedPlace   = null;
+let pendingGeo      = null;
 let weekChart = null;
 
 // ===================================================

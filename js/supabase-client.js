@@ -147,9 +147,37 @@ async function fetchProfile(userId) {
 //  POOPS SYNC
 // ============================================================
 
+// `place`, `lat` et `lon` sont arrivées avec la PoopMap (migration 13). Tant
+// qu'une base n'a pas la migration, PostgREST rejette la ligne entière : on
+// réessaie alors sans ces colonnes plutôt que de perdre le caca, et on s'en
+// souvient pour le reste de la session.
+let _geoColumns = true;
+const GEO_COLS = ['place', 'lat', 'lon'];
+
+function withGeo(row, poop) {
+  if (!_geoColumns) return row;
+  return {
+    ...row,
+    place: poop.place || null,
+    lat:   typeof poop.lat === 'number' ? poop.lat : null,
+    lon:   typeof poop.lon === 'number' ? poop.lon : null,
+  };
+}
+
+function isMissingGeoColumn(error) {
+  if (!error) return false;
+  // PGRST204 : colonne inconnue du cache de schéma. 42703 : undefined_column.
+  if (error.code !== 'PGRST204' && error.code !== '42703') return false;
+  const msg = `${error.message || ''} ${error.details || ''}`;
+  return GEO_COLS.some(c => msg.includes(c));
+}
+
+const POOP_COLS     = 'id, local_id, date, texture, color, comment, is_retro, mood, updated_at';
+const POOP_COLS_GEO = POOP_COLS + ', place, lat, lon';
+
 async function savePoopCloud(poop) {
   const sb = getSB(); if (!sb || !_currentUser) return;
-  const { error } = await sb.from('poops').upsert({
+  const row = {
     local_id:   String(poop.id),
     user_id:    _currentUser.id,
     date:       poop.date,
@@ -159,7 +187,12 @@ async function savePoopCloud(poop) {
     is_retro:   poop.isRetro || false,
     mood:       poop.mood || null,
     updated_at: poop.updated_at || Date.now()
-  }, { onConflict: 'user_id,local_id' });
+  };
+  let { error } = await sb.from('poops').upsert(withGeo(row, poop), { onConflict: 'user_id,local_id' });
+  if (isMissingGeoColumn(error)) {
+    _geoColumns = false;
+    ({ error } = await sb.from('poops').upsert(row, { onConflict: 'user_id,local_id' }));
+  }
   if (error) throw new Error(error.message);
 }
 
@@ -171,26 +204,38 @@ async function deletePoopCloud(localId) {
 // Fetch all of the current user's poops from Supabase (for cloud→local sync)
 async function getMyPoops() {
   const sb = getSB(); if (!sb || !_currentUser) return [];
-  const { data, error } = await sb.from('poops')
-    .select('id, local_id, date, texture, color, comment, is_retro, mood, updated_at')
+  const query = cols => sb.from('poops')
+    .select(cols)
     .eq('user_id', _currentUser.id)
     .order('date', { ascending: false });
+
+  let { data, error } = await query(_geoColumns ? POOP_COLS_GEO : POOP_COLS);
+  if (isMissingGeoColumn(error)) {
+    _geoColumns = false;
+    ({ data, error } = await query(POOP_COLS));
+  }
   logSbError('getMyPoops', error);
-  return (data || []).map(p => ({
-    id:         p.local_id || p.id,   // prefer the original local UUID
-    date:       p.date,
-    texture:    p.texture || 'normal',
-    color:      p.color   || 'marron',
-    comment:    p.comment || '',
-    isRetro:    p.is_retro || false,
-    mood:       p.mood    || '',
-    updated_at: p.updated_at || 0
-  }));
+  return (data || []).map(p => {
+    const log = {
+      id:         p.local_id || p.id,   // prefer the original local UUID
+      date:       p.date,
+      texture:    p.texture || 'normal',
+      color:      p.color   || 'marron',
+      comment:    p.comment || '',
+      isRetro:    p.is_retro || false,
+      mood:       p.mood    || '',
+      place:      p.place   || null,
+      updated_at: p.updated_at || 0
+    };
+    // lat/lon restent absents quand il n'y a pas de position : `hasGeo` s'y fie.
+    if (typeof p.lat === 'number' && typeof p.lon === 'number') { log.lat = p.lat; log.lon = p.lon; }
+    return log;
+  });
 }
 
 async function syncLocalToCloud(logs) {
   const sb = getSB(); if (!sb || !_currentUser) throw new Error('Non connecté');
-  const rows = logs.map(p => ({
+  const base = logs.map(p => ({
     local_id:  String(p.id),
     user_id:   _currentUser.id,
     date:      p.date,
@@ -202,9 +247,14 @@ async function syncLocalToCloud(logs) {
   }));
   // Upsert par batch de 100
   // onConflict 'user_id,local_id' correspond à la contrainte UNIQUE composite
-  for (let i = 0; i < rows.length; i += 100) {
-    const batch = rows.slice(i, i + 100);
-    const { error } = await sb.from('poops').upsert(batch, { onConflict: 'user_id,local_id' });
+  for (let i = 0; i < base.length; i += 100) {
+    const plain = base.slice(i, i + 100);
+    const batch = plain.map((row, j) => withGeo(row, logs[i + j]));
+    let { error } = await sb.from('poops').upsert(batch, { onConflict: 'user_id,local_id' });
+    if (isMissingGeoColumn(error)) {
+      _geoColumns = false;
+      ({ error } = await sb.from('poops').upsert(plain, { onConflict: 'user_id,local_id' }));
+    }
     if (error) throw new Error(error.message);
   }
 }

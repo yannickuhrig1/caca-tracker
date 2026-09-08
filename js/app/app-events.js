@@ -58,6 +58,38 @@ function setupEvents() {
     });
   });
 
+  // Lieux (PoopMap) — grille construite depuis PoopMapModule.PLACES
+  buildPlaceGrid();
+  $id('place-grid')?.addEventListener('click', e => {
+    const btn = e.target.closest('.place-btn');
+    if (!btn) return;
+    // Re-cliquer sur le lieu déjà choisi le désélectionne : le lieu est facultatif.
+    selectPlace(selectedPlace === btn.dataset.place ? null : btn.dataset.place);
+  });
+
+  // Position GPS : capturée seulement sur clic explicite, jamais en fond
+  $id('geo-btn')?.addEventListener('click', async () => {
+    const btn = $id('geo-btn');
+    const status = $id('geo-status');
+    btn.disabled = true;
+    btn.textContent = '📍 Localisation…';
+    try {
+      pendingGeo = await window.PoopMapModule.capturePosition();
+      btn.textContent = '📍 Position enregistrée ✅';
+      if (status) status.textContent = `${pendingGeo.lat.toFixed(4)}, ${pendingGeo.lon.toFixed(4)}`;
+    } catch (err) {
+      pendingGeo = null;
+      btn.textContent = '📍 Ajouter ma position';
+      if (status) status.textContent = err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // Réglages PoopMap
+  refreshPoopMapSettings();
+  $id('poopmap-forget-btn')?.addEventListener('click', forgetPoopMapPositions);
+
   // Retro toggle
   $id('retro-chk').addEventListener('change', e => {
     $id('retro-date-wrap').classList.toggle('hidden', !e.target.checked);

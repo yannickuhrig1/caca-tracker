@@ -795,3 +795,94 @@
     width: 22px;
     background: var(--accent);
 }
+
+/* === POOPMAP (carte des lieux) === */
+.poopmap-canvas {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1.5rem;
+    touch-action: none;              /* le déplacement du doigt pilote la carte */
+    cursor: grab;
+    /* Damier discret : ce qu'on voit si les tuiles ne chargent pas (hors ligne) */
+    background-color: color-mix(in srgb, var(--accent) 8%, transparent);
+    background-image:
+        linear-gradient(45deg, rgba(0,0,0,.04) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.04) 75%),
+        linear-gradient(45deg, rgba(0,0,0,.04) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.04) 75%);
+    background-size: 24px 24px;
+    background-position: 0 0, 12px 12px;
+}
+.poopmap-canvas:active { cursor: grabbing; }
+.poopmap-layer { position: absolute; inset: 0; }
+.poopmap-tile {
+    position: absolute;
+    width: 256px;
+    height: 256px;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+}
+.poopmap-pin {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    width: 34px;
+    height: 34px;
+    border-radius: 99px;
+    border: 2px solid #fff;
+    background: var(--card-bg, #fff);
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    font-size: 17px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.poopmap-pin:hover { transform: translate(-50%, -50%) scale(1.12); }
+.poopmap-pin-count {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 18px;
+    padding: 0 4px;
+    border-radius: 99px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 18px;
+}
+.poopmap-controls {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 2;
+}
+.poopmap-controls button {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,0,0,.12);
+    background: rgba(255,255,255,.92);
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+.poopmap-controls button:hover { background: #fff; }
+.poopmap-attrib {
+    position: absolute;
+    bottom: 4px;
+    right: 6px;
+    z-index: 2;
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 6px;
+    background: rgba(255,255,255,.8);
+    color: #334155;
+    text-decoration: none;
+}

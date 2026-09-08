@@ -39,8 +39,11 @@ function addPoop() {
     comment: $id('comment').value.trim(),
     isRetro: isRetro,
     mood: selectedMood || null,
+    place: selectedPlace || null,
     updated_at: Date.now()
   };
+  // Coordonnees seulement si l'utilisatrice a touche le bouton 📍
+  if (pendingGeo) { poop.lat = pendingGeo.lat; poop.lon = pendingGeo.lon; }
 
   state.logs.push(poop);
   state.logs.sort((a, b) => b.date - a.date);
@@ -113,6 +116,12 @@ window.editLog = function(idOrIndex) {
   document.querySelector(`.color-btn[data-color="${log.color}"]`)?.click();
   if (log.mood) document.querySelector(`.mood-btn[data-mood="${log.mood}"]`)?.click();
 
+  if (log.place) selectPlace(log.place);
+  // Une position deja enregistree est conservee telle quelle, sauf nouveau clic sur 📍
+  pendingGeo = window.PoopMapModule?.hasGeo(log) ? { lat: log.lat, lon: log.lon } : null;
+  const geoStatus = $id('geo-status');
+  if (geoStatus) geoStatus.textContent = pendingGeo ? `📍 ${pendingGeo.lat.toFixed(4)}, ${pendingGeo.lon.toFixed(4)}` : '';
+
   $id('comment').value = log.comment || '';
 
   // En édition la date est toujours modifiable : on masque le toggle
@@ -161,6 +170,9 @@ function saveEditedPoop() {
   log.color    = selectedColor;
   log.comment  = $id('comment').value.trim();
   log.mood     = selectedMood || null;
+  log.place    = selectedPlace || null;
+  if (pendingGeo) { log.lat = pendingGeo.lat; log.lon = pendingGeo.lon; }
+  else { delete log.lat; delete log.lon; }
   // isRetro décrit la saisie d'origine, pas la modification : on n'y touche pas.
   log.updated_at = Date.now();   // arbitre la résolution de conflit multi-appareils
 

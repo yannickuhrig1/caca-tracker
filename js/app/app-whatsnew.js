@@ -7,12 +7,21 @@
 
 // Source de vérité unique de la version. L'en-tête et les Réglages sont
 // remplis à partir d'ici, ce qui évite qu'ils divergent comme par le passé.
-const APP_VERSION = '2.13.0';
-const APP_VERSION_DATE = 'Août 2026';
+const APP_VERSION = '2.14.0';
+const APP_VERSION_DATE = 'Septembre 2026';
 
 // De la plus récente à la plus ancienne. `items` reste court et écrit pour
 // Clémence, pas pour un développeur : ce que ça change pour elle, pas comment.
 const APP_CHANGELOG = [
+  {
+    version: '2.14.0',
+    date: 'Septembre 2026',
+    items: [
+      ['🗺️', '**PoopMap** : dis où ça s\'est passé (🏠 💼 🏫 🍽️ 👯 🚆 🌳 🚻) et retrouve le classement de tes lieux dans les Stats.'],
+      ['📍', 'Si tu l\'actives dans les Réglages, chaque caca peut garder sa position — la carte se remplit toute seule.'],
+      ['🧭', '3 nouveaux badges : Exploratrice, Globe-trotteuse et Casanière.'],
+    ]
+  },
   {
     version: '2.13.0',
     date: 'Août 2026',
