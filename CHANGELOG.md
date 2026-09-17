@@ -33,9 +33,10 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 ### Technique
 - Glissement continu du doigt ajouté à l'écran des jeux (`inst.drag`), et
   écran d'accueil propre au jeu (`inst.noReady`).
-- Migration `17_20260918_grand-transit.sql` (**pas encore appliquée**) :
-  ajoute `transit` aux jeux autorisés dans `game_scores`. Sans elle, la base
-  refuse le score (23514), le client le garde en local et cesse de réessayer.
+- Migration `17_20260918_grand-transit.sql` (**appliquée en production le
+  2026-09-17**, dump préalable en `supabase_admin`) : ajoute `transit` aux jeux
+  autorisés dans `game_scores`. Le repli reste en place — sans elle, la base
+  refuserait le score (23514), le client le garderait en local sans réessayer.
 - Tests : `jeux-transit`, `mais`.
 - Cache SW caca-v39 → caca-v40.
 

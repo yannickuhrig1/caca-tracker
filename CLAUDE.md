@@ -1,6 +1,8 @@
 # 💩 Caca-Tracker 3000 Deluxe - v2.20.0
 
 > ☁️ **Backend** : Supabase **auto-hébergé sur le NAS Unraid** depuis v2.9.0 (2026-07-14) — API `https://caca-api.yannick-uhrig.com` (Traefik + Cloudflare Tunnel → Postgres/GoTrue/PostgREST, stack `compose-stacks/caca-supabase`). L'ancien projet cloud `fnljhknjmmteawwomehb` est en pause.
+>
+> 🗄️ **Migrations** : elles s'appliquent depuis le clone du dépôt sur le NAS, `/mnt/user/appdata/compose-stacks/caca-supabase/caca-tracker` (`git pull` puis `./scripts/apply-migrations.sh`). ⚠️ Le dossier `repo-migrations/` qui traîne à côté est un **instantané figé** (migrations 13 → 16, script limité à la 16) : il s'exécute sans erreur en sautant les migrations plus récentes. Ne pas s'en servir.
 
 ## 🎯 Modifications prévues - Février 2026
 
@@ -238,7 +240,7 @@ function shakeAchievement(id)
 - ➕ **Test du maïs** (`js/app/app-mais.js`, clé `mais.tests.v1`) : vrai temps de transit, carte dans la tuile Transit des Stats + case dans la saisie. Refus d'un maïs revu en moins de 6 h, abandon automatique après 5 jours
 - ➕ Écran des jeux : `inst.drag` (glissé continu) et `inst.noReady` (le jeu affiche son propre accueil)
 - ➕ 3 badges (86 au total), tous dans `RARITY_SKIP` : données locales
-- ➕ Migration `17_20260918_grand-transit.sql` — **pas encore appliquée** ; sans elle le score du Grand Transit reste en local (erreur 23514 détectée, plus de réessai)
+- ➕ Migration `17_20260918_grand-transit.sql` — **appliquée en production le 2026-09-17** (dump préalable en `supabase_admin`, contrainte, RLS, trigger et API vérifiés) ; le repli reste en place : sans elle, le score du Grand Transit resterait en local (erreur 23514 détectée, plus de réessai)
 - 🔧 Bump cache SW caca-v39 → caca-v40
 
 ### v2.19.0 (Septembre 2026) - 🎮 JEUX DU TRÔNE

@@ -5,7 +5,12 @@
 --  migration ajoute 'transit' à la liste autorisée. Rien d'autre ne change :
 --  ni colonne, ni policy, ni trigger.
 --
---  ⚠️  PAS ENCORE APPLIQUÉE en production.
+--  ✅ APPLIQUÉE en production le 2026-09-17 sur caca-db (NAS Unraid), après
+--     sauvegarde (pg_dump en supabase_admin, 628 Ko). Vérifié : la contrainte
+--     liste bien 'transit', RLS toujours active avec ses 4 policies, trigger
+--     game_scores_keep_best en place, GET /game_scores en 200 via PostgREST
+--     sans redémarrage, et 42501 (permission denied) avec la clé anon, comme
+--     avant. Les lignes existantes n'ont pas bougé.
 --
 --  ORDRE DE DÉPLOIEMENT — indifférent. Sans elle, la base refuse le score
 --  (violation de contrainte 23514) ; le client le détecte, garde le score en
