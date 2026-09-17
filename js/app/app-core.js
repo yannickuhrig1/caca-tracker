@@ -145,6 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupSaisie();
   setupHome();
   setupWrapped();
+  setupJeux();
   setupSystemTheme();
   setupGoal();
   startCountdown();
@@ -190,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
   maybeShowOnboarding();
   maybeShowWhatsNew();
 
-  // Raccourcis d'app : ?action=add | timer | wrapped
+  // Raccourcis d'app : ?action=add | timer | wrapped | jeux
   handleLaunchAction();
 
   $debug('✅ ready. logs=' + state.logs.length);

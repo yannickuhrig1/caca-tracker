@@ -1,4 +1,4 @@
-# 💩 Caca-Tracker 3000 Deluxe - v2.18.0
+# 💩 Caca-Tracker 3000 Deluxe - v2.19.0
 
 > ☁️ **Backend** : Supabase **auto-hébergé sur le NAS Unraid** depuis v2.9.0 (2026-07-14) — API `https://caca-api.yannick-uhrig.com` (Traefik + Cloudflare Tunnel → Postgres/GoTrue/PostgREST, stack `compose-stacks/caca-supabase`). L'ancien projet cloud `fnljhknjmmteawwomehb` est en pause.
 
@@ -230,6 +230,16 @@ function shakeAchievement(id)
 - Poids total : ~50KB
 
 ## 🆗 Changelog
+
+### v2.19.0 (Septembre 2026) - 🎮 JEUX DU TRÔNE
+
+- ➕ **Jeux du trône** (`js/jeux/`, écran `js/app/app-jeux.js`, styles `css/jeux.css`) : Plop!, Tour de PQ, Le Côlon, Course au trône, Qui a fait ce caca ?, Fosse septique tycoon. Ouverture : bouton accueil, 🎮 du chrono flottant, `?action=jeux` (+ raccourci du manifest)
+- ➕ **Temps limité** : 8 min de séance (départ du chrono s'il tourne, sinon première partie), alerte à 1 min, pause des jeux 10 min (`jeux.pauseJusqua`). `stopTimer()` appelle `jeuxOnTimerStop()` ; finir avant la limite = « sortie digne »
+- ➕ Stats locales `jeux.stats.v1` (records, meilleur score de la semaine, jardin) ; engrais de la fosse recalculé depuis `state.logs`
+- ➕ **Classement hebdo** dans Social (`renderGameBoard`), table `game_scores` + trigger « le meilleur score gagne » — migration `16_20260917_jeux-du-trone.sql` — **appliquée en production le 2026-09-17** (dump préalable en `supabase_admin`, trigger « meilleur score » testé en transaction annulée, table illisible en anon via l'API) ; sans elle, carte masquée et scores gardés en local puis renvoyés
+- ➕ Badges : catégorie `jeux` (8, total 83), dans `RARITY_SKIP` ; `computeBadges(logs, streak, games)`
+- ➕ Stickers à débloquer (`unlock` dans `STICKERS`, `stickerUnlocked`)
+- 🔧 Bump cache SW caca-v37 → caca-v39
 
 ### v2.18.0 (Septembre 2026) - 💩 MASCOTTE, SANTÉ, WRAPPED
 

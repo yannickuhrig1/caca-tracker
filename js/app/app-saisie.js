@@ -170,7 +170,7 @@ function applyUsual() {
 /** Fonction pure : action demandée par l'URL de lancement. */
 function launchAction(search) {
   const a = new URLSearchParams(search || '').get('action');
-  return ['add', 'timer', 'wrapped'].includes(a) ? a : null;
+  return ['add', 'timer', 'wrapped', 'jeux'].includes(a) ? a : null;
 }
 
 function handleLaunchAction() {
@@ -184,6 +184,7 @@ function handleLaunchAction() {
   if (action === 'add') openDrawer();
   if (action === 'timer' && typeof startTimer === 'function') startTimer();
   if (action === 'wrapped' && typeof openYearWrapped === 'function') openYearWrapped();
+  if (action === 'jeux' && typeof window.openJeux === 'function') window.openJeux();
 }
 
 // ===================================================

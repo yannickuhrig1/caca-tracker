@@ -40,6 +40,8 @@ function startTimer() {
 function stopTimer(cancel = false) {
   if (!_timerStart) return;
   const elapsed = Math.floor((Date.now() - _timerStart) / 1000);
+  // Jeux du trône : arrêter le chrono met fin à la séance de jeu (v2.19.0).
+  if (typeof jeuxOnTimerStop === 'function') jeuxOnTimerStop(cancel);
   clearInterval(_timerInterval);
   _timerInterval = null;
   _timerStart = null;

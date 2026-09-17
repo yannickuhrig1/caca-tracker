@@ -1,4 +1,4 @@
-const CACHE = 'caca-v37';
+const CACHE = 'caca-v39';
 const ASSETS = [
   './',
   './index.html',
@@ -13,6 +13,7 @@ const ASSETS = [
   './css/tailwind.css',
   './css/app.css',
   './css/styles.css',
+  './css/jeux.css',
   './fonts/fredoka-latin.woff2',
   './fonts/fredoka-latin-ext.woff2',
   './fonts/space-mono-400-latin.woff2',
@@ -39,6 +40,14 @@ const ASSETS = [
   './js/app/app-saisie.js',
   './js/app/app-accueil.js',
   './js/app/app-wrapped.js',
+  './js/jeux/jeux-core.js',
+  './js/jeux/plop.js',
+  './js/jeux/pq.js',
+  './js/jeux/colon.js',
+  './js/jeux/course.js',
+  './js/jeux/quiz.js',
+  './js/jeux/fosse.js',
+  './js/app/app-jeux.js',
   './js/jokes.js',
   './js/achievements.js',
   './js/predictions.js',

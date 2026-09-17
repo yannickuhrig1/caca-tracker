@@ -31,6 +31,17 @@ test('parseSticker : du texte ordinaire ou un id inconnu restent du texte', () =
   assert.strictEqual(F.stickerBody('inexistant'), null);
 });
 
+test('stickerUnlocked : libres par défaut, ceux des jeux exigent leur badge', () => {
+  const libre = F.STICKERS.find(s => !s.unlock);
+  const jeu = F.STICKERS.find(s => s.unlock === 'sniper');
+  assert.strictEqual(F.stickerUnlocked(libre, []), true);
+  assert.strictEqual(F.stickerUnlocked(jeu, []), false);
+  assert.strictEqual(F.stickerUnlocked(jeu, ['sniper']), true);
+  assert.strictEqual(F.stickerUnlocked(null, ['sniper']), false);
+  // Verrouillé ou non, il reste lisible dans un commentaire
+  assert.strictEqual(F.parseSticker(F.stickerBody(jeu.id)).id, jeu.id);
+});
+
 test('les ids de stickers sont uniques', () => {
   const ids = F.STICKERS.map(s => s.id);
   assert.strictEqual(new Set(ids).size, ids.length);

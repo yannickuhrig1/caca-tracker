@@ -89,3 +89,16 @@ les stickers (`:sticker:id:`) n'ont donc rien à adapter côté serveur.
 - Toute migration se termine par `NOTIFY pgrst, 'reload schema';` — sans ce
   signal, PostgREST continue de répondre PGRST204 sur les colonnes ajoutées.
 - Toute nouvelle table doit arriver par une migration, pas par l'éditeur SQL.
+
+## Migration 16 (v2.19.0)
+
+`16_20260917_jeux-du-trone.sql` crée `game_scores` (clé `user_id, game,
+week_start`) : meilleur score de la semaine par jeu des Jeux du trône. Un
+trigger `BEFORE UPDATE` garde le plus haut score si un appareil envoie moins.
+RLS : lecture de sa ligne et de celles des personnes d'un même groupe
+(`shares_group_with`), écriture de ses propres lignes. **Appliquée le
+2026-09-17**, après un dump complet fait en `supabase_admin`. Vérifié : clé
+primaire, 4 policies, RLS active, trigger, score plus bas ignoré à l'upsert
+(transaction annulée), table illisible avec la clé anon via l'API, table vue
+par PostgREST sans redémarrage. Sans la table, le client masque la carte du
+classement et garde les scores en local.

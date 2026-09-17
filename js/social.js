@@ -144,7 +144,8 @@ const SocialModule = (() => {
       renderMonthlyHistory(groupId),
       renderHallOfFame(groupId),
       renderEndurance(groupId),
-      renderLeague(groupId)
+      renderLeague(groupId),
+      renderGameBoard(groupId)
     ]);
     updateQueenCrown();
     checkWinnerCelebration(groupId);
@@ -316,6 +317,63 @@ const SocialModule = (() => {
     } catch (e) {
       card.classList.add('hidden');
     }
+  }
+
+  // ============================================================
+  //  JEUX DU TRÔNE 🎮 (v2.19.0) : classement de la semaine
+  // ============================================================
+  let _gameBoard = { groupId: null, data: null, game: 'plop' };
+
+  async function renderGameBoard(groupId) {
+    const card = document.getElementById('jeux-board-card');
+    if (!card || !window.JeuxCore) return;
+    try {
+      const data = await window.SupabaseClient.getGroupGameScores(groupId, window.JeuxCore.jeuxWeekStart());
+      // null : table game_scores absente (migration 16 pas encore jouée)
+      if (!data) { card.classList.add('hidden'); return; }
+      _gameBoard = { ..._gameBoard, groupId, data };
+      card.classList.remove('hidden');
+      drawGameBoard();
+    } catch (e) {
+      card.classList.add('hidden');
+    }
+  }
+
+  function drawGameBoard() {
+    const tabs = document.getElementById('jeux-board-tabs');
+    const list = document.getElementById('jeux-board-list');
+    const { data, game } = _gameBoard;
+    if (!tabs || !list || !data) return;
+    const J = window.JeuxCore;
+    tabs.innerHTML = J.JEUX_CLASSES.map(id => {
+      const m = J.jeuMeta(id);
+      const on = id === game;
+      return `<button type="button" class="text-xs font-bold px-3 py-1.5 rounded-full" data-jeu-tab="${id}" aria-pressed="${on}"
+        style="background:${on ? 'var(--accent)' : 'color-mix(in srgb,var(--accent) 12%,transparent)'};color:${on ? '#fff' : 'var(--accent)'}">${m.emoji} ${esc(m.nom)}</button>`;
+    }).join('');
+    tabs.querySelectorAll('[data-jeu-tab]').forEach(b => b.addEventListener('click', () => {
+      _gameBoard.game = b.dataset.jeuTab;
+      drawGameBoard();
+    }));
+
+    const meta = J.jeuMeta(game);
+    const classement = J.gameLeaderboard(data.rows, data.members, game);
+    const myId = window.SupabaseClient.getCurrentProfile()?.id;
+    const jouer = `<button type="button" class="w-full mt-2 py-2 rounded-[1rem] text-sm font-bold" data-jeu-play="${game}"
+      style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">${meta.emoji} Jouer à ${esc(meta.nom)}</button>`;
+    if (!classement.length) {
+      list.innerHTML = `<p class="text-sm opacity-60 text-center">Personne n'a encore joué à ${esc(meta.nom)} cette semaine.</p>${jouer}`;
+    } else {
+      const medals = ['👑', '🥈', '🥉'];
+      list.innerHTML = classement.map((m, i) => `
+        <div class="flex items-center gap-3 p-2 rounded-[1rem] text-sm${m.id === myId ? ' league-mine' : ''}">
+          <span class="text-lg w-8 text-center">${medals[i] || i + 1}</span>
+          <span class="text-xl">${esc(m.avatar)}</span>
+          <div class="flex-1 min-w-0 font-bold truncate">${esc(m.username)}</div>
+          <span class="font-bold" style="color:var(--accent)">${m.score} <span class="text-xs opacity-70">${esc(meta.unite)}</span></span>
+        </div>`).join('') + jouer;
+    }
+    list.querySelector('[data-jeu-play]')?.addEventListener('click', e => window.Jeux?.open(e.currentTarget.dataset.jeuPlay));
   }
 
   // ============================================================
@@ -576,6 +634,7 @@ const SocialModule = (() => {
       if (item) { item.commentCount = comments.length; updateCommentCount(poopId); }
 
       const fun = window.SocialFun;
+      const badgesJeux = window.Jeux?.badgesDone?.() || [];
       const corps = body => {
         const st = fun?.parseSticker(body);
         return st
@@ -594,10 +653,16 @@ const SocialModule = (() => {
           <button class="comment-send" data-comment-send="${poopId}">Envoyer</button>
         </div>
         <div class="sticker-tray hidden">
-          ${(fun?.STICKERS || []).map(st => `
-            <button type="button" class="sticker-pick" data-sticker="${st.id}" title="${esc(st.text)}">
-              <span class="sticker-art" aria-hidden="true">${st.art}</span><span class="sticker-text">${esc(st.text)}</span>
-            </button>`).join('')}
+          ${(fun?.STICKERS || []).map(st => {
+            // Stickers des Jeux du trône : visibles mais verrouillés sans le badge
+            const libre = fun.stickerUnlocked(st, badgesJeux);
+            const badge = st.unlock && typeof BADGE_DEFS !== 'undefined' ? BADGE_DEFS.find(b => b.id === st.unlock) : null;
+            return `
+            <button type="button" class="sticker-pick${libre ? '' : ' locked'}" data-sticker="${st.id}"${libre ? '' : ' data-locked="1" aria-disabled="true"'}
+              title="${esc(libre ? st.text : `Débloqué par le badge ${badge ? badge.icon + ' ' + badge.label : st.unlock}`)}">
+              <span class="sticker-art" aria-hidden="true">${libre ? st.art : '🔒'}</span><span class="sticker-text">${esc(st.text)}</span>
+            </button>`;
+          }).join('')}
         </div>`;
 
       const tray = thread.querySelector('.sticker-tray');
@@ -607,6 +672,10 @@ const SocialModule = (() => {
         trayBtn.setAttribute('aria-expanded', String(ouvert));
       });
       tray?.querySelectorAll('[data-sticker]').forEach(b => b.addEventListener('click', async () => {
+        if (b.dataset.locked) {
+          window.UI?.toast(b.title, 'info');
+          return;
+        }
         const body = fun.stickerBody(b.dataset.sticker);
         if (!body) return;
         tray.querySelectorAll('button').forEach(x => { x.disabled = true; });
@@ -1208,7 +1277,7 @@ const SocialModule = (() => {
   // Le groupe affiché — la rareté des badges (onglet Badges) en a besoin.
   const currentGroupId = () => _activeGroupId;
 
-  return { renderSocialTab, openProfileModal, afterLogin, currentGroupId };
+  return { renderSocialTab, openProfileModal, afterLogin, currentGroupId, refreshGameBoard: () => _gameBoard.groupId && _activeGroupId === _gameBoard.groupId && renderGameBoard(_activeGroupId) };
 
 })();
 

@@ -21,12 +21,26 @@ const STICKERS = [
   { id: 'eau',       art: '💧🥤', text: 'Bois de l\'eau' },
   { id: 'coeur',     art: '💖💩', text: 'Love' },
   { id: 'mdr',       art: '🤣🤣', text: 'MDR' },
+  // Jeux du trône (v2.19.0) : à débloquer avec le badge indiqué. Tout le monde
+  // les VOIT dans les commentaires ; seule leur pose est réservée.
+  { id: 'plop-parfait', art: '🎯🚽', text: 'Plop parfait',          unlock: 'sniper' },
+  { id: 'tour-pq',      art: '🧻🧻🧻', text: 'Tour de PQ',          unlock: 'architecte' },
+  { id: 'detective',    art: '🕵️💩', text: 'Je sais que c\'est toi', unlock: 'detective' },
+  { id: 'sortie-digne', art: '🚪✨', text: 'Sortie digne',          unlock: 'sortieDigne' },
+  { id: 'jardin',       art: '🌻💩', text: 'Engrais de qualité',    unlock: 'mainVerte' },
 ];
 
 const STICKER_RE = /^:sticker:([a-z0-9-]+):$/;
 
 function stickerBody(id) {
   return STICKERS.some(s => s.id === id) ? `:sticker:${id}:` : null;
+}
+
+/** Le sticker peut-il être posé ? `badgesDone` : ids des badges gagnés. */
+function stickerUnlocked(st, badgesDone) {
+  if (!st) return false;
+  if (!st.unlock) return true;
+  return [...(badgesDone || [])].includes(st.unlock);
 }
 
 /** Le sticker d'un commentaire, ou null si c'est du texte (ou un id inconnu). */
@@ -87,4 +101,4 @@ function leagueWeekStart(now = Date.now()) {
   return d.getTime();
 }
 
-window.SocialFun = { STICKERS, stickerBody, parseSticker, groupStreak, enduranceRanking, leagueWeekStart };
+window.SocialFun = { STICKERS, stickerBody, stickerUnlocked, parseSticker, groupStreak, enduranceRanking, leagueWeekStart };

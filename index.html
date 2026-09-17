@@ -31,6 +31,7 @@
 
   <link rel="stylesheet" href="css/app.css" />
   <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/jeux.css" />
 </head>
 
 <body>
@@ -200,11 +201,15 @@
         </button>
       </div>
 
-      <!-- Partager mes stats -->
-      <div class="flex justify-center mb-6">
+      <!-- Partager mes stats · Jeux du trône (v2.19.0) -->
+      <div class="flex justify-center flex-wrap gap-2 mb-6">
         <button id="share-stats-btn" class="py-2 px-5 rounded-full text-sm font-bold"
           style="background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1.5px solid color-mix(in srgb,var(--accent) 30%,transparent)">
           📤 Partager en image
+        </button>
+        <button id="jeux-open-btn" type="button" class="py-2 px-5 rounded-full text-sm font-bold"
+          style="background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1.5px solid color-mix(in srgb,var(--accent) 30%,transparent)">
+          🎮 Jeux du trône
         </button>
       </div>
 
@@ -536,6 +541,14 @@
             <h4 class="font-bold mb-1">⏱️ Reine de l'endurance</h4>
             <p class="text-xs opacity-60 mb-3">La plus longue séance chronométrée du mois</p>
             <div id="endurance-list" class="space-y-1"></div>
+          </div>
+
+          <!-- Jeux du trône (v2.19.0) — masqué sans la migration 16 -->
+          <div id="jeux-board-card" class="card p-5 rounded-[2rem] shadow hidden">
+            <h4 class="font-bold mb-1">🎮 Jeux du trône</h4>
+            <p class="text-xs opacity-60 mb-3">Meilleurs scores de la semaine. Remise à zéro chaque lundi.</p>
+            <div id="jeux-board-tabs" class="flex gap-1 mb-3 flex-wrap"></div>
+            <div id="jeux-board-list" class="space-y-1"></div>
           </div>
 
           <!-- Historique des podiums mensuels -->
@@ -905,10 +918,23 @@
             🏅 Badges
           </summary>
           <div class="px-4 pb-4 space-y-2 text-sm opacity-80 leading-relaxed">
-            <p><strong>75 badges à débloquer</strong>, rangés en 11 catégories repliables.</p>
+            <p><strong>83 badges à débloquer</strong>, rangés en 12 catégories repliables.</p>
             <p><strong>🎯 À portée de main</strong> — Les 3 badges que tu es le plus près de gagner, avec leur progression.</p>
-            <p><strong>💎 Rareté</strong> — Dans ton groupe, chaque badge est Commun, Rare, Épique, Légendaire (tu es la seule sur 3 copines ou plus) ou Inédit (personne ne l'a).</p>
+            <p><strong>💎 Rareté</strong> — Dans ton groupe, chaque badge est Commun, Rare, Épique, Légendaire (tu es la seule sur 3 copines ou plus) ou Inédit (personne ne l'a). Les badges des jeux n'ont pas de rareté : leurs stats restent sur ton téléphone.</p>
             <p>Les badges débloqués apparaissent en couleur, les autres sont grisés avec leur condition affichée.</p>
+          </div>
+        </details>
+
+        <!-- Jeux du trône -->
+        <details class="mb-2 rounded-[1.25rem] overflow-hidden" style="background:color-mix(in srgb,var(--accent) 6%,transparent)">
+          <summary class="px-4 py-3 cursor-pointer font-bold text-sm flex items-center gap-2 select-none">
+            🎮 Jeux du trône
+          </summary>
+          <div class="px-4 pb-4 space-y-2 text-sm opacity-80 leading-relaxed">
+            <p>Bouton <strong>🎮 Jeux du trône</strong> sur l'accueil, ou 🎮 à côté du chrono : Plop!, Tour de PQ, Le Côlon, Course au trône, Qui a fait ce caca ? (avec ton groupe) et la Fosse septique tycoon.</p>
+            <p><strong>⏳ 8 minutes maximum</strong> — Le temps compte depuis le lancement du chrono (ou ta première partie). Au-delà, les jeux font une pause de 10 minutes : rester assise longtemps n'est pas bon pour la santé.</p>
+            <p><strong>🚪 Sortie digne</strong> — Touche « ✅ Fini » ou arrête le chrono avant la limite : +20 d'engrais pour ton jardin.</p>
+            <p><strong>🏆 Classement</strong> — Ton meilleur score de la semaine apparaît dans l'onglet Social, remis à zéro chaque lundi.</p>
           </div>
         </details>
 
@@ -1240,9 +1266,39 @@
         <div class="text-xs opacity-80">Séance en cours</div>
         <div id="timer-overlay-display" class="text-2xl font-mono">00:00</div>
       </div>
-      <button id="timer-stop-btn" class="ml-2 bg-white/20 px-3 py-2 rounded-[1rem] text-sm">
+      <button id="timer-jeux-btn" type="button" class="bg-white/20 px-3 py-2 rounded-[1rem] text-sm" aria-label="Jouer en attendant">
+        🎮
+      </button>
+      <button id="timer-stop-btn" class="bg-white/20 px-3 py-2 rounded-[1rem] text-sm">
         ✅ Terminé
       </button>
+    </div>
+  </div>
+
+  <!-- JEUX DU TRÔNE 🎮 (v2.19.0) : menu et partie, au-dessus du chrono -->
+  <div id="jeux-modal" class="jeux-modal hidden" role="dialog" aria-modal="true" aria-labelledby="jeux-title">
+    <div id="jeux-hub" class="jeux-screen">
+      <div class="jeux-head">
+        <h2 id="jeux-title" class="jeux-title">🎮 Jeux du trône</h2>
+        <button type="button" id="jeux-close" class="jeux-icon-btn" aria-label="Fermer les jeux">✕</button>
+      </div>
+      <div id="jeux-session" class="jeux-session" aria-live="polite"></div>
+      <div id="jeux-list" class="jeux-list"></div>
+      <p class="jeux-foot">Les parties s'arrêtent au bout de 8 minutes sur le trône : tes fesses te remercieront.</p>
+    </div>
+    <div id="jeux-play" class="jeux-screen hidden">
+      <div class="jeux-head">
+        <button type="button" id="jeux-back" class="jeux-icon-btn" aria-label="Retour au menu des jeux">‹</button>
+        <div class="jeux-play-title"><span id="jeux-play-name"></span><span id="jeux-play-score" class="jeux-play-score" aria-live="polite"></span></div>
+        <button type="button" id="jeux-done" class="jeux-done">✅ Fini</button>
+      </div>
+      <div id="jeux-timebar" class="jeux-timebar"><div id="jeux-timebar-fill" class="jeux-timebar-fill"></div><span id="jeux-timebar-txt" class="jeux-timebar-txt"></span></div>
+      <div id="jeux-stage" class="jeux-stage">
+        <canvas id="jeux-canvas" class="jeux-canvas"></canvas>
+        <div id="jeux-dom" class="jeux-dom hidden"></div>
+        <div id="jeux-ready" class="jeux-ready hidden"></div>
+        <div id="jeux-over" class="jeux-over hidden"></div>
+      </div>
     </div>
   </div>
 
@@ -1441,6 +1497,15 @@
   <script src="js/app/app-saisie.js"></script>
   <script src="js/app/app-accueil.js"></script>
   <script src="js/app/app-wrapped.js"></script>
+  <!-- v2.19.0 : Jeux du trône (logique pure, puis écran) -->
+  <script src="js/jeux/jeux-core.js"></script>
+  <script src="js/jeux/plop.js"></script>
+  <script src="js/jeux/pq.js"></script>
+  <script src="js/jeux/colon.js"></script>
+  <script src="js/jeux/course.js"></script>
+  <script src="js/jeux/quiz.js"></script>
+  <script src="js/jeux/fosse.js"></script>
+  <script src="js/app/app-jeux.js"></script>
 
     <!-- Modules JS — defer : ils gardent leur ordre relatif et s'exécutent tous
          avant DOMContentLoaded, donc avant le code d'amorçage d'app-core.js.

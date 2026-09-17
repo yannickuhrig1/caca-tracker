@@ -1075,6 +1075,63 @@ async function setUserAdmin(userId, isAdmin) {
 }
 
 // ============================================================
+//  JEUX DU TRÔNE 🎮 (v2.19.0)
+//  Meilleur score de la semaine par jeu (table game_scores, migration 16).
+//  Sans la migration, les scores restent en local et la carte du
+//  classement est masquée.
+// ============================================================
+let _gameScoresTable = true;
+
+/** true : envoyé. null : table absente ou hors connexion (réessayer plus tard). */
+async function saveGameScore({ game, score, week_start }) {
+  const sb = getSB(); if (!sb || !_currentUser || !_gameScoresTable) return null;
+  const { error } = await sb.from('game_scores').upsert(
+    { user_id: _currentUser.id, game, week_start, score: Math.max(0, Math.floor(score)), updated_at: new Date().toISOString() },
+    { onConflict: 'user_id,game,week_start' }
+  );
+  if (isMissingTable(error)) { _gameScoresTable = false; return null; }
+  if (error) { logSbError('saveGameScore', error); return null; }
+  return true;
+}
+
+/** { members, rows } des scores de la semaine, ou null sans la table. */
+async function getGroupGameScores(groupId, weekStart) {
+  const sb = getSB(); if (!sb || !_gameScoresTable) return null;
+  const members = await getGroupMembers(groupId);
+  if (!members.length) return { members: [], rows: [] };
+  const { data, error } = await sb.from('game_scores')
+    .select('user_id, game, score')
+    .in('user_id', members.map(m => m.id))
+    .eq('week_start', weekStart);
+  if (isMissingTable(error)) { _gameScoresTable = false; return null; }
+  logSbError('getGroupGameScores', error);
+  return { members, rows: data || [] };
+}
+
+/**
+ * Entrées récentes du groupe pour « Qui a fait ce caca ? ». Seulement des
+ * colonnes que le groupe voit déjà : ni note, ni position, ni carnet de santé.
+ */
+async function getQuizData(groupId, days = 30) {
+  const sb = getSB(); if (!sb || !_currentUser || !groupId) return null;
+  const members = await getGroupMembers(groupId);
+  if (members.length < 2) return { rows: [], members, myId: _currentUser.id };
+  const autres = members.filter(m => m.id !== _currentUser.id).map(m => m.id);
+  const cols = () => 'user_id, date, texture, color' + (_geoColumns ? ', place' : '') + (_durationColumn ? ', duration_s' : '');
+  let data, error;
+  for (let passe = 0; passe < 3; passe++) {
+    ({ data, error } = await sb.from('poops').select(cols())
+      .in('user_id', autres)
+      .gte('date', Date.now() - days * 86400000)
+      .order('date', { ascending: false })
+      .limit(400));
+    if (!dropMissingColumns(error)) break;
+  }
+  if (error) { logSbError('getQuizData', error); throw new Error(error.message); }
+  return { rows: data || [], members, myId: _currentUser.id };
+}
+
+// ============================================================
 //  EXPORT GLOBAL
 // ============================================================
 window.SupabaseClient = {
@@ -1098,6 +1155,11 @@ window.SupabaseClient = {
   getGroupDurations,
   getGroupLeague,
   getLeagueOptIn,
+  // Jeux du trône (migration 16)
+  saveGameScore,
+  getGroupGameScores,
+  getQuizData,
+  gameScoresAvailable: () => _gameScoresTable,
   createGroup,
   joinGroup,
   leaveGroup,

@@ -5,6 +5,44 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.19.0] — 2026-09-17
+
+### Ajouté
+- **🎮 Jeux du trône** — un écran de jeux pour la séance, ouvert depuis
+  l'accueil, le chrono flottant ou le raccourci `?action=jeux` :
+  - **🚽 Plop!** : lâcher le caca dans la cuvette qui glisse, série de plops
+    parfaits, 3 éclaboussures et c'est fini.
+  - **🧻 Tour de PQ** : empiler des rouleaux, ce qui dépasse est coupé.
+  - **🐍 Le Côlon** : Snake au doigt ; fibres, fast-food qui bouche, piment
+    qui accélère.
+  - **🏃‍♀️ Course au trône** : runner à un doigt avec jauge d'urgence.
+  - **🕵️ Qui a fait ce caca ?** : quiz sur les entrées des copines (jour,
+    heure, texture, couleur, lieu, durée ; jamais notes, positions ni santé).
+  - **🌻 Fosse septique tycoon** : jardin qui pousse avec l'engrais gagné
+    par l'historique ; récolte quotidienne.
+- **⏳ Temps limité** — 8 minutes de séance (depuis le chrono s'il tourne),
+  alerte la dernière minute, puis 10 minutes de pause des jeux. Terminer
+  avant la limite compte une « sortie digne » (+20 d'engrais).
+- **🏆 Classement hebdo** des jeux dans l'onglet Social (table
+  `game_scores`, migration 16, carte masquée sans elle).
+- **Badges** : catégorie « Jeux du trône », 8 badges (83 au total), exclus
+  de la rareté (statistiques locales).
+- **Stickers** débloqués par les badges de jeu (visibles par tout le monde,
+  posables seulement une fois le badge gagné).
+- La mascotte réagit en fin de partie ; score partageable en story 1080×1920.
+
+### Technique
+- `js/jeux/` : `jeux-core.js` (session, stats, badges, classement) et un
+  fichier par jeu, logique pure séparée du dessin. `js/app/app-jeux.js` :
+  écran, boucle, entrées, branchement sur `stopTimer()`.
+- `css/jeux.css`, migration `16_20260917_jeux-du-trone.sql` (**appliquée en
+  production le 2026-09-17**, après sauvegarde ; RLS, trigger et accès anon
+  vérifiés), `scripts/apply-migrations.sh` l'inclut.
+- Tests : `jeux-core`, `jeux-arcade`, `jeux-quiz-fosse`.
+- Cache SW caca-v37 → caca-v39.
+
+---
+
 ## [2.18.0] — 2026-09-17
 
 ### Ajouté
