@@ -35,6 +35,11 @@ remarque.
 | `bristol.test.js` | `bristolBreakdown` | verrouille le comptage : chaque selle une seule fois, pourcentages à 100 % |
 | `calendar.test.js` | `buildMonthGrid` | place chaque caca sur sa case : un décalage d'un jour ne saute pas aux yeux sur un calendrier |
 | `backfill.test.js` | `poopMapEntriesToPush` | choisit ce qui remonte une fois vers le cloud : trop étroit, des lieux restent bloqués sur un seul téléphone |
+| `sante.test.js` | `durationStats`, `formatDuration`, `healthInsights`, `bloodAlert`, `usualEntry` | disent quelque chose de la santé de l'utilisatrice : une comparaison fausse ou une alerte manquée est pire que rien |
+| `accueil-wrapped.test.js` | `streakDetails`, `jokerToAnnounce`, `mascotMood`, `mascotLevel`, `buildYearWrapped`, `shareCardData` | série et mascotte s'affichent tous les jours ; le Wrapped part en image sur les réseaux |
+| `social-fun.test.js` | `parseSticker`, `groupStreak`, `enduranceRanking`, `leagueWeekStart` | la série du groupe désigne publiquement qui manque à l'appel |
+| `badges-cloud-v218.test.js` | `BADGE_CATEGORIES`, `nextBadges`, `rarityTier`, `poopRow`, `dropMissingColumns`, `applyExtraFields` | un badge sans catégorie disparaît ; une base sans migration 15 ne doit pas faire perdre de caca |
+| `themes-contrast.test.js` | variables de `css/app.css` | texte lisible (WCAG AA) sur les cartes des 16 thèmes |
 
 ## La suite détecte-t-elle vraiment les régressions ?
 

@@ -19,6 +19,8 @@ function renderAll() {
 //  DASHBOARD
 // ===================================================
 function renderDashboard() {
+  // Carte « Aujourd'hui » et mascotte (v2.18.0, app-accueil.js)
+  if (typeof renderHomeCard === 'function') renderHomeCard();
   const today = new Date().toDateString();
   const todayCount = state.logs.filter(l => new Date(l.date).toDateString() === today).length;
   $id('today-count').textContent = todayCount;
@@ -102,7 +104,9 @@ function filterLogs(logs, f = historyFilters, now = Date.now()) {
     const place = window.PoopMapModule?.placeMeta(l.place)?.label || '';
     const dt = new Date(l.date).toLocaleDateString('fr-FR',
       { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    return [l.texture, l.color, l.mood, l.comment, place, dt]
+    const sante = (Array.isArray(l.health) ? l.health : [])
+      .map(t => (typeof healthTagMeta === 'function' ? healthTagMeta(t)?.label : '') || t);
+    return [l.texture, l.color, l.mood, l.comment, place, dt, ...sante]
       .filter(Boolean).join(' ').toLowerCase().includes(q);
   });
 }
@@ -145,7 +149,13 @@ function renderHistory() {
     const placeTag = placeMeta
       ? `<span class="text-xs px-2 py-0.5 rounded-full mr-1" style="background:color-mix(in srgb,var(--accent) 12%,transparent)">${placeMeta.emoji} ${esc(placeMeta.label)}${window.PoopMapModule.hasGeo(log) ? ' 📍' : ''}</span>`
       : '';
-    const note = placeTag + (log.mood ? `<span class="text-xs px-2 py-0.5 rounded-full mr-1" style="background:color-mix(in srgb,var(--accent) 12%,transparent)">${{normal:'😊',douloureux:'😫',urgent:'⚡',difficile:'😴'}[log.mood] || ''} ${log.mood}</span>` : '') + (log.comment ? `<div class="text-xs mt-1 bg-amber-100 text-amber-800 px-2 py-1 rounded-xl">${esc(log.comment)}</div>` : '');
+    const chip = txt => `<span class="text-xs px-2 py-0.5 rounded-full mr-1" style="background:color-mix(in srgb,var(--accent) 12%,transparent)">${txt}</span>`;
+    const dureeTag = typeof validDuration === 'function' && validDuration(log.duration) !== null
+      ? chip('⏱️ ' + formatDuration(log.duration)) : '';
+    const santeTags = (Array.isArray(log.health) ? log.health : [])
+      .map(t => typeof healthTagMeta === 'function' ? healthTagMeta(t) : null).filter(Boolean)
+      .map(m => chip(`${m.emoji} ${esc(m.label)}`)).join('');
+    const note = placeTag + dureeTag + santeTags + (log.mood ? `<span class="text-xs px-2 py-0.5 rounded-full mr-1" style="background:color-mix(in srgb,var(--accent) 12%,transparent)">${{normal:'😊',douloureux:'😫',urgent:'⚡',difficile:'😴'}[log.mood] || ''} ${log.mood}</span>` : '') + (log.comment ? `<div class="text-xs mt-1 bg-amber-100 text-amber-800 px-2 py-1 rounded-xl">${esc(log.comment)}</div>` : '');
     return `<div class="card flex items-center gap-3 p-4 rounded-[1.5rem] shadow">
       <div class="w-12 h-12 rounded-[1rem] flex items-center justify-center text-2xl flex-shrink-0"
         style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">${icon}</div>
@@ -263,6 +273,10 @@ function renderStats() {
 
   // Records personnels (feature 9)
   renderPersonalRecords();
+
+  // Durée des séances et carnet de santé (v2.18.0, app-sante.js)
+  if (typeof renderDurationCard === 'function') renderDurationCard();
+  if (typeof renderInsightsCard === 'function') renderInsightsCard();
 
   // Bristol Scale (feature 17)
   renderBristolScale();
@@ -405,39 +419,78 @@ function renderYearlyTotals() {
 // ===================================================
 //  STREAK
 // ===================================================
-function calculateStreak(logs) {
-  // Streak "tolérant" (v2.10.0) : 1 jour raté est pardonné (joker 🃏),
-  // dans la limite d'un joker par fenêtre de 7 jours, si le jour précédent
-  // le trou a bien un caca. Le jour joker ne compte pas dans le total.
-  // Le paramètre sert à calculer le streak d'une copine (rareté des badges) ;
-  // sans lui, c'est celui de l'utilisatrice.
-  const source = logs || state.logs;
-  const hasDay = d => source.some(l => new Date(l.date).toDateString() === d.toDateString());
-  const today = new Date();
-  if (!hasDay(today)) return 0;
+// Streak "tolérant" (v2.10.0) : 1 jour raté est pardonné (joker 🃏),
+// dans la limite d'un joker par fenêtre de 7 jours, si le jour précédent
+// le trou a bien un caca. Le jour joker ne compte pas dans le total.
+// `depart` : 0 = la série doit inclure aujourd'hui, 1 = elle part d'hier.
+// Rend aussi les jours pardonnés, pour pouvoir le dire à l'utilisatrice.
+function streakCore(source, now = Date.now(), depart = 0) {
+  const jours = new Set((source || []).map(l => new Date(l.date).toDateString()));
+  const jour = i => { const d = new Date(now); d.setDate(d.getDate() - i); return d; };
+  const aJour = i => jours.has(jour(i).toDateString());
+  if (!aJour(depart)) return { streak: 0, jokers: [] };
   let streak = 1;
   let lastJokerAt = -Infinity;
-  for (let i = 1; i < 366; i++) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    if (hasDay(d)) { streak++; continue; }
-    const dBefore = new Date(); dBefore.setDate(dBefore.getDate() - i - 1);
-    if (i - lastJokerAt >= 7 && hasDay(dBefore)) {
+  const jokers = [];
+  for (let i = depart + 1; i < depart + 366; i++) {
+    if (aJour(i)) { streak++; continue; }
+    if (i - lastJokerAt >= 7 && aJour(i + 1)) {
       lastJokerAt = i; // joker consommé : le trou est pardonné mais ne compte pas
+      const d = jour(i); d.setHours(0, 0, 0, 0);
+      jokers.push(d.getTime());
       continue;
     }
     break;
   }
-  return streak;
+  return { streak, jokers };
+}
+
+function calculateStreak(logs) {
+  // Le paramètre sert à calculer le streak d'une copine (rareté des badges) ;
+  // sans lui, c'est celui de l'utilisatrice.
+  return streakCore(logs || state.logs).streak;
+}
+
+/**
+ * Série vue par l'utilisatrice (v2.18.0). Pas encore de caca aujourd'hui ne
+ * veut pas dire série perdue : celle d'hier tient jusqu'à minuit. `pending`
+ * porte alors sa longueur, pour afficher « en attente » plutôt qu'un 0 sec.
+ */
+function streakDetails(logs, now = Date.now()) {
+  const source = logs || state.logs;
+  const aujourdhui = streakCore(source, now, 0);
+  if (aujourdhui.streak > 0) return { current: aujourdhui.streak, pending: 0, jokers: aujourdhui.jokers };
+  const hier = streakCore(source, now, 1);
+  return { current: 0, pending: hier.streak, jokers: hier.jokers };
 }
 
 function updateStreakBadge() {
-  const streak = calculateStreak();
+  const { current, pending } = streakDetails();
   const el = $id('streak-badge');
   if (!el) return;
-  if (streak >= 2) {
+  const valeur = current || pending;
+  if (valeur >= 2) {
     el.style.display = 'flex';
-    $id('streak-val').textContent = streak;
+    $id('streak-val').textContent = valeur;
+    // En attente : même flamme, mais pâlie, et le titre explique pourquoi.
+    el.classList.toggle('streak-pending', !current);
+    el.title = current
+      ? `Série de ${current} jours`
+      : `Série de ${pending} jours en attente : un caca avant minuit pour la garder`;
   } else {
     el.style.display = 'none';
   }
+}
+
+/**
+ * Fonction pure : le joker qui vient de sauver la série et qu'on n'a pas
+ * encore annoncé (le plus récent, s'il date d'hier ou d'avant-hier).
+ */
+function jokerToAnnounce(details, dejaAnnonce, now = Date.now()) {
+  if (!details || !details.current || !details.jokers?.length) return null;
+  const recent = Math.max(...details.jokers);
+  const debutAujourdhui = new Date(now); debutAujourdhui.setHours(0, 0, 0, 0);
+  if (debutAujourdhui.getTime() - recent > 2 * 86400000) return null;
+  if (Number(dejaAnnonce) === recent) return null;
+  return recent;
 }

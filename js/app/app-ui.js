@@ -33,7 +33,11 @@ function applyTheme(theme) {
     nordique:'#dce8f5', automne:'#fde8c8', neon:'#000000'
   };
   const drawerInner = $id('drawer-inner');
-  if (drawerInner) drawerInner.style.background = drawerBg[theme] || '';
+  if (drawerInner) {
+    drawerInner.style.background = drawerBg[theme] || '';
+    // Fond des boutons collés en bas de la saisie (v2.18.0)
+    drawerInner.style.setProperty('--drawer-bg', drawerBg[theme] || '#fff');
+  }
 }
 
 // ===================================================
@@ -47,12 +51,14 @@ function applyAutoNight() {
     btn.style.background = enabled ? '#4f46e5' : 'rgba(0,0,0,0.15)';
     if (knob) knob.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)';
   }
-  if (!enabled) return;
   const h = new Date().getHours();
-  const isNight = h >= 22 || h < 7;
-  if (isNight) {
+  const isNight = enabled && (h >= 22 || h < 7);
+  // Thème du téléphone (v2.18.0, app-accueil.js) : même effet que la nuit,
+  // sans toucher au thème choisi, qui revient dès que le téléphone repasse en clair.
+  const sombreSysteme = typeof systemPrefersDark === 'function' && systemPrefersDark();
+  if (isNight || sombreSysteme) {
     document.documentElement.setAttribute('data-theme', 'dark');
-  } else {
+  } else if (enabled || typeof systemThemeEnabled === 'function' && systemThemeEnabled()) {
     applyTheme(state.theme || 'default');
   }
 }
@@ -184,6 +190,8 @@ const STATS_TILES = [
   { id: 'month-compare', label: '📆 Comparatif mensuel' },
   { id: 'health',        label: '🏥 Score de santé' },
   { id: 'records',       label: '🏆 Records personnels' },
+  { id: 'duration',      label: '⏱️ Durée des séances' },
+  { id: 'insights',      label: '🔍 Ce que j\'ai remarqué' },
   { id: 'bristol',       label: '🔬 Échelle de Bristol' },
   { id: 'yearly',        label: '📅 Bilan année / mois' },
   { id: 'poopmap',       label: '🗺️ PoopMap' },
@@ -283,6 +291,7 @@ function switchTab(name) {
 function openDrawer() {
   refreshRetroMax();
   refreshGeoButton();
+  if (typeof refreshUsualButton === 'function') refreshUsualButton();
   $id('drawer').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 }
@@ -328,6 +337,10 @@ function closeDrawer() {
   selectedMood    = null;
   selectedPlace   = null;
   pendingGeo      = null;
+  if (typeof setDurationInput === 'function') setDurationInput(null);
+  if (typeof setHealthSelection === 'function') setHealthSelection([]);
+  const santeDetails = $id('health-details');
+  if (santeDetails) santeDetails.open = false;
   document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('border-amber-400','bg-amber-50'));
   document.querySelectorAll('.place-btn').forEach(b => b.classList.remove('border-amber-400','bg-amber-50'));
   const geoStatus = $id('geo-status');

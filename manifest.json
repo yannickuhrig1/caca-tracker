@@ -1,7 +1,7 @@
 {
   "name": "Caca-Tracker 3000 Deluxe",
   "short_name": "CacaTracker",
-  "version": "2.13.0",
+  "version": "2.18.0",
   "description": "Le tracker de selles ultime de Clémence 💩",
   "start_url": "./index.html",
   "display": "standalone",
@@ -26,6 +26,34 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nouveau caca",
+      "short_name": "Nouveau",
+      "description": "Ouvrir directement la saisie",
+      "url": "./index.html?action=add",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Lancer le chrono",
+      "short_name": "Chrono",
+      "description": "Chronométrer la séance",
+      "url": "./index.html?action=timer",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Applique les migrations PoopMap (13 et 14) sur la base du NAS.
+# Applique les migrations 13, 14 (PoopMap) et 15 (durée, santé, ligue) sur la base du NAS.
 #
 # À lancer DEPUIS LE NAS, dans une copie du dépôt :
 #     ./scripts/apply-migrations.sh
@@ -22,6 +22,7 @@ RACINE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MIGRATIONS=(
   "supabase/migrations/13_20260908_poopmap.sql"
   "supabase/migrations/14_20260908_poopmap-conquete.sql"
+  "supabase/migrations/15_20260917_duree-sante-ligue.sql"
 )
 
 psql_exec() {
@@ -49,8 +50,15 @@ psql_exec -c "
   SELECT column_name, data_type
     FROM information_schema.columns
    WHERE table_schema = 'public' AND table_name = 'poops'
-     AND column_name IN ('place','lat','lon','city','region','country','country_code')
+     AND column_name IN ('place','lat','lon','city','region','country','country_code','duration_s')
    ORDER BY column_name;"
+
+echo
+echo "🔍 Carnet de santé et ligue :"
+psql_exec -c "
+  SELECT 'poop_health' AS objet, count(*) AS policies FROM pg_policies WHERE tablename = 'poop_health'
+  UNION ALL
+  SELECT 'group_league()', count(*) FROM pg_proc WHERE proname = 'group_league';"
 
 # Ceinture et bretelles : les migrations envoient déjà ce signal, mais si
 # PostgREST n'écoute pas le canal (db-channel-enabled à false), il faut le
@@ -61,6 +69,6 @@ psql_exec -c "NOTIFY pgrst, 'reload schema';"
 echo "   Si l'app répond encore « colonne inconnue » d'ici une minute,"
 echo "   redémarre le conteneur PostgREST (docker restart caca-rest)."
 echo
-echo "🎉 Terminé. Lieux, positions et territoires se synchronisent maintenant"
-echo "   entre les appareils. Sur le téléphone : se déconnecter / reconnecter"
-echo "   pour repousser l'historique local vers le cloud."
+echo "🎉 Terminé. Lieux, positions, durées et carnet de santé se synchronisent"
+echo "   maintenant entre les appareils. Au lancement suivant, l'app repousse"
+echo "   d'elle-même les durées et symptômes saisis avant la migration."

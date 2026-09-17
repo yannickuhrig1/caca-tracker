@@ -7,12 +7,26 @@
 
 // Source de vérité unique de la version. L'en-tête et les Réglages sont
 // remplis à partir d'ici, ce qui évite qu'ils divergent comme par le passé.
-const APP_VERSION = '2.17.0';
+const APP_VERSION = '2.18.0';
 const APP_VERSION_DATE = 'Septembre 2026';
 
 // De la plus récente à la plus ancienne. `items` reste court et écrit pour
 // Clémence, pas pour un développeur : ce que ça change pour elle, pas comment.
 const APP_CHANGELOG = [
+  {
+    version: '2.18.0',
+    date: 'Septembre 2026',
+    items: [
+      ['💩', 'Une **mascotte** t\'accueille : elle change d\'humeur selon ta journée, grandit avec tes cacas et gagne lunettes puis couronne avec ta série.'],
+      ['🔥', 'Pas encore de caca aujourd\'hui ? Ta série reste affichée **jusqu\'à minuit** au lieu de retomber à 0.'],
+      ['⏱️', 'Le chrono remplit maintenant une vraie **durée** : moyenne et record dans les Stats, badges Express et Marathon, et la **Reine de l\'endurance** dans ton groupe.'],
+      ['🩺', 'Nouveau **carnet de santé privé** à la saisie (symptômes, règles, café, épicé…) et un bloc « **Ce que j\'ai remarqué** » dans les Stats.'],
+      ['⚡', '« **Comme d\'habitude** » remplit ta saisie en un geste, avec des textures dessinées.'],
+      ['📤', 'Partage en **image story** (semaine, mois, année) et **Caca Wrapped** en écrans successifs à la fin de l\'année.'],
+      ['🎨', '**Stickers** dans les commentaires, **série du groupe** et **ligue entre groupes**.'],
+      ['🏆', 'Badges rangés par catégories, « à portée de main » et paliers de rareté (Rare, Épique, Légendaire…).'],
+    ]
+  },
   {
     version: '2.17.0',
     date: 'Septembre 2026',

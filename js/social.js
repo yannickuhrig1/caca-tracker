@@ -142,7 +142,9 @@ const SocialModule = (() => {
       renderChallenge(groupId),
       renderMemberFilter(groupId),
       renderMonthlyHistory(groupId),
-      renderHallOfFame(groupId)
+      renderHallOfFame(groupId),
+      renderEndurance(groupId),
+      renderLeague(groupId)
     ]);
     updateQueenCrown();
     checkWinnerCelebration(groupId);
@@ -210,6 +212,8 @@ const SocialModule = (() => {
         return;
       }
 
+      renderGroupStreak(Object.values(stats), myId);
+
       const medals = ['🥇','🥈','🥉'];
       const heights = ['90px','70px','55px'];
       const colors  = ['#f59e0b','#94a3b8','#b45309'];
@@ -250,6 +254,110 @@ const SocialModule = (() => {
 
     } catch(e) {
       container.innerHTML = `<div class="text-xs text-red-500">${esc(e.message)}</div>`;
+    }
+  }
+
+  // ============================================================
+  //  SÉRIE PARTAGÉE DU GROUPE 🔥 (v2.18.0)
+  // ============================================================
+  function renderGroupStreak(membres, myId) {
+    const el = document.getElementById('group-streak');
+    if (!el) return;
+    const g = window.SocialFun?.groupStreak(membres);
+    if (!g) { el.classList.add('hidden'); return; }
+    el.classList.remove('hidden');
+    const manquantes = g.missingToday;
+    const moiManque = manquantes.some(m => m.id === myId);
+    const qui = manquantes.map(m => `${m.avatar || '💩'} ${esc(m.username)}`).join(', ');
+    el.innerHTML = `
+      <div class="flex items-center gap-3">
+        <div class="group-streak-flame${g.days ? '' : ' off'}" aria-hidden="true">🔥</div>
+        <div class="flex-1 min-w-0">
+          <div class="font-bold text-sm">Série du groupe : ${g.days} jour${g.days > 1 ? 's' : ''}</div>
+          <div class="text-xs opacity-70">
+            ${manquantes.length
+              ? `${g.includesToday ? '' : 'Pour la prolonger aujourd\'hui, il manque : '}${qui}${moiManque ? ' (toi aussi !)' : ''}`
+              : `Tout le monde a posté aujourd'hui, bravo la team 💪`}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ============================================================
+  //  REINE DE L'ENDURANCE ⏱️ (v2.18.0)
+  // ============================================================
+  async function renderEndurance(groupId) {
+    const card = document.getElementById('endurance-card');
+    const list = document.getElementById('endurance-list');
+    if (!card || !list) return;
+    try {
+      const debutMois = new Date(); debutMois.setDate(1); debutMois.setHours(0, 0, 0, 0);
+      const membres = await window.SupabaseClient.getGroupDurations(groupId, debutMois.getTime());
+      // null : colonne absente en base (migration 15 pas encore jouée)
+      if (!membres) { card.classList.add('hidden'); return; }
+      card.classList.remove('hidden');
+      const classement = window.SocialFun.enduranceRanking(membres);
+      if (!classement.length) {
+        list.innerHTML = '<p class="text-sm opacity-60 text-center">Personne n\'a encore chronométré de séance ce mois-ci. Lance le ⏱️ !</p>';
+        return;
+      }
+      const medals = ['👑', '🥈', '🥉'];
+      const fmt = typeof formatDuration === 'function' ? formatDuration : s => `${s} s`;
+      list.innerHTML = classement.map((m, i) => `
+        <div class="flex items-center gap-3 p-2 rounded-[1rem] text-sm">
+          <span class="text-lg w-8 text-center">${medals[i] || i + 1}</span>
+          <span class="text-xl">${m.avatar || '💩'}</span>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold truncate">${esc(m.username)}</div>
+            <div class="text-xs opacity-60">${m.count} séance${m.count > 1 ? 's' : ''} · moyenne ${fmt(m.avg)}</div>
+          </div>
+          <span class="font-bold" style="color:var(--accent)">${fmt(m.max)}</span>
+        </div>`).join('');
+    } catch (e) {
+      card.classList.add('hidden');
+    }
+  }
+
+  // ============================================================
+  //  LIGUE ENTRE GROUPES 🏟️ (v2.18.0)
+  // ============================================================
+  async function renderLeague(groupId) {
+    const card = document.getElementById('league-card');
+    const list = document.getElementById('league-list');
+    const sub  = document.getElementById('league-sub');
+    if (!card || !list) return;
+    try {
+      const inscrit = await window.SupabaseClient.getLeagueOptIn(groupId);
+      const lignes  = inscrit === null ? null
+        : await window.SupabaseClient.getGroupLeague(window.SocialFun.leagueWeekStart());
+      // null : migration 15 absente, la carte reste masquée
+      if (inscrit === null || lignes === null) { card.classList.add('hidden'); return; }
+      card.classList.remove('hidden');
+
+      const groups    = await window.SupabaseClient.getMyGroups();
+      const isCreator = groups.find(g => g.id === groupId)?.created_by === window.SupabaseClient.getCurrentProfile()?.id;
+      if (sub) sub.textContent = inscrit
+        ? 'Cacas par membre cette semaine. Remise à zéro chaque lundi.'
+        : (isCreator
+            ? 'Ton groupe ne participe pas. Inscris-le dans ⚙️ Gestion du groupe.'
+            : 'Ton groupe ne participe pas. La créatrice peut l\'inscrire.');
+
+      if (!lignes.length) {
+        list.innerHTML = '<p class="text-sm opacity-60 text-center">Aucun groupe inscrit pour l\'instant.</p>';
+        return;
+      }
+      const medals = ['🥇', '🥈', '🥉'];
+      list.innerHTML = lignes.slice(0, 10).map((r, i) => `
+        <div class="flex items-center gap-3 p-2 rounded-[1rem] text-sm${r.is_mine ? ' league-mine' : ''}">
+          <span class="text-lg w-8 text-center">${medals[i] || i + 1}</span>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold truncate">${esc(r.name)}${r.is_mine ? ' <span class="text-xs opacity-60">(vous)</span>' : ''}</div>
+            <div class="text-xs opacity-60">${r.total} caca${r.total > 1 ? 's' : ''} · ${r.active}/${r.members} active${r.active > 1 ? 's' : ''}</div>
+          </div>
+          <span class="font-bold" style="color:var(--accent)">${Number(r.score).toFixed(1)}</span>
+        </div>`).join('');
+    } catch (e) {
+      card.classList.add('hidden');
     }
   }
 
@@ -467,16 +575,49 @@ const SocialModule = (() => {
       const iOwnPoop = item && item.user_id === myId;
       if (item) { item.commentCount = comments.length; updateCommentCount(poopId); }
 
+      const fun = window.SocialFun;
+      const corps = body => {
+        const st = fun?.parseSticker(body);
+        return st
+          ? `<span class="sticker-bubble"><span class="sticker-art" aria-hidden="true">${st.art}</span><span class="sticker-text">${esc(st.text)}</span></span>`
+          : esc(body);
+      };
       thread.innerHTML = comments.map(c => `
         <div class="comment-item">
           <span>${c.avatar}</span>
-          <div class="c-body"><span class="font-bold">${esc(c.username)}</span> ${esc(c.body)}</div>
+          <div class="c-body"><span class="font-bold">${esc(c.username)}</span> ${corps(c.body)}</div>
           ${(c.user_id === myId || iOwnPoop) ? `<span class="c-del" data-del-comment="${c.id}">✕</span>` : ''}
         </div>`).join('') + `
         <div class="comment-input-row">
+          <button type="button" class="comment-sticker-btn" aria-label="Stickers" aria-expanded="false">🎨</button>
           <input class="comment-input" data-comment-input="${poopId}" placeholder="Un petit mot… 💬" maxlength="280" />
           <button class="comment-send" data-comment-send="${poopId}">Envoyer</button>
+        </div>
+        <div class="sticker-tray hidden">
+          ${(fun?.STICKERS || []).map(st => `
+            <button type="button" class="sticker-pick" data-sticker="${st.id}" title="${esc(st.text)}">
+              <span class="sticker-art" aria-hidden="true">${st.art}</span><span class="sticker-text">${esc(st.text)}</span>
+            </button>`).join('')}
         </div>`;
+
+      const tray = thread.querySelector('.sticker-tray');
+      const trayBtn = thread.querySelector('.comment-sticker-btn');
+      trayBtn?.addEventListener('click', () => {
+        const ouvert = tray.classList.toggle('hidden') === false;
+        trayBtn.setAttribute('aria-expanded', String(ouvert));
+      });
+      tray?.querySelectorAll('[data-sticker]').forEach(b => b.addEventListener('click', async () => {
+        const body = fun.stickerBody(b.dataset.sticker);
+        if (!body) return;
+        tray.querySelectorAll('button').forEach(x => { x.disabled = true; });
+        try {
+          await window.SupabaseClient.addComment(poopId, body);
+          await loadComments(poopId, groupId);
+        } catch(e) {
+          window.UI?.toast(e.message, 'error');
+          tray.querySelectorAll('button').forEach(x => { x.disabled = false; });
+        }
+      }));
 
       const input = thread.querySelector('.comment-input');
       const send  = thread.querySelector('.comment-send');
@@ -761,6 +902,36 @@ const SocialModule = (() => {
         });
       } else {
         inviteRow.classList.add('hidden');
+      }
+
+      // Inscription à la ligue entre groupes (créatrice seulement, v2.18.0).
+      // Masqué tant que la base n'a pas la colonne (migration 15).
+      let leagueRow = document.getElementById('league-optin-row');
+      if (!leagueRow) {
+        leagueRow = document.createElement('div');
+        leagueRow.id = 'league-optin-row';
+        leagueRow.className = 'flex items-center justify-between text-sm mb-3 px-1 gap-2';
+        listEl.parentElement.insertBefore(leagueRow, listEl);
+      }
+      const inscrit = isCreator ? await window.SupabaseClient.getLeagueOptIn(groupId) : null;
+      if (isCreator && inscrit !== null) {
+        leagueRow.innerHTML = `
+          <span class="text-xs font-bold opacity-70">🏟️ Participer à la ligue des groupes<br><span class="font-normal opacity-80">Seuls le nom du groupe et ses totaux sont visibles des autres.</span></span>
+          <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+            <input type="checkbox" id="league-optin-toggle" class="sr-only peer" ${inscrit ? 'checked' : ''} />
+            <div class="w-9 h-5 rounded-full bg-gray-300 peer-checked:bg-[var(--accent)] transition-colors duration-200"></div>
+            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 peer-checked:translate-x-4"></div>
+          </label>`;
+        leagueRow.classList.remove('hidden');
+        document.getElementById('league-optin-toggle')?.addEventListener('change', async e => {
+          try {
+            await window.SupabaseClient.updateGroupSettings(groupId, { league_opt_in: e.target.checked });
+            window.UI.toast(e.target.checked ? 'Groupe inscrit à la ligue 🏟️' : 'Groupe retiré de la ligue', 'success');
+            await renderLeague(groupId);
+          } catch(err) { window.UI.toast('Erreur : ' + err.message, 'error'); e.target.checked = !e.target.checked; }
+        });
+      } else {
+        leagueRow.classList.add('hidden');
       }
 
       listEl.innerHTML = members.map(m => {

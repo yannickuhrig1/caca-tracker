@@ -65,7 +65,7 @@ test('une entrée sans position laisse les colonnes vides, pas « undefined »',
   const l = lignes(toCSV([log()]))[1];
   assert.strictEqual(l.includes('undefined'), false, l);
   assert.strictEqual(l.includes('null'), false, l);
-  assert.ok(l.endsWith(';non;'), l);   // pas de lieu, pas de position, pas de note
+  assert.ok(l.endsWith(';non;;;'), l);   // pas de retard, ni durée, ni santé, ni note
 });
 
 test('liste vide : seulement l\'en-tête', () => {
@@ -87,5 +87,10 @@ test('toutes les lignes ont le même nombre de colonnes', () => {
   };
   const compte = lignes(csv).map(colonnes);
   assert.strictEqual(new Set(compte).size, 1, 'colonnes par ligne : ' + compte.join(', '));
-  assert.strictEqual(compte[0], 11);
+  assert.strictEqual(compte[0], 13);
+});
+
+test('durée et carnet de santé sont exportés (v2.18.0)', () => {
+  const l = lignes(toCSV([log({ duration: 195, health: ['cafe', 'stress'], comment: 'ok' })]))[1];
+  assert.ok(l.includes(';non;195;cafe, stress;ok'), l);
 });

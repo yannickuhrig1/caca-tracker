@@ -130,6 +130,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // Une fois par appareil : repousser les lieux/positions que le cloud
       // n'avait pas encore (colonnes arrivées avec les migrations 13 et 14).
       await maybeBackfillPoopMapCloud();
+      // Idem pour les durées et le carnet de santé (migration 15)
+      await maybeBackfillExtrasCloud();
       $debug('☁️ session restored via INITIAL_SESSION: ' + profile.username);
     }
   }, { once: true });
@@ -140,13 +142,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Initialiser les features supplémentaires
+  setupSaisie();
+  setupHome();
+  setupWrapped();
+  setupSystemTheme();
   setupGoal();
   startCountdown();
   setupTimer();
-  $id('wrapped-btn')?.addEventListener('click', openWrapped);
-  $id('close-wrapped-btn')?.addEventListener('click', () => $id('wrapped-modal').classList.add('hidden'));
+  $id('wrapped-btn')?.addEventListener('click', () => openYearWrapped());
+  $id('home-wrapped-btn')?.addEventListener('click', () => openYearWrapped());
   $id('close-day-detail-btn')?.addEventListener('click', () => $id('day-detail-modal').classList.add('hidden'));
-  $id('share-stats-btn')?.addEventListener('click', shareStats);
+  $id('share-stats-btn')?.addEventListener('click', openShareChooser);
   $id('share-app-btn')?.addEventListener('click', shareApp);
   $id('export-ical-btn')?.addEventListener('click', exportIcal);
 
@@ -183,6 +189,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // deux à la fois : maybeShowWhatsNew() ne fait rien au tout premier lancement.
   maybeShowOnboarding();
   maybeShowWhatsNew();
+
+  // Raccourcis d'app : ?action=add | timer | wrapped
+  handleLaunchAction();
 
   $debug('✅ ready. logs=' + state.logs.length);
 });

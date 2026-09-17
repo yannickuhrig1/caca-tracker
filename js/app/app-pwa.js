@@ -48,15 +48,11 @@ function stopTimer(cancel = false) {
   if (display) { display.textContent = '00:00'; display.classList.add('hidden'); }
 
   if (!cancel && elapsed > 10) {
-    const m = Math.floor(elapsed / 60);
-    const s = elapsed % 60;
-    const durationStr = m > 0 ? `${m}min ${s}s` : `${s}s`;
-    // Pré-remplir le commentaire et ouvrir le drawer
+    // La durée va dans son propre champ (v2.18.0) : elle alimente les stats,
+    // les badges et le classement d'endurance. Avant, elle finissait en texte
+    // dans la note, inexploitable.
     openDrawer();
-    setTimeout(() => {
-      const commentEl = $id('comment');
-      if (commentEl) commentEl.value = `⏱️ Durée : ${durationStr}`;
-    }, 100);
+    setDurationInput(elapsed);
   }
 }
 

@@ -97,6 +97,7 @@ async function syncCloudData() {
           mood:      p.mood || null,
           updated_at: p.updated_at
         }, p));
+        applyExtraFields(state.logs[state.logs.length - 1], p);
         changed++;
       } else {
         const local = localMap.get(key);
@@ -113,6 +114,7 @@ async function syncCloudData() {
             updated_at: p.updated_at
           });
           applyPoopMapFields(local, p);
+          applyExtraFields(local, p);
           changed++;
         }
       }
@@ -145,6 +147,23 @@ function applyPoopMapFields(target, cloud) {
     if (cloud[champ]) target[champ] = cloud[champ];
     else delete target[champ];
   });
+  return target;
+}
+
+// Durée et carnet de santé (migration 15). Tant que la base ne les a pas, le
+// cloud ne les renvoie pas : ce n'est pas une suppression, on garde le local.
+function applyExtraFields(target, cloud, dispo = {
+  duration: window.SupabaseClient?.durationColumnAvailable?.() !== false,
+  health:   window.SupabaseClient?.healthTableAvailable?.() !== false,
+}) {
+  if (dispo.duration) {
+    if (cloud.duration) target.duration = cloud.duration;
+    else delete target.duration;
+  }
+  if (dispo.health) {
+    if (Array.isArray(cloud.health) && cloud.health.length) target.health = [...cloud.health];
+    else delete target.health;
+  }
   return target;
 }
 
@@ -192,6 +211,37 @@ async function maybeBackfillPoopMapCloud() {
   }
 }
 window.maybeBackfillPoopMapCloud = maybeBackfillPoopMapCloud;
+
+// Même rattrapage pour la durée et le carnet de santé (v2.18.0, migration 15) :
+// ce qui a été saisi avant que la base les connaisse est repoussé une fois.
+const EXTRAS_BACKFILL_KEY = 'sante.cloudBackfill.v1';
+
+/** Fonction pure : entrées portant une durée ou des étiquettes de santé. */
+function extraEntriesToPush(logs) {
+  return (logs || []).filter(l => l.duration || (Array.isArray(l.health) && l.health.length));
+}
+
+async function maybeBackfillExtrasCloud() {
+  if (!LS_OK || localStorage.getItem(EXTRAS_BACKFILL_KEY)) return;
+  if (!window.SupabaseClient?.isLoggedIn() || !navigator.onLine) return;
+
+  const aPousser = extraEntriesToPush(state.logs);
+  if (!aPousser.length) { localStorage.setItem(EXTRAS_BACKFILL_KEY, '1'); return; }
+
+  try {
+    await window.SupabaseClient.syncLocalToCloud(aPousser);
+    const sc = window.SupabaseClient;
+    if (sc.durationColumnAvailable?.() === false || sc.healthTableAvailable?.() === false) {
+      $debug('☁️ rattrapage durée/santé reporté : migration 15 absente');
+      return;
+    }
+    localStorage.setItem(EXTRAS_BACKFILL_KEY, '1');
+    $debug(`☁️ ${aPousser.length} entrée(s) repoussée(s) avec durée/santé`);
+  } catch (e) {
+    $debug('backfill extras err: ' + e.message);
+  }
+}
+window.maybeBackfillExtrasCloud = maybeBackfillExtrasCloud;
 
 // ===================================================
 //  OFFLINE QUEUE  (feature 14)
@@ -312,7 +362,8 @@ function exportData() {
 // reconnaissent, la virgule ferait tout tomber dans une seule colonne.
 function toCSV(logs) {
   const cols = ['date_iso', 'date', 'heure', 'texture', 'couleur', 'humeur',
-                'lieu', 'latitude', 'longitude', 'en_retard', 'note'];
+                'lieu', 'latitude', 'longitude', 'en_retard', 'duree_s', 'sante', 'note'];
+  const santeLabel = id => (typeof healthTagMeta === 'function' && healthTagMeta(id)?.label) || id;
   const cell = v => {
     const t = String(v ?? '');
     return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
@@ -328,6 +379,8 @@ function toCSV(logs) {
       typeof l.lat === 'number' ? l.lat : '',
       typeof l.lon === 'number' ? l.lon : '',
       l.isRetro ? 'oui' : 'non',
+      l.duration || '',
+      (Array.isArray(l.health) ? l.health : []).map(santeLabel).join(', '),
       l.comment || '',
     ].map(cell).join(';');
   });
