@@ -233,7 +233,7 @@ function shakeAchievement(id)
 
 ### v2.20.0 (Septembre 2026) - 🌽 LE GRAND TRANSIT
 
-- ➕ **Le Grand Transit** (`js/jeux/transit.js`) : grain de maïs, 3 organes (bouche, estomac, côlon), carapace + bouclier, déplacement au glissé du pouce, horloge de transit et étoiles par organe
+- ➕ **Le Grand Transit** (`js/jeux/transit.js`) : grain de maïs, 5 organes (bouche, œsophage, estomac, intestin grêle, côlon), carapace + bouclier, déplacement au glissé du pouce, horloge de transit (0 h → 36 h) et étoiles par organe. Mécanique propre à chacun : mâchoires, anneaux de péristaltisme et reflux, acide et enzymes, villosités aspirantes et jets de bile, bactéries et gaz
 - ➕ **Sauvegarde par organe** dans `stats.transit.checkpoint` (`normalizeTransitCheckpoint` côté noyau) : une digestion renvoie au début de l'organe, pas du jeu
 - ➕ **Test du maïs** (`js/app/app-mais.js`, clé `mais.tests.v1`) : vrai temps de transit, carte dans la tuile Transit des Stats + case dans la saisie. Refus d'un maïs revu en moins de 6 h, abandon automatique après 5 jours
 - ➕ Écran des jeux : `inst.drag` (glissé continu) et `inst.noReady` (le jeu affiche son propre accueil)

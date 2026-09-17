@@ -10,9 +10,14 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 ### Ajouté
 - **🌽 Le Grand Transit** (`js/jeux/transit.js`) — on incarne un grain de maïs
   avalé, à faire ressortir entier :
-  - Trois organes : la bouche (molaires, et le carrefour œsophage / trachée),
-    l'estomac (flaques d'acide, enzymes, bulles qui réparent) et le côlon
-    (bactéries, bouchons, gaz qui propulsent, eau réabsorbée qui ralentit).
+  - Cinq organes : la bouche (molaires, et le carrefour œsophage / trachée),
+    l'œsophage (anneaux de péristaltisme qui propulsent ouverts et serrent
+    fermés, remontées acides qui font reculer), l'estomac (flaques d'acide,
+    enzymes, bulles qui réparent), l'intestin grêle (villosités qui aspirent
+    vers les parois, jets de bile, vitamines) et le côlon (bactéries,
+    bouchons, gaz qui propulsent, eau réabsorbée qui ralentit).
+  - Portes de sortie propres à chaque organe : épiglotte, cardia, pylore,
+    valvule iléo-cæcale, sphincter.
   - **Carapace** en guise de vie, **bouclier** au toucher (recharge 3,5 s),
     déplacement au **glissé du pouce**.
   - **Sauvegarde à l'entrée de chaque organe** : la traversée peut s'étaler

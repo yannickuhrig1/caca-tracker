@@ -24,15 +24,27 @@ const TRANSIT = {
       anecdote: 'On mâche mal le maïs : son enveloppe résiste aux dents comme à la digestion.',
     },
     {
-      id: 'estomac', nom: 'L\'estomac', emoji: '⚗️', vitesse: 45, longueur: 3200, heures: [0.03, 4],
+      id: 'oesophage', nom: 'L\'œsophage', emoji: '🌊', vitesse: 55, longueur: 1600, heures: [0.03, 0.06],
+      fond: ['#fbcfe8', '#9d174d'], paroi: '#831843',
+      intro: 'Le tube te pousse vers le bas par vagues. Traverse un anneau au moment où il s\'ouvre : il te propulse. Fermé, il te serre. Évite les remontées acides 🫧, elles te font remonter.',
+      anecdote: 'L\'œsophage ne laisse pas tomber : ses muscles poussent la nourriture en vagues. On peut avaler la tête en bas.',
+    },
+    {
+      id: 'estomac', nom: 'L\'estomac', emoji: '⚗️', vitesse: 45, longueur: 3200, heures: [0.06, 4],
       fond: ['#fed7aa', '#c2410c'], paroi: '#7c2d12',
       intro: 'Bain d\'acide ! Les flaques rongent ta carapace, les enzymes ✂️ coupent. Les bulles te réparent.',
       anecdote: 'L\'acide de l\'estomac est assez fort pour dissoudre du métal, mais sa paroi se renouvelle sans cesse.',
     },
     {
+      id: 'grele', nom: 'L\'intestin grêle', emoji: '🧬', vitesse: 48, longueur: 4000, heures: [4, 10],
+      fond: ['#fef3c7', '#b45309'], paroi: '#78350f',
+      intro: 'Six mètres de couloir tapissé de villosités : elles aspirent tout sur leur passage. Les jets de bile 💛 brûlent, les enzymes ✂️ coupent. Attrape les vitamines 💊.',
+      anecdote: 'Déplié, l\'intestin grêle mesure 6 à 7 m. Ses villosités offrent une surface d\'absorption grande comme un court de tennis.',
+    },
+    {
       id: 'colon', nom: 'Le côlon', emoji: '🦠', vitesse: 50, longueur: 3800, heures: [10, 36],
       fond: ['#fde68a', '#92400e'], paroi: '#78350f',
-      intro: 'Intestin grêle traversé (6 m en accéléré). Ici vivent les bactéries : les gentilles aident, les méchantes attaquent. Un pet 💨 te propulse !',
+      intro: 'Dernière ligne droite. Ici vivent les bactéries : les gentilles aident, les méchantes attaquent. Un pet 💨 te propulse, mais l\'eau s\'en va et tout ralentit.',
       anecdote: 'Ton intestin abrite près de 100 000 milliards de bactéries. Le côlon récupère l\'eau : tout ralentit et durcit.',
     },
   ],
@@ -42,7 +54,7 @@ const TRANSIT = {
 
 /** Bords gauche et droit du tube à la profondeur y (ils ondulent). */
 function transitWalls(y, niveau = 0) {
-  const ampl = [5, 8, 6][niveau] ?? 6;
+  const ampl = [5, 10, 8, 7, 6][niveau] ?? 6;
   const g = 7 + ampl * (0.5 + 0.5 * Math.sin(y / 45 + niveau));
   const d = 7 + ampl * (0.5 + 0.5 * Math.sin(y / 38 + 1.7 + niveau));
   return { left: g, right: 100 - d };
@@ -61,9 +73,11 @@ function transitGapHalf(o, t) {
 // ---- Construction d'un niveau ----
 
 const TRANSIT_TIRAGES = {
-  bouche:  [['machoire', 5], ['miette', 3], ['miette2', 1]],
-  estomac: [['acide', 4], ['pepsine', 3], ['bulle', 2], ['miette', 1]],
-  colon:   [['mechante', 4], ['bouchon', 2], ['gentille', 3], ['gaz', 2]],
+  bouche:    [['machoire', 5], ['miette', 3], ['miette2', 1]],
+  oesophage: [['anneau', 5], ['reflux', 3], ['miette', 2]],
+  estomac:   [['acide', 4], ['pepsine', 3], ['bulle', 2], ['miette', 1]],
+  grele:     [['villosite', 4], ['bile', 3], ['pepsine', 2], ['vitamine', 3]],
+  colon:     [['mechante', 4], ['bouchon', 2], ['gentille', 3], ['gaz', 2]],
 };
 
 function transitPick(table, rng) {
@@ -96,6 +110,24 @@ function transitBuildLevel(index, rng = Math.random) {
     } else if (kind === 'miette' || kind === 'miette2') {
       objets.push({ kind: 'miette', y, x: dansLeTube(y, 8), r: 3.5 });
       if (kind === 'miette2') objets.push({ kind: 'miette', y: y + 14, x: dansLeTube(y + 14, 8), r: 3.5 });
+    } else if (kind === 'anneau') {
+      // Anneau musculaire sur toute la largeur : c'est le MOMENT qui compte,
+      // pas la position. Ouvert il propulse, fermé il serre.
+      objets.push({ kind, y, h: 14, periode: 1.6 + rng() * 0.9, phase: rng() });
+    } else if (kind === 'reflux') {
+      const w = transitWalls(y, index);
+      const largeur = 20 + rng() * 18;
+      const x1 = w.left + rng() * Math.max(1, w.right - w.left - largeur);
+      objets.push({ kind, y, h: 22, x1, x2: x1 + largeur });
+    } else if (kind === 'villosite') {
+      // Frange de villosités collée à une paroi : elle aspire vers elle.
+      objets.push({ kind, y, h: 26, cote: rng() < 0.5 ? 'left' : 'right' });
+    } else if (kind === 'bile') {
+      const w = transitWalls(y, index);
+      const cote = rng() < 0.5 ? 'left' : 'right';
+      objets.push({ kind, y, h: 7, cote, portee: 0.45 + rng() * 0.3, periode: 1.8 + rng() * 1.2, phase: rng(), mur: cote === 'left' ? w.left : w.right });
+    } else if (kind === 'vitamine') {
+      objets.push({ kind, y, x: dansLeTube(y, 8), r: 4 });
     } else if (kind === 'acide') {
       const w = transitWalls(y, index);
       const largeur = 22 + rng() * 22;
@@ -124,7 +156,14 @@ function transitBuildLevel(index, rng = Math.random) {
     // Carrefour : à gauche l'œsophage, à droite la trachée.
     objets.push({ kind: 'epiglotte', y: yPorte, h: 10 });
   } else {
-    objets.push({ kind: 'porte', nom: niv.id === 'estomac' ? 'pylore' : 'sphincter', y: yPorte, h: 12, x: 50, min: 2.5, max: 15, periode: niv.id === 'estomac' ? 2.2 : 2.6, phase: rng() });
+    const portes = {
+      oesophage: { nom: 'cardia',    periode: 2 },
+      estomac:   { nom: 'pylore',    periode: 2.2 },
+      grele:     { nom: 'valvule',   periode: 2.4 },
+      colon:     { nom: 'sphincter', periode: 2.6 },
+    };
+    const p = portes[niv.id];
+    objets.push({ kind: 'porte', nom: p.nom, y: yPorte, h: 12, x: 50, min: 2.5, max: 15, periode: p.periode, phase: rng() });
   }
   return objets.sort((a, b) => a.y - b.y);
 }
@@ -233,6 +272,14 @@ function transitStep(s, dt) {
       const wo = transitWalls(o.y, s.level);
       if (o.x < wo.left + o.r || o.x > wo.right - o.r) { o.vx *= -1; o.x = Math.max(wo.left + o.r, Math.min(wo.right - o.r, o.x)); }
     }
+    if (o.kind === 'villosite' && dy < o.h / 2 + R) {
+      // Aspiration latérale : il faut tirer contre pour rester au milieu.
+      const wo = transitWalls(s.y, s.level);
+      const vers = o.cote === 'left' ? wo.left : wo.right;
+      const force = (s.shield > 0 ? 8 : 20) * dt;
+      s.x += Math.sign(vers - s.x) * Math.min(Math.abs(vers - s.x), force);
+      if (!o.vu) { o.vu = true; evs.push({ type: 'aspire', cote: o.cote }); }
+    }
     if (o.kind === 'mechante' && o.y > s.y && o.y - s.y < 70) {
       o.x += Math.sign(s.x - o.x) * Math.min(Math.abs(s.x - o.x), 14 * dt);
     }
@@ -276,6 +323,40 @@ function transitStep(s, dt) {
         break;
       case 'pepsine':
         if (rond && !o.hit) { o.hit = true; transitDamage(s, 20, evs, 'pepsine'); }
+        break;
+      case 'anneau': {
+        if (dy >= o.h / 2 + R || o.hit) break;
+        o.hit = true;
+        if (transitOpen(o, s.t) > 0.5) {
+          // Anneau ouvert : la vague de péristaltisme te propulse.
+          s.boost = Math.max(s.boost, 1.2);
+          s.score += 10;
+          evs.push({ type: 'vague', points: 10 });
+        } else {
+          transitDamage(s, 15, evs, 'anneau');
+        }
+        break;
+      }
+      case 'reflux':
+        if (dy < o.h / 2 + R && s.x + R > o.x1 && s.x - R < o.x2) {
+          // Remontée acide : elle annule la descente sans abîmer la carapace.
+          s.y -= 34 * dt;
+          if (!o.vu) { o.vu = true; evs.push({ type: 'reflux' }); }
+        }
+        break;
+      case 'bile': {
+        if (dy >= o.h / 2 + R) break;
+        const jet = transitOpen(o, s.t) > 0.55;
+        if (!jet) break;
+        const wo = transitWalls(o.y, s.level);
+        const atteint = o.cote === 'left'
+          ? s.x - R < wo.left + (wo.right - wo.left) * o.portee
+          : s.x + R > wo.right - (wo.right - wo.left) * o.portee;
+        if (atteint && !o.hit) { o.hit = true; transitDamage(s, 20, evs, 'bile'); }
+        break;
+      }
+      case 'vitamine':
+        if (rond) { o.done = true; s.carapace = Math.min(TRANSIT.CARAPACE, s.carapace + 8); s.score += 15; evs.push({ type: 'bonus', kind: 'vitamine', points: 15 }); }
         break;
       case 'mechante':
         if (rond) { o.done = true; transitDamage(s, 20, evs, 'bacterie'); }
@@ -490,12 +571,15 @@ function transitCreate(env) {
         if (ev.type === 'degat') {
           env.haptic(ev.cause === 'acide' ? 15 : [25, 30, 25]);
           secousse = env.reduceMotion ? 0 : 0.3;
-          const txt = { machoire: 'CRONCH !', trachee: 'Fausse route !', pylore: 'Pylore fermé !', sphincter: 'Sphincter fermé !', acide: 'Ça brûle !', pepsine: 'Coupé !', bacterie: 'Attaque !', bouchon: 'Bouché !' }[ev.cause] || 'Aïe !';
+          const txt = { machoire: 'CRONCH !', trachee: 'Fausse route !', cardia: 'Cardia fermé !', pylore: 'Pylore fermé !', valvule: 'Valvule fermée !', sphincter: 'Sphincter fermé !', acide: 'Ça brûle !', pepsine: 'Coupé !', bacterie: 'Attaque !', bouchon: 'Bouché !', anneau: 'Serré !', bile: 'Jet de bile !' }[ev.cause] || 'Aïe !';
           flottants.push({ txt, x: px, y: py - 40, t: 0, color: '#fecaca', size: 22 });
         }
         if (ev.type === 'bloque') flottants.push({ txt: 'Paré !', x: px, y: py - 40, t: 0, color: '#e0f2fe' });
         if (ev.type === 'bonus') { env.haptic(6); flottants.push({ txt: ev.kind === 'bulle' ? '+ carapace' : `+${ev.points}`, x: px, y: py - 40, t: 0, color: '#fef9c3' }); }
         if (ev.type === 'gaz') { env.haptic([10, 10, 10]); flottants.push({ txt: 'Propulsion !', x: px, y: py - 40, t: 0, color: '#bbf7d0', size: 24 }); }
+        if (ev.type === 'vague') { env.haptic([8, 12, 8]); flottants.push({ txt: 'Vague ! +10', x: px, y: py - 40, t: 0, color: '#fbcfe8', size: 24 }); }
+        if (ev.type === 'reflux') flottants.push({ txt: 'Ça remonte !', x: px, y: py - 40, t: 0, color: '#d9f99d' });
+        if (ev.type === 'aspire') flottants.push({ txt: 'Aspiration !', x: px, y: py - 40, t: 0, color: '#fbcfe8' });
         if (ev.type === 'niveau') {
           env.haptic([10, 40, 10, 40, 10]);
           if (!s.finished) sauver({ level: s.level + 1, carapace: s.carapace, score: s.score, stars: [...s.stars] });
@@ -554,6 +638,53 @@ function transitCreate(env) {
           D.rrect(ctx, w.left * u - 10, sy - hh / 2, (o.x - half - w.left) * u + 10, hh, 8); ctx.fill(); ctx.stroke();
           D.rrect(ctx, (o.x + half) * u, sy - hh / 2, (w.right - o.x - half) * u + 10, hh, 8); ctx.fill(); ctx.stroke();
           if (o.kind === 'porte') D.texte(ctx, o.nom === 'pylore' ? 'PYLORE' : 'SORTIE', W / 2, sy - hh / 2 - 12, { size: 13, color: '#fff' });
+        } else if (o.kind === 'anneau') {
+          // Anneau musculaire : il se referme sur toute la largeur.
+          const ouvert = transitOpen(o, s.t);
+          const w = transitWalls(o.y, s.level);
+          const demi = ((w.right - w.left) / 2) * (0.12 + 0.88 * ouvert);
+          const hh = o.h * u, centre = (w.left + w.right) / 2;
+          ctx.fillStyle = ouvert > 0.5 ? '#f472b6' : '#9f1239';
+          ctx.strokeStyle = '#831843';
+          ctx.lineWidth = 2;
+          D.rrect(ctx, w.left * u - 10, sy - hh / 2, (centre - demi - w.left) * u + 10, hh, 10); ctx.fill(); ctx.stroke();
+          D.rrect(ctx, (centre + demi) * u, sy - hh / 2, (w.right - centre - demi) * u + 10, hh, 10); ctx.fill(); ctx.stroke();
+          if (ouvert > 0.5) D.texte(ctx, '▼ vague', centre * u, sy, { size: 12, color: '#fff' });
+        } else if (o.kind === 'reflux') {
+          ctx.fillStyle = 'rgba(190,242,100,.35)';
+          D.rrect(ctx, o.x1 * u, sy - (o.h * u) / 2, (o.x2 - o.x1) * u, o.h * u, 12); ctx.fill();
+          ctx.fillStyle = 'rgba(236,252,203,.9)';
+          for (let i = 0; i < 4; i++) {
+            const bx = (o.x1 + (o.x2 - o.x1) * (0.15 + i * 0.25)) * u;
+            const by = sy + ((s.t * 40 + i * 30) % (o.h * u)) - (o.h * u) / 2;
+            ctx.beginPath(); ctx.arc(bx, by, 4, 0, Math.PI * 2); ctx.fill();
+          }
+          D.texte(ctx, '↑', (o.x1 + o.x2) / 2 * u, sy, { size: 18, color: '#3f6212' });
+        } else if (o.kind === 'villosite') {
+          // Frange de doigts le long d'une paroi, qui ondule et aspire.
+          const hh = o.h * u;
+          ctx.fillStyle = '#f9a8d4';
+          for (let i = 0; i <= 6; i++) {
+            const yy = sy - hh / 2 + (hh / 6) * i;
+            const w = transitWalls(o.y - o.h / 2 + (o.h / 6) * i, s.level);
+            const base = (o.cote === 'left' ? w.left : w.right) * u;
+            const sens = o.cote === 'left' ? 1 : -1;
+            const lg = (9 + Math.sin(s.t * 3 + i) * 3) * u;
+            D.rrect(ctx, o.cote === 'left' ? base : base - lg, yy - 4, lg, 8, 4);
+            ctx.fill();
+          }
+        } else if (o.kind === 'bile') {
+          const w = transitWalls(o.y, s.level);
+          const actif = transitOpen(o, s.t) > 0.55;
+          const lg = (w.right - w.left) * o.portee * u;
+          const base = (o.cote === 'left' ? w.left : w.right) * u;
+          ctx.fillStyle = '#65a30d';
+          ctx.beginPath(); ctx.arc(base, sy, 6, 0, Math.PI * 2); ctx.fill();
+          if (actif) {
+            ctx.fillStyle = 'rgba(250,204,21,.85)';
+            D.rrect(ctx, o.cote === 'left' ? base : base - lg, sy - (o.h * u) / 2, lg, o.h * u, 6);
+            ctx.fill();
+          }
         } else if (o.kind === 'epiglotte') {
           ctx.fillStyle = 'rgba(255,255,255,.2)';
           ctx.fillRect(50 * u, sy - 60, W / 2, 120);
@@ -576,7 +707,7 @@ function transitCreate(env) {
           ctx.beginPath(); ctx.arc(o.x * u, sy, o.r * u, 0, Math.PI * 2); ctx.fill();
           D.texte(ctx, '˘‿˘', o.x * u, sy, { size: o.r * u * 0.9, color: '#14532d' });
         } else {
-          const emo = { miette: '🍞', pepsine: '✂️', mechante: '🦠', gaz: '💨' }[o.kind];
+          const emo = { miette: '🍞', pepsine: '✂️', mechante: '🦠', gaz: '💨', vitamine: '💊' }[o.kind];
           if (emo) D.emoji(ctx, emo, o.x * u, sy, (o.r || 4) * u * 2.1);
         }
       }

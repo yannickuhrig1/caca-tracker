@@ -46,7 +46,7 @@ test('chaque organe pose ses obstacles dans le tube, triés, et finit par sa por
 });
 
 test('mâchoires et portes s\'ouvrent assez pour laisser passer le grain', () => {
-  [0, 1, 2].forEach(i => {
+  [0, 1, 2, 3, 4].forEach(i => {
     T.transitBuildLevel(i, J.mulberry32(3 + i))
       .filter(o => o.kind === 'machoire' || o.kind === 'porte')
       .forEach(o => {
@@ -164,11 +164,99 @@ test('l\'épiglotte punit la trachée et renvoie à gauche', () => {
 });
 
 test('le côlon ralentit à mesure qu\'il pompe l\'eau', () => {
-  const s = T.transitNew({ level: 2, carapace: 100, score: 0, stars: [3, 3] });
+  const s = T.transitNew({ level: 4, carapace: 100, score: 0, stars: [3, 3, 3, 3] });
   T.transitStartLevel(s, J.mulberry32(9));
   const debut = T.transitSpeed(s);
-  s.y = T.TRANSIT.NIVEAUX[2].longueur * 0.9;
+  s.y = T.TRANSIT.NIVEAUX[4].longueur * 0.9;
   assert.ok(T.transitSpeed(s) < debut * 0.85);
+});
+
+// ---------- L'œsophage : les vagues ----------
+
+test('l\'anneau propulse quand il est ouvert, serre quand il est fermé', () => {
+  const anneau = phase => ({ kind: 'anneau', y: 0, h: 14, periode: 2, phase });
+
+  const s = T.transitNew({ level: 1, carapace: 100, score: 0, stars: [3] });
+  T.transitStartLevel(s, J.mulberry32(21));
+  const ouvert = anneau(0.5);          // cosinus au minimum : grand ouvert
+  ouvert.y = s.y + 1;
+  s.objets = [ouvert];
+  assert.ok(T.transitOpen(ouvert, s.t) > 0.9, 'anneau bien ouvert');
+  const evs = T.transitStep(s, 1 / 60);
+  assert.ok(evs.some(e => e.type === 'vague'));
+  assert.ok(s.boost > 0, 'la vague propulse');
+  assert.strictEqual(s.carapace, 100);
+
+  const f = T.transitNew({ level: 1, carapace: 100, score: 0, stars: [3] });
+  T.transitStartLevel(f, J.mulberry32(21));
+  const ferme = anneau(0);
+  ferme.y = f.y + 1;
+  f.objets = [ferme];
+  assert.ok(T.transitOpen(ferme, f.t) < 0.1, 'anneau bien fermé');
+  T.transitStep(f, 1 / 60);
+  assert.strictEqual(f.carapace, 85);
+});
+
+test('le reflux freine la descente sans abîmer la carapace', () => {
+  const s = T.transitNew({ level: 1, carapace: 100, score: 0, stars: [3] });
+  T.transitStartLevel(s, J.mulberry32(22));
+  s.objets = [{ kind: 'reflux', y: s.y + 10, h: 40, x1: 0, x2: 100 }];
+  const depart = s.y;
+  const evs = [];
+  for (let i = 0; i < 30; i++) evs.push(...T.transitStep(s, 1 / 60));
+  assert.ok(evs.some(e => e.type === 'reflux'));
+  assert.strictEqual(s.carapace, 100, 'ça remonte, ça ne brûle pas');
+
+  const libre = T.transitNew({ level: 1, carapace: 100, score: 0, stars: [3] });
+  T.transitStartLevel(libre, J.mulberry32(22));
+  libre.objets = [];
+  for (let i = 0; i < 30; i++) T.transitStep(libre, 1 / 60);
+  assert.ok(s.y - depart < libre.y, 'la remontée freine vraiment');
+});
+
+// ---------- L'intestin grêle : aspiration et bile ----------
+
+test('les villosités aspirent vers leur paroi, la carapace durcie résiste mieux', () => {
+  const aspiration = bouclier => {
+    const s = T.transitNew({ level: 3, carapace: 100, score: 0, stars: [3, 3, 3] });
+    T.transitStartLevel(s, J.mulberry32(23));
+    s.objets = [{ kind: 'villosite', y: s.y + 1, h: 60, cote: 'left' }];
+    if (bouclier) T.transitShield(s);
+    const depart = s.x;
+    T.transitSetTarget(s, depart);
+    T.transitStep(s, 0.5);
+    return depart - s.x;
+  };
+  const libre = aspiration(false);
+  assert.ok(libre > 1, `aspiration trop faible : ${libre}`);
+  assert.ok(aspiration(true) < libre, 'le bouclier freine l\'aspiration');
+});
+
+test('le jet de bile ne brûle que quand il jaillit, et seulement à sa portée', () => {
+  const jet = (phase, placer) => {
+    const s = T.transitNew({ level: 3, carapace: 100, score: 0, stars: [3, 3, 3] });
+    T.transitStartLevel(s, J.mulberry32(24));
+    const w = T.transitWalls(s.y, 3);
+    s.x = placer(w);
+    s.target = s.x;
+    s.objets = [{ kind: 'bile', y: s.y + 1, h: 10, cote: 'left', portee: 0.4, periode: 2, phase }];
+    T.transitStep(s, 1 / 60);
+    return s.carapace;
+  };
+  const pres = w => w.left + 6;
+  const loin = w => w.right - 6;
+  assert.strictEqual(jet(0.5, pres), 80, 'jet actif, grain à portée');
+  assert.strictEqual(jet(0, pres), 100, 'jet au repos');
+  assert.strictEqual(jet(0.5, loin), 100, 'grain hors de portée');
+});
+
+test('la vitamine répare un peu et rapporte des points', () => {
+  const s = T.transitNew({ level: 3, carapace: 70, score: 0, stars: [3, 3, 3] });
+  T.transitStartLevel(s, J.mulberry32(25));
+  s.objets = [{ kind: 'vitamine', y: s.y + 1, x: s.x, r: 5 }];
+  T.transitStep(s, 1 / 60);
+  assert.strictEqual(s.carapace, 78);
+  assert.strictEqual(s.score, 15);
 });
 
 // ---------- Enchaînement des organes et sauvegarde ----------
@@ -218,11 +306,12 @@ test('une sauvegarde abîmée ne bloque pas le jeu', () => {
   assert.strictEqual(J.normalizeTransitCheckpoint({ level: 2, carapace: 300, score: -5 }).carapace, 100);
   assert.strictEqual(J.normalizeTransitCheckpoint({ level: 2, carapace: 40, score: -5 }).score, 0);
   assert.strictEqual(J.normalizeTransitCheckpoint({ level: 7 }), null);
+  assert.strictEqual(J.normalizeTransitCheckpoint({ level: 3, carapace: 50, score: 10 }).level, 3, 'l\'intestin grêle est une reprise valable');
   assert.strictEqual(J.normalizeTransitCheckpoint(null), null);
 });
 
 test('arrivée : partie finie, bonus final, plus rien à reprendre', () => {
-  const s = T.transitNew({ level: 2, carapace: 100, score: 500, stars: [3, 3] });
+  const s = T.transitNew({ level: 4, carapace: 100, score: 500, stars: [3, 3, 3, 3] });
   T.transitStartLevel(s, J.mulberry32(14));
   s.objets = [];
   jouer(s, () => 50);
@@ -233,17 +322,27 @@ test('arrivée : partie finie, bonus final, plus rien à reprendre', () => {
   const r = T.transitResult(s);
   assert.strictEqual(r.finished, true);
   assert.strictEqual(r.carapace, 100);
-  assert.strictEqual(r.stars, 9);
+  assert.strictEqual(r.stars, 15);
 });
 
-test('l\'horloge du transit avance de la bouche (0 h) au côlon (36 h)', () => {
+test('les cinq organes s\'enchaînent et l\'horloge ne recule jamais', () => {
+  assert.strictEqual(T.TRANSIT.NIVEAUX.length, 5, 'bouche, œsophage, estomac, grêle, côlon');
+  let precedent = -1;
+  T.TRANSIT.NIVEAUX.forEach(niv => {
+    assert.ok(niv.heures[0] >= precedent, `${niv.id} commence avant la fin du précédent`);
+    assert.ok(niv.heures[1] > niv.heures[0], `${niv.id} : durée nulle`);
+    precedent = niv.heures[1];
+  });
+  assert.strictEqual(T.TRANSIT.NIVEAUX[0].heures[0], 0);
+  assert.strictEqual(T.TRANSIT.NIVEAUX[4].heures[1], 36, 'la sortie est à 36 h');
+
   const s = T.transitNew();
   T.transitStartLevel(s, J.mulberry32(15));
   assert.ok(T.transitClock(s) < 0.05);
-  s.level = 2;
+  s.level = 4;
   T.transitStartLevel(s, J.mulberry32(15));
   assert.strictEqual(Math.round(T.transitClock(s)), 10);
-  s.y = T.TRANSIT.NIVEAUX[2].longueur;
+  s.y = T.TRANSIT.NIVEAUX[4].longueur;
   assert.strictEqual(Math.round(T.transitClock(s)), 36);
 });
 

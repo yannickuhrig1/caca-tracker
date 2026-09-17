@@ -17,7 +17,7 @@ const APP_CHANGELOG = [
     version: '2.20.0',
     date: 'Septembre 2026',
     items: [
-      ['🌽', '**Le Grand Transit** : tu es un grain de maïs avalé. Glisse le pouce pour éviter les molaires, l\'acide et les bactéries, tape pour durcir ta carapace. Bouche, estomac, côlon, et la sortie !'],
+      ['🌽', '**Le Grand Transit** : tu es un grain de maïs avalé. Glisse le pouce pour éviter les molaires, l\'acide et les bactéries, tape pour durcir ta carapace. Cinq organes : bouche, œsophage, estomac, intestin grêle et côlon.'],
       ['💾', 'La partie est **sauvegardée à l\'entrée de chaque organe** : tu reprends où tu en étais à la séance suivante.'],
       ['⏳', 'Le **vrai test du maïs** : dans Stats, touche « J\'ai mangé du maïs », puis coche « Je vois du maïs » au caca où tu le retrouves. L\'app calcule ton **temps de transit réel**, celui que mesurent les médecins.'],
       ['🏅', '3 nouveaux badges : Le Grand Transit, Ressortie Intacte et Test du Maïs.'],

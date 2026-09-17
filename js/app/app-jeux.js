@@ -96,7 +96,7 @@ function renderJeuxHub() {
     let sous = j.desc;
     if (j.id === 'transit') {
       const cp = stats.transit?.checkpoint;
-      if (cp) sous = `Reprise : ${['la bouche', "l'estomac", 'le côlon'][cp.level]} · carapace ${Math.round(cp.carapace)} %`;
+      if (cp) sous = `Reprise : ${window.JeuTransit?.TRANSIT.NIVEAUX[cp.level]?.nom || 'en route'} · carapace ${Math.round(cp.carapace)} %`;
       const mais = typeof maisPendingHours === 'function' ? maisPendingHours() : null;
       if (mais !== null) sous += ` · 🌽 test en cours (${mais} h)`;
     }
@@ -358,7 +358,7 @@ function showJeuxOver(limite) {
     if (lr.result.reason === 'accident') message = 'Trop tard… la jauge a débordé. Pense aux toilettes 🚽 !';
     if (_jeux.gameId === 'transit') {
       if (lr.result.finished) { mood = 'party'; message = `Ressorti entier avec ${lr.result.carapace} % de carapace ! Un vrai grain de maïs.`; }
-      else { mood = 'worried'; message = `Digéré dans ${['la bouche', 'l\'estomac', 'le côlon'][lr.result.level] || 'le ventre'}… Tu reprendras là où tu en étais.`; }
+      else { mood = 'worried'; message = `Digéré dans ${window.JeuTransit?.TRANSIT.NIVEAUX[lr.result.level]?.nom || 'le ventre'}… Tu reprendras là où tu en étais.`; }
     }
   }
   const exploit = JEUX_EXPLOITS[_jeux.gameId];

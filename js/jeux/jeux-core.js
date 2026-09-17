@@ -95,13 +95,14 @@ function defaultGameStats() {
 function normalizeTransitCheckpoint(cp) {
   if (!cp || typeof cp !== 'object') return null;
   const level = Number(cp.level);
-  if (!Number.isInteger(level) || level < 0 || level > 2) return null;
+  // 5 organes dans js/jeux/transit.js (bouche → côlon)
+  if (!Number.isInteger(level) || level < 0 || level > 4) return null;
   const nb = v => (Number.isFinite(Number(v)) ? Number(v) : 0);
   return {
     level,
     carapace: Math.max(0, Math.min(100, nb(cp.carapace))),
     score: Math.max(0, nb(cp.score)),
-    stars: Array.isArray(cp.stars) ? cp.stars.slice(0, 3).map(x => Math.max(0, Math.min(3, nb(x)))) : [],
+    stars: Array.isArray(cp.stars) ? cp.stars.slice(0, 5).map(x => Math.max(0, Math.min(3, nb(x)))) : [],
   };
 }
 
