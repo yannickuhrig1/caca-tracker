@@ -44,6 +44,10 @@ function addPoop() {
   };
   // Coordonnees seulement si l'utilisatrice a touche le bouton 📍
   if (pendingGeo) { poop.lat = pendingGeo.lat; poop.lon = pendingGeo.lon; }
+  // Durée et carnet de santé : absents plutôt que vides (v2.18.0)
+  const duree = readDurationInput();
+  if (duree !== null) poop.duration = duree;
+  if (selectedHealth.size) poop.health = [...selectedHealth];
 
   state.logs.push(poop);
   state.logs.sort((a, b) => b.date - a.date);
@@ -52,6 +56,8 @@ function addPoop() {
 
   closeDrawer();
   renderAll();
+  haptic([15, 40, 25]);
+  announceSavedStreak();
 
   // Son selon la texture
   if (!isRetro && typeof soundManager !== 'undefined') {
@@ -144,6 +150,9 @@ window.editLog = function(idOrIndex) {
   if (geoStatus) geoStatus.textContent = pendingGeo ? `📍 ${pendingGeo.lat.toFixed(4)}, ${pendingGeo.lon.toFixed(4)}` : '';
 
   $id('comment').value = log.comment || '';
+  setDurationInput(log.duration);
+  setHealthSelection(log.health);
+  refreshUsualButton();
 
   // En édition la date est toujours modifiable : on masque le toggle
   // « caca en retard » (qui décrit une saisie, pas une correction) et on
@@ -158,6 +167,20 @@ window.editLog = function(idOrIndex) {
 
 // <input type="datetime-local"> attend AAAA-MM-JJTHH:MM en heure LOCALE.
 // toISOString() renverrait de l'UTC et décalerait l'heure affichée.
+// « Série sauvée » : le joker a pardonné un jour raté, on le dit une fois.
+const JOKER_ANNOUNCED_KEY = 'streak.jokerAnnounced';
+
+function announceSavedStreak() {
+  let deja = null;
+  try { deja = localStorage.getItem(JOKER_ANNOUNCED_KEY); } catch {}
+  const details = streakDetails();
+  const joker = jokerToAnnounce(details, deja);
+  if (!joker) return;
+  try { localStorage.setItem(JOKER_ANNOUNCED_KEY, String(joker)); } catch {}
+  const jour = new Date(joker).toLocaleDateString('fr-FR', { weekday: 'long' });
+  window.UI?.toast(`🃏 Joker utilisé pour ${jour} : ta série de ${details.current} jours est sauvée !`, 'party', 6000);
+}
+
 function toLocalDatetimeValue(ts) {
   const d = new Date(ts);
   const p = n => String(n).padStart(2, '0');
@@ -192,6 +215,9 @@ function saveEditedPoop() {
   log.comment  = $id('comment').value.trim();
   log.mood     = selectedMood || null;
   log.place    = selectedPlace || null;
+  const duree  = readDurationInput();
+  if (duree !== null) log.duration = duree; else delete log.duration;
+  if (selectedHealth.size) log.health = [...selectedHealth]; else delete log.health;
   const geoAvant = window.PoopMapModule?.hasGeo(log) ? `${log.lat},${log.lon}` : '';
   if (pendingGeo) { log.lat = pendingGeo.lat; log.lon = pendingGeo.lon; }
   else { delete log.lat; delete log.lon; }

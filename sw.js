@@ -1,4 +1,4 @@
-const CACHE = 'caca-v36';
+const CACHE = 'caca-v37';
 const ASSETS = [
   './',
   './index.html',
@@ -35,6 +35,10 @@ const ASSETS = [
   './js/app/app-sync.js',
   './js/app/app-onboarding.js',
   './js/app/app-whatsnew.js',
+  './js/app/app-sante.js',
+  './js/app/app-saisie.js',
+  './js/app/app-accueil.js',
+  './js/app/app-wrapped.js',
   './js/jokes.js',
   './js/achievements.js',
   './js/predictions.js',
@@ -44,6 +48,7 @@ const ASSETS = [
   './js/animations.js',
   './js/supabase-client.js',
   './js/ui.js',
+  './js/social-fun.js',
   './js/social.js',
   './js/push.js'
 ];

@@ -92,6 +92,28 @@ const BADGE_DEFS = [
   { id:'aventuriere',  icon:'🥾', label:'Aventurière',             desc:'Un caca à plus de 50 km du QG',     color:'#a16207' },
   { id:'longCourrier', icon:'✈️', label:'Long-Courrier',           desc:'Un caca à plus de 500 km du QG',    color:'#6366f1' },
   { id:'pleineNature', icon:'🏕️', label:'Pleine Nature',           desc:'Un caca géolocalisé en pleine nature', color:'#16a34a' },
+  // ── Durée et santé ⏱️ (v2.18.0) ───────────────────────────
+  { id:'chrono',       icon:'⏱️', label:'Chronométreuse',          desc:'1re séance chronométrée',           color:'#0ea5e9' },
+  { id:'express',      icon:'🏃', label:'Express',                 desc:'5 séances de moins de 2 min',       color:'#22c55e' },
+  { id:'marathon',     icon:'📖', label:'Marathon',                desc:'Une séance de 15 min ou plus',      color:'#a855f7' },
+  { id:'carnet',       icon:'🩺', label:'Carnet de Santé',         desc:'Contexte noté sur 10 cacas',        color:'#ef4444' },
+  { id:'hydratee',     icon:'💧', label:'Bien Hydratée',           desc:'« Bien hydratée » noté 10 fois',    color:'#38bdf8' },
+];
+
+// Rangement de l'onglet Badges (v2.18.0) : 75 badges d'un bloc, c'était une
+// liste à faire défiler sans fin. Chaque badge appartient à une catégorie.
+const BADGE_CATEGORIES = [
+  { id:'classiques', label:'⭐ Les classiques',        ids:['first','rainbow','veteran','retro','frenchie','centenaire','nightcaca'] },
+  { id:'series',     label:'🔥 Séries',                ids:['streak3','streak5','streak7','streak14','streak30'] },
+  { id:'volume',     label:'📦 Volume',                ids:['poops25','poops50','poops200','poops365','poops500','poops1000'] },
+  { id:'horaires',   label:'🕐 Horaires',              ids:['earlyBird','morningPerson','afterLunch','eveningCaca','nightOwl5','earlyMorning','midnight'] },
+  { id:'rafales',    label:'🎯 Journées chargées',     ids:['double','triple','quad','volcano','speedRunner','ultraSpeed','sigma'] },
+  { id:'semaine',    label:'📆 Jours de la semaine',   ids:['mondayBlues','weekendW','fridayFun','allWeekDays','lucky7'] },
+  { id:'textures',   label:'🎨 Textures et couleurs',  ids:['allTextures','softie','hardRock','normalNormal','explosive','colorCollect','allColors','brownMaster','greenPower'] },
+  { id:'notes',      label:'📝 Notes et humeurs',      ids:['journaliste','philosopher','novelist','moodStart','allMoods'] },
+  { id:'speciaux',   label:'🌟 Spéciaux',              ids:['worldChamp','retroMaster','consistent','comeback','veteran50','veteran100','anniversary','bingo'] },
+  { id:'lieux',      label:'🗺️ Lieux et conquête',     ids:['explorer','globetrotter','casaniere','firstDrop','cartographe','touriste','roadtrip','passeport','aventuriere','longCourrier','pleineNature'] },
+  { id:'sante',      label:'⏱️ Durée et santé',        ids:['chrono','express','marathon','carnet','hydratee'] },
 ];
 
 // Badges que la rareté ne peut pas calculer honnêtement : ils dépendent de
@@ -101,21 +123,59 @@ const RARITY_SKIP = new Set([
   'journaliste', 'philosopher', 'novelist',
   'firstDrop', 'cartographe', 'touriste', 'roadtrip', 'passeport',
   'aventuriere', 'longCourrier', 'pleineNature',
+  // Carnet de santé : privé, jamais lu chez les copines
+  'carnet', 'hydratee',
 ]);
 
-function buildBadgesGrid() {
-  const grid = $id('badges-grid');
-  if (!grid) return;
-  grid.innerHTML = BADGE_DEFS.map(b => `
-    <div class="card p-4 rounded-[1.5rem] text-center border-2 border-transparent transition-all" data-badge="${b.id}" style="border-color:transparent">
-      <div class="text-4xl mb-2">${b.icon}</div>
+function badgeCardHTML(b) {
+  return `
+    <div class="badge-card card p-4 rounded-[1.5rem] text-center border-2 transition-all" data-badge="${b.id}" style="border-color:transparent">
+      <div class="text-4xl mb-2" aria-hidden="true">${b.icon}</div>
       <div class="font-bold text-sm">${b.label}</div>
       <div class="text-xs opacity-60 mb-2">${b.desc}</div>
       <div class="w-full rounded-full overflow-hidden" style="height:6px;background:rgba(0,0,0,0.1)">
         <div class="badge-bar" style="height:100%;border-radius:99px;width:0%;background:${b.color};transition:width .5s ease"></div>
       </div>
-      <div class="badge-rarity text-xs mt-2 opacity-60"></div>
-    </div>`).join('');
+      <div class="badge-rarity text-xs mt-2"></div>
+    </div>`;
+}
+
+const BADGE_OPEN_KEY = 'badges.openCats';
+
+function buildBadgesGrid() {
+  const grid = $id('badges-grid');
+  if (!grid) return;
+  let ouvertes = null;
+  try { ouvertes = JSON.parse(localStorage.getItem(BADGE_OPEN_KEY) || 'null'); } catch {}
+  grid.innerHTML = BADGE_CATEGORIES.map((c, i) => {
+    const defs = c.ids.map(id => BADGE_DEFS.find(b => b.id === id)).filter(Boolean);
+    // Par défaut, seule la première catégorie est dépliée.
+    const ouverte = Array.isArray(ouvertes) ? ouvertes.includes(c.id) : i === 0;
+    return `
+      <details class="badge-cat" data-cat="${c.id}"${ouverte ? ' open' : ''}>
+        <summary class="badge-cat-head">
+          <span class="font-bold">${c.label}</span>
+          <span class="badge-cat-count text-xs font-bold"></span>
+        </summary>
+        <div class="grid grid-cols-2 gap-3 pt-3">${defs.map(badgeCardHTML).join('')}</div>
+      </details>`;
+  }).join('');
+  grid.querySelectorAll('.badge-cat').forEach(d => d.addEventListener('toggle', () => {
+    const ids = [...grid.querySelectorAll('.badge-cat[open]')].map(x => x.dataset.cat);
+    try { localStorage.setItem(BADGE_OPEN_KEY, JSON.stringify(ids)); } catch {}
+  }));
+}
+
+/**
+ * Fonction pure : les badges pas encore gagnés les plus avancés, pour
+ * montrer « ce qui est à portée » plutôt qu'un mur de cases grises.
+ */
+function nextBadges(etats, n = 3) {
+  return BADGE_DEFS
+    .map((b, ordre) => ({ ...b, ordre, pct: etats[b.id]?.pct || 0, done: !!etats[b.id]?.done }))
+    .filter(b => !b.done && b.pct > 0 && b.pct < 100)
+    .sort((a, b) => b.pct - a.pct || a.ordre - b.ordre)
+    .slice(0, n);
 }
 
 function updateBadges() {
@@ -130,6 +190,46 @@ function updateBadges() {
     card.style.borderColor = done ? (def?.color || '#f59e0b') : 'transparent';
     card.style.opacity = done ? '1' : '0.65';
   });
+
+  // Compteurs par catégorie et au total
+  let gagnes = 0;
+  BADGE_CATEGORIES.forEach(c => {
+    const n = c.ids.filter(id => badges[id]?.done).length;
+    gagnes += n;
+    const el = document.querySelector(`.badge-cat[data-cat="${c.id}"] .badge-cat-count`);
+    if (el) el.textContent = `${n}/${c.ids.length}`;
+  });
+  const resume = $id('badges-summary');
+  if (resume) {
+    const total = BADGE_DEFS.length;
+    resume.innerHTML = `
+      <div class="flex items-center justify-between text-sm font-bold mb-1">
+        <span>🏆 ${gagnes} badge${gagnes > 1 ? 's' : ''} sur ${total}</span>
+        <span style="color:var(--accent)">${Math.round(gagnes / total * 100)} %</span>
+      </div>
+      <div class="w-full rounded-full overflow-hidden" style="height:8px;background:rgba(0,0,0,0.08)">
+        <div style="width:${gagnes / total * 100}%;height:100%;border-radius:99px;background:var(--accent);transition:width .6s"></div>
+      </div>`;
+  }
+
+  const prochains = $id('badges-next');
+  if (prochains) {
+    const liste = nextBadges(badges);
+    prochains.classList.toggle('hidden', !liste.length);
+    prochains.innerHTML = liste.length ? `
+      <div class="font-bold text-sm mb-2">🎯 À portée de main</div>
+      ${liste.map(b => `
+        <div class="flex items-center gap-3 py-1.5">
+          <span class="text-2xl" aria-hidden="true">${b.icon}</span>
+          <div class="flex-1 min-w-0">
+            <div class="flex justify-between text-xs font-bold"><span class="truncate">${b.label}</span><span>${Math.round(b.pct)} %</span></div>
+            <div class="text-[11px] opacity-60 truncate">${b.desc}</div>
+            <div class="w-full rounded-full overflow-hidden mt-1" style="height:5px;background:rgba(0,0,0,0.08)">
+              <div style="width:${b.pct}%;height:100%;border-radius:99px;background:${b.color}"></div>
+            </div>
+          </div>
+        </div>`).join('')}` : '';
+  }
 }
 
 // Fonction pure : l'état de chaque badge pour une liste d'entrées donnée.
@@ -200,6 +300,13 @@ function computeBadges(logs, streak) {
   const spots      = geoInfos?.spots || 0;
   const plusLoinKm = geoInfos?.farthestKm || 0;
   const natureGeo  = geoloc.filter(l => l.place === 'nature').length;
+
+  // Durée et carnet de santé (v2.18.0)
+  const durees      = logs.map(l => Number(l.duration)).filter(d => Number.isFinite(d) && d > 0 && d <= 10800);
+  const nbExpress   = durees.filter(d => d < 120).length;
+  const plusLongue  = durees.length ? Math.max(...durees) : 0;
+  const avecSante   = logs.filter(l => Array.isArray(l.health) && l.health.length).length;
+  const hydratees   = logs.filter(l => Array.isArray(l.health) && l.health.includes('hydratee')).length;
 
   // Colors & textures
   const colorsUsed   = new Set(logs.map(l => l.color).filter(Boolean));
@@ -350,6 +457,12 @@ function computeBadges(logs, streak) {
     aventuriere:  { pct: Math.min(100,(plusLoinKm/50)*100),           done: plusLoinKm>=50 },
     longCourrier: { pct: Math.min(100,(plusLoinKm/500)*100),          done: plusLoinKm>=500 },
     pleineNature: { pct: natureGeo>=1?100:0,                          done: natureGeo>=1 },
+    // Durée et santé
+    chrono:       { pct: durees.length>=1?100:0,                      done: durees.length>=1 },
+    express:      { pct: Math.min(100,(nbExpress/5)*100),             done: nbExpress>=5 },
+    marathon:     { pct: Math.min(100,(plusLongue/900)*100),          done: plusLongue>=900 },
+    carnet:       { pct: Math.min(100,(avecSante/10)*100),            done: avecSante>=10 },
+    hydratee:     { pct: Math.min(100,(hydratees/10)*100),            done: hydratees>=10 },
   };
 
   return badges;
@@ -386,6 +499,20 @@ async function updateBadgeRarity() {
   }
 }
 
+/**
+ * Fonction pure : niveau de rareté d'un badge dans le groupe.
+ * n = copines qui l'ont (soi comprise), total = taille du groupe.
+ */
+function rarityTier(n, total) {
+  if (!total || total < 2) return null;
+  if (n === 0) return { id: 'inedit', label: 'Inédit' };
+  if (n === 1 && total >= 3) return { id: 'legendaire', label: 'Légendaire' };
+  const pct = n / total;
+  if (pct <= 0.34) return { id: 'epique', label: 'Épique' };
+  if (pct <= 0.67) return { id: 'rare', label: 'Rare' };
+  return { id: 'commun', label: 'Commun' };
+}
+
 function renderBadgeRarity(membres) {
   if (!membres?.length || membres.length < 2) return;   // seule, la rareté n'a pas de sens
   const compte = {};
@@ -401,8 +528,10 @@ function renderBadgeRarity(membres) {
     if (!el) return;
     if (RARITY_SKIP.has(b.id)) { el.textContent = ''; return; }
     const n = compte[b.id] || 0;
-    const pct = Math.round(n / membres.length * 100);
-    // En dessous d'un tiers du groupe, le badge vaut d'être frimé.
-    el.textContent = (pct <= 33 ? '💎 ' : '👯 ') + `${n}/${membres.length} l'${n > 1 ? 'ont' : 'a'}`;
+    const tier = rarityTier(n, membres.length);
+    // Palier d'abord (ce qui se frime), le décompte ensuite, plus discret.
+    el.innerHTML = tier
+      ? `<span class="rarity-chip rarity-${tier.id}">${tier.label}</span> <span class="opacity-60">${n}/${membres.length}</span>`
+      : '';
   });
 }

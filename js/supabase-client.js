@@ -150,40 +150,26 @@ async function fetchProfile(userId) {
 // `place`, `lat` et `lon` sont arrivées avec la PoopMap (migration 13). Tant
 // qu'une base n'a pas la migration, PostgREST rejette la ligne entière : on
 // réessaie alors sans ces colonnes plutôt que de perdre le caca, et on s'en
-// souvient pour le reste de la session.
+// souvient pour le reste de la session. Même règle pour `duration_s`
+// (migration 15), suivie à part : une base peut avoir l'une sans l'autre.
 let _geoColumns = true;
+let _durationColumn = true;
+// Carnet de santé (table privée `poop_health`, migration 15)
+let _healthTable = true;
 const GEO_COLS = ['place', 'lat', 'lon', 'city', 'region', 'country', 'country_code'];
 
-function withGeo(row, poop) {
-  if (!_geoColumns) return row;
-  return {
-    ...row,
-    place:        poop.place || null,
-    lat:          typeof poop.lat === 'number' ? poop.lat : null,
-    lon:          typeof poop.lon === 'number' ? poop.lon : null,
-    city:         poop.city || null,
-    region:       poop.region || null,
-    country:      poop.country || null,
-    country_code: poop.countryCode || null,
-  };
+/** Durée valide pour la contrainte SQL (1 s à 3 h), sinon null. */
+function cleanDuration(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) && n > 0 && n <= 10800 ? n : null;
 }
 
-function isMissingGeoColumn(error) {
-  if (!error) return false;
-  // PGRST204 : colonne inconnue du cache de schéma. 42703 : undefined_column.
-  if (error.code !== 'PGRST204' && error.code !== '42703') return false;
-  const msg = `${error.message || ''} ${error.details || ''}`;
-  return GEO_COLS.some(c => msg.includes(c));
-}
-
-const POOP_COLS     = 'id, local_id, date, texture, color, comment, is_retro, mood, updated_at';
-const POOP_COLS_GEO = POOP_COLS + ', place, lat, lon, city, region, country, country_code';
-
-async function savePoopCloud(poop) {
-  const sb = getSB(); if (!sb || !_currentUser) return;
+/** Ligne `poops` complète, selon les colonnes que la base accepte. */
+function poopRow(poop, userId, cols = { geo: _geoColumns, duration: _durationColumn }) {
   const row = {
     local_id:   String(poop.id),
-    user_id:    _currentUser.id,
+    user_id:    userId,
     date:       poop.date,
     texture:    poop.texture,
     color:      poop.color,
@@ -192,17 +178,110 @@ async function savePoopCloud(poop) {
     mood:       poop.mood || null,
     updated_at: poop.updated_at || Date.now()
   };
-  let { error } = await sb.from('poops').upsert(withGeo(row, poop), { onConflict: 'user_id,local_id' });
-  if (isMissingGeoColumn(error)) {
-    _geoColumns = false;
-    ({ error } = await sb.from('poops').upsert(row, { onConflict: 'user_id,local_id' }));
+  if (cols.geo) {
+    Object.assign(row, {
+      place:        poop.place || null,
+      lat:          typeof poop.lat === 'number' ? poop.lat : null,
+      lon:          typeof poop.lon === 'number' ? poop.lon : null,
+      city:         poop.city || null,
+      region:       poop.region || null,
+      country:      poop.country || null,
+      country_code: poop.countryCode || null,
+    });
+  }
+  if (cols.duration) row.duration_s = cleanDuration(poop.duration);
+  return row;
+}
+
+function isMissingColumnError(error) {
+  return !!error && (error.code === 'PGRST204' || error.code === '42703');
+}
+
+function isMissingGeoColumn(error) {
+  if (!isMissingColumnError(error)) return false;
+  const msg = `${error.message || ''} ${error.details || ''}`;
+  return GEO_COLS.some(c => msg.includes(c));
+}
+
+function isMissingDurationColumn(error) {
+  if (!isMissingColumnError(error)) return false;
+  return `${error.message || ''} ${error.details || ''}`.includes('duration_s');
+}
+
+/**
+ * Colonne absente signalée par l'erreur : bascule le drapeau correspondant.
+ * Rend true s'il faut rejouer la requête sans elle.
+ */
+function dropMissingColumns(error) {
+  if (_durationColumn && isMissingDurationColumn(error)) { _durationColumn = false; return true; }
+  if (_geoColumns && isMissingGeoColumn(error))         { _geoColumns = false;     return true; }
+  return false;
+}
+
+// PGRST205 : table inconnue du cache de schéma. 42P01 : undefined_table.
+function isMissingTable(error) {
+  return !!error && (error.code === 'PGRST205' || error.code === '42P01');
+}
+
+const POOP_COLS     = 'id, local_id, date, texture, color, comment, is_retro, mood, updated_at';
+const POOP_COLS_GEO = POOP_COLS + ', place, lat, lon, city, region, country, country_code';
+
+function poopSelectCols() {
+  return (_geoColumns ? POOP_COLS_GEO : POOP_COLS) + (_durationColumn ? ', duration_s' : '');
+}
+
+async function savePoopCloud(poop) {
+  const sb = getSB(); if (!sb || !_currentUser) return;
+  let error;
+  // Au plus trois passes : complète, puis sans durée, puis sans position.
+  for (let passe = 0; passe < 3; passe++) {
+    ({ error } = await sb.from('poops').upsert(poopRow(poop, _currentUser.id), { onConflict: 'user_id,local_id' }));
+    if (!dropMissingColumns(error)) break;
   }
   if (error) throw new Error(error.message);
+  await savePoopHealth(poop);
 }
 
 async function deletePoopCloud(localId) {
   const sb = getSB(); if (!sb || !_currentUser) return;
   await sb.from('poops').delete().eq('local_id', String(localId)).eq('user_id', _currentUser.id);
+  if (_healthTable) {
+    const { error } = await sb.from('poop_health').delete()
+      .eq('local_id', String(localId)).eq('user_id', _currentUser.id);
+    if (isMissingTable(error)) _healthTable = false;
+  }
+}
+
+// ---- Carnet de santé (privé, migration 15) ----
+/** Ligne `poop_health` d'une entrée ; les étiquettes sont dédoublonnées. */
+function healthRow(poop, userId) {
+  const tags = [...new Set((poop.health || []).filter(t => typeof t === 'string' && t))];
+  return { user_id: userId, local_id: String(poop.id), tags, updated_at: poop.updated_at || Date.now() };
+}
+
+/** Une ligne sans étiquette ne sert à rien : on l'efface plutôt que de la garder. */
+async function savePoopHealth(poop) {
+  const sb = getSB(); if (!sb || !_currentUser || !_healthTable) return;
+  const row = healthRow(poop, _currentUser.id);
+  const { error } = row.tags.length
+    ? await sb.from('poop_health').upsert(row, { onConflict: 'user_id,local_id' })
+    : await sb.from('poop_health').delete().eq('local_id', row.local_id).eq('user_id', _currentUser.id);
+  if (isMissingTable(error)) { _healthTable = false; return; }
+  logSbError('savePoopHealth', error);
+}
+
+// Dernière lecture du carnet réussie ? Sinon (réseau, droits), la synchro ne
+// doit pas prendre l'absence d'étiquettes pour un effacement.
+let _healthReadOk = true;
+
+/** { local_id: [étiquettes] } pour l'utilisatrice courante. */
+async function getMyHealthTags() {
+  const sb = getSB(); if (!sb || !_currentUser || !_healthTable) return {};
+  const { data, error } = await sb.from('poop_health').select('local_id, tags').eq('user_id', _currentUser.id);
+  if (isMissingTable(error)) { _healthTable = false; return {}; }
+  logSbError('getMyHealthTags', error);
+  _healthReadOk = !error;
+  return Object.fromEntries((data || []).map(r => [String(r.local_id), r.tags || []]));
 }
 
 // Fetch all of the current user's poops from Supabase (for cloud→local sync)
@@ -213,12 +292,13 @@ async function getMyPoops() {
     .eq('user_id', _currentUser.id)
     .order('date', { ascending: false });
 
-  let { data, error } = await query(_geoColumns ? POOP_COLS_GEO : POOP_COLS);
-  if (isMissingGeoColumn(error)) {
-    _geoColumns = false;
-    ({ data, error } = await query(POOP_COLS));
+  let data, error;
+  for (let passe = 0; passe < 3; passe++) {
+    ({ data, error } = await query(poopSelectCols()));
+    if (!dropMissingColumns(error)) break;
   }
   logSbError('getMyPoops', error);
+  const sante = await getMyHealthTags();
   return (data || []).map(p => {
     const log = {
       id:         p.local_id || p.id,   // prefer the original local UUID
@@ -238,33 +318,34 @@ async function getMyPoops() {
     if (p.region)       log.region      = p.region;
     if (p.country)      log.country     = p.country;
     if (p.country_code) log.countryCode = p.country_code;
+    // Durée et santé : absentes plutôt que nulles, comme la position.
+    if (cleanDuration(p.duration_s)) log.duration = p.duration_s;
+    const tags = sante[String(log.id)];
+    if (tags?.length) log.health = tags;
     return log;
   });
 }
 
 async function syncLocalToCloud(logs) {
   const sb = getSB(); if (!sb || !_currentUser) throw new Error('Non connecté');
-  const base = logs.map(p => ({
-    local_id:  String(p.id),
-    user_id:   _currentUser.id,
-    date:      p.date,
-    texture:   p.texture,
-    color:     p.color,
-    comment:   p.comment || '',
-    is_retro:  p.isRetro || false,
-    mood:      p.mood || null
-  }));
   // Upsert par batch de 100
   // onConflict 'user_id,local_id' correspond à la contrainte UNIQUE composite
-  for (let i = 0; i < base.length; i += 100) {
-    const plain = base.slice(i, i + 100);
-    const batch = plain.map((row, j) => withGeo(row, logs[i + j]));
-    let { error } = await sb.from('poops').upsert(batch, { onConflict: 'user_id,local_id' });
-    if (isMissingGeoColumn(error)) {
-      _geoColumns = false;
-      ({ error } = await sb.from('poops').upsert(plain, { onConflict: 'user_id,local_id' }));
+  for (let i = 0; i < logs.length; i += 100) {
+    const tranche = logs.slice(i, i + 100);
+    let error;
+    for (let passe = 0; passe < 3; passe++) {
+      const batch = tranche.map(p => poopRow(p, _currentUser.id));
+      ({ error } = await sb.from('poops').upsert(batch, { onConflict: 'user_id,local_id' }));
+      if (!dropMissingColumns(error)) break;
     }
     if (error) throw new Error(error.message);
+
+    const sante = tranche.filter(p => p.health?.length).map(p => healthRow(p, _currentUser.id));
+    if (sante.length && _healthTable) {
+      const { error: hErr } = await sb.from('poop_health').upsert(sante, { onConflict: 'user_id,local_id' });
+      if (isMissingTable(hErr)) _healthTable = false;
+      else logSbError('syncLocalToCloud (santé)', hErr);
+    }
   }
 }
 
@@ -432,7 +513,9 @@ async function getGroupStats(groupId) {
       week7,
       today:    todayCount,
       lastPoop,
-      streak
+      streak,
+      // Jours actifs (toDateString) : sert à la série partagée du groupe
+      days:     [...days]
     };
   });
   return result;
@@ -473,6 +556,61 @@ async function getGroupMonthlyRanking(groupId, monthsBack = 3) {
     });
   }
   return months;
+}
+
+// ============================================================
+//  REINE DE L'ENDURANCE ⏱️ (v2.18.0)
+//  Durées du mois en cours, par membre. null si la base n'a pas encore
+//  la colonne duration_s (migration 15) : la carte est alors masquée.
+// ============================================================
+async function getGroupDurations(groupId, since) {
+  const sb = getSB(); if (!sb || !_durationColumn) return null;
+  const members = await getGroupMembers(groupId);
+  if (!members.length) return null;
+  const { data, error } = await sb.from('poops')
+    .select('user_id, duration_s')
+    .in('user_id', members.map(m => m.id))
+    .gte('date', since)
+    .not('duration_s', 'is', null);
+  if (isMissingDurationColumn(error)) { _durationColumn = false; return null; }
+  logSbError('getGroupDurations', error);
+  const parMembre = {};
+  (data || []).forEach(p => {
+    if (!cleanDuration(p.duration_s)) return;
+    (parMembre[p.user_id] = parMembre[p.user_id] || []).push(p.duration_s);
+  });
+  return members.map(m => ({
+    id: m.id, username: m.username, avatar: m.avatar || '💩',
+    durations: parMembre[m.id] || []
+  }));
+}
+
+// ============================================================
+//  LIGUE ENTRE GROUPES 🏟️ (v2.18.0)
+//  Agrégats seulement, calculés côté base (fonction group_league,
+//  migration 15). null = fonctionnalité absente de la base.
+// ============================================================
+async function getGroupLeague(weekStart) {
+  const sb = getSB(); if (!sb || !_currentUser) return null;
+  const { data, error } = await sb.rpc('group_league', { week_start: weekStart });
+  if (error) {
+    // PGRST202 / 42883 : fonction inconnue. 42703 : colonne league_opt_in absente.
+    if (['PGRST202', '42883', '42703'].includes(error.code)) return null;
+    logSbError('getGroupLeague', error);
+    return null;
+  }
+  return data || [];
+}
+
+/** true / false, ou null si la colonne n'existe pas encore. */
+async function getLeagueOptIn(groupId) {
+  const sb = getSB(); if (!sb) return null;
+  const { data, error } = await sb.from('groups').select('league_opt_in').eq('id', groupId).maybeSingle();
+  if (error) {
+    if (!isMissingColumnError(error)) logSbError('getLeagueOptIn', error);
+    return null;
+  }
+  return !!data?.league_opt_in;
 }
 
 async function getGroupFeed(groupId, limit = 30) {
@@ -776,25 +914,27 @@ async function getGroupBadgeData(groupId) {
   if (members.length < 2) return [];
 
   const memberIds = members.map(m => m.id);
-  const cols = 'user_id, date, texture, color, mood, is_retro' + (_geoColumns ? ', place' : '');
-  let { data, error } = await sb.from('poops').select(cols).in('user_id', memberIds);
-  if (isMissingGeoColumn(error)) {
-    _geoColumns = false;
-    ({ data, error } = await sb.from('poops')
-      .select('user_id, date, texture, color, mood, is_retro').in('user_id', memberIds));
+  const cols = () => 'user_id, date, texture, color, mood, is_retro'
+    + (_geoColumns ? ', place' : '') + (_durationColumn ? ', duration_s' : '');
+  let data, error;
+  for (let passe = 0; passe < 3; passe++) {
+    ({ data, error } = await sb.from('poops').select(cols()).in('user_id', memberIds));
+    if (!dropMissingColumns(error)) break;
   }
   logSbError('getGroupBadgeData', error);
 
   const parMembre = Object.fromEntries(members.map(m => [m.id, []]));
   (data || []).forEach(p => {
-    parMembre[p.user_id]?.push({
+    const log = {
       date:    p.date,
       texture: p.texture || 'normal',
       color:   p.color   || 'marron',
       mood:    p.mood    || '',
       isRetro: p.is_retro || false,
       place:   p.place   || null,
-    });
+    };
+    if (cleanDuration(p.duration_s)) log.duration = p.duration_s;
+    parMembre[p.user_id]?.push(log);
   });
   return members.map(m => ({
     id: m.id,
@@ -952,6 +1092,12 @@ window.SupabaseClient = {
   syncLocalToCloud,
   // Les colonnes PoopMap sont-elles disponibles côté base ? (cf. migrations 13/14)
   geoColumnsAvailable: () => _geoColumns,
+  // Durée et carnet de santé (migration 15)
+  durationColumnAvailable: () => _durationColumn,
+  healthTableAvailable: () => _healthTable && _healthReadOk,
+  getGroupDurations,
+  getGroupLeague,
+  getLeagueOptIn,
   createGroup,
   joinGroup,
   leaveGroup,

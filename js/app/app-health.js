@@ -156,6 +156,17 @@ function checkHealthTrends() {
   // Alertes par ordre de priorité
   const alerts = [];
 
+  // Sang noté dans le carnet de santé (v2.18.0) : passe avant tout le reste
+  const sang = typeof bloodAlert === 'function' ? bloodAlert(state.logs) : null;
+  if (sang) {
+    alerts.push({
+      msg: sang.count >= 2
+        ? `🩸 Du sang noté ${sang.count} fois en 2 semaines : parles-en à un médecin.`
+        : '🩸 Du sang noté sur ton dernier caca : si ça revient, parles-en à un médecin.',
+      color: '#dc2626', bg: 'rgba(220,38,38,0.1)'
+    });
+  }
+
   // Constipation (>48h)
   if (hoursSinceLast > 48) {
     const h = Math.round(hoursSinceLast);
@@ -225,6 +236,25 @@ function exportMedicalPDF() {
 
   const textureNames = { normal:'Normal (Bristol 3-4)', dur:'Dur (Bristol 1-2)', mou:'Mou (Bristol 5)', spray:'Floconneux (Bristol 6)', liquide:'Liquide (Bristol 7)', explosif:'Explosif (Bristol 7)' };
 
+  // Durée et carnet de santé (v2.18.0) : sections seulement s'il y a des données
+  const duree = typeof durationStats === 'function' ? durationStats(logs) : null;
+  const trois = now.getTime() - 90 * 86400000;
+  const sante = typeof healthTagCounts === 'function' ? healthTagCounts(logs, trois) : [];
+  const nb90  = logs.filter(l => l.date >= trois).length;
+  const sectionDuree = duree ? `
+    <div class="print-section">
+      <h2 style="font-size:14pt;margin-bottom:8px">Durée des passages</h2>
+      <p><strong>Passages chronométrés :</strong> ${duree.count}</p>
+      <p><strong>Durée moyenne :</strong> ${formatDuration(duree.avg)} (médiane ${formatDuration(duree.median)})</p>
+      <p><strong>Plus long :</strong> ${formatDuration(duree.max)} — <strong>15 min et plus :</strong> ${duree.marathon} fois</p>
+    </div>` : '';
+  const sectionSante = sante.length ? `
+    <div class="print-section">
+      <h2 style="font-size:14pt;margin-bottom:8px">Symptômes et contexte notés (90 derniers jours)</h2>
+      <p style="font-size:10pt;opacity:.7;margin-bottom:6px">${nb90} selles sur la période.</p>
+      ${sante.map(t => `<p style="margin-bottom:4px"><strong>${t.meta.label}</strong> (${t.meta.kind === 'symptome' ? 'symptôme' : 'contexte'}) : ${t.n} fois</p>`).join('')}
+    </div>` : '';
+
   el.innerHTML = `
     <div class="print-section">
       <h1 style="font-size:20pt;margin-bottom:4px">📋 Rapport intestinal médical</h1>
@@ -247,6 +277,8 @@ function exportMedicalPDF() {
       }).join('')}
       <p style="margin-top:12px;font-size:10pt;opacity:.7">✅ Idéal médical : 75-85% Normal, moins de 5% Liquide/Explosif</p>
     </div>
+    ${sectionDuree}
+    ${sectionSante}
     <div class="print-section">
       <h2 style="font-size:14pt;margin-bottom:8px">Note pour le médecin</h2>
       <p style="font-size:10pt;opacity:.7">Ces données ont été collectées via l'application Caca-Tracker 3000 Deluxe (enregistrement manuel). La classification des selles suit l'Échelle de Bristol (1-7). Les données sont à titre indicatif et doivent être interprétées par un professionnel de santé.</p>

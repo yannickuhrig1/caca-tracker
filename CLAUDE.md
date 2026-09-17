@@ -1,4 +1,4 @@
-# 💩 Caca-Tracker 3000 Deluxe - v2.17.0
+# 💩 Caca-Tracker 3000 Deluxe - v2.18.0
 
 > ☁️ **Backend** : Supabase **auto-hébergé sur le NAS Unraid** depuis v2.9.0 (2026-07-14) — API `https://caca-api.yannick-uhrig.com` (Traefik + Cloudflare Tunnel → Postgres/GoTrue/PostgREST, stack `compose-stacks/caca-supabase`). L'ancien projet cloud `fnljhknjmmteawwomehb` est en pause.
 
@@ -230,6 +230,22 @@ function shakeAchievement(id)
 - Poids total : ~50KB
 
 ## 🆗 Changelog
+
+### v2.18.0 (Septembre 2026) - 💩 MASCOTTE, SANTÉ, WRAPPED
+
+> Reprend ce que font **Poopie** (widgets de série, classement par durée), **Poop Map** (ligues, stickers) et **Plop** / **Poop Tracker** (symptômes, déclencheurs).
+
+- ➕ **Durée** en vraie donnée (`log.duration`, colonne `poops.duration_s`) : le chrono la reporte dans la saisie au lieu de l'écrire dans la note. Tuile Stats, badges ⏱️ 🏃 📖, classement « Reine de l'endurance »
+- ➕ **Carnet de santé privé** (`log.health`, table `poop_health` lisible par sa seule propriétaire) : 20 étiquettes symptômes/contexte, tuile « Ce que j'ai remarqué » (`healthInsights`), alerte sang, section du PDF médical, colonnes CSV
+- ➕ **Accueil allégé** (`js/app/app-accueil.js`) : carte « Aujourd'hui » avec **mascotte SVG** (humeurs, niveaux, lunettes à 7 j, couronne à 30 j), blocs secondaires repliés dans `#home-more`
+- ➕ **Série en attente** : `streakDetails()` / `streakCore()` dans `app-render.js` — la série d'hier reste affichée jusqu'à minuit ; toast « joker utilisé » (`jokerToAnnounce`). `calculateStreak` inchangé
+- ➕ **Saisie** (`js/app/app-saisie.js`) : plein écran sur téléphone, textures en SVG, « ⚡ Comme d'habitude » (`usualEntry`), vibrations (réglable), raccourcis `?action=add|timer|wrapped` + `shortcuts` du manifest + liens à copier pour Raccourcis iOS
+- ➕ **Partage story 1080×1920** et **Caca Wrapped** en écrans successifs (`js/app/app-wrapped.js`) ; `shareStats()` et `openWrapped()` retirés d'`app-goal.js`. Rappel du Wrapped du 15 décembre au 15 janvier
+- ➕ **Social** (`js/social-fun.js`) : stickers (`:sticker:id:`, aucun changement en base), série partagée du groupe, reine de l'endurance, **ligue entre groupes** sur inscription (`groups.league_opt_in`, fonction `group_league`)
+- ➕ **Badges** : 75 (5 nouveaux), 11 catégories repliables, « à portée de main » (`nextBadges`), paliers de rareté (`rarityTier`)
+- ➕ Thème qui **suit le téléphone** (clair/sombre) ; `UI.choose()` ; test de contraste WCAG des 16 thèmes
+- ➕ Migration `15_20260917_duree-sante-ligue.sql` — **pas encore appliquée** ; le client se passe de chaque fonctionnalité tant qu'elle manque (PGRST204/205/202), puis repousse une fois durées et santé (`maybeBackfillExtrasCloud`)
+- 🔧 Bump cache SW caca-v36 → caca-v37
 
 ### v2.17.0 (Septembre 2026) - 📊 REFONTE DES STATS
 

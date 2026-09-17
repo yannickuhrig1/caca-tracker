@@ -63,6 +63,14 @@ Le repli côté client (détection de PGRST204 / 42703, requête rejouée sans c
 colonnes) reste en place comme filet de sécurité pour une base neuve ou
 restaurée depuis un vieux dump.
 
+## Migration 15 (v2.18.0) — à appliquer
+
+`15_20260917_duree-sante-ligue.sql` ajoute `poops.duration_s`, la table privée
+`poop_health` (RLS : propriétaire seulement), `groups.league_opt_in` et la
+fonction `group_league(week_start)`. **Pas encore appliquée** au moment du
+merge : `scripts/apply-migrations.sh` la joue avec 13 et 14 (idempotentes).
+Le client détecte son absence et se passe de la fonctionnalité concernée.
+
 ## Convention
 
 - Un fichier par changement, préfixé d'un numéro d'ordre et de sa date :

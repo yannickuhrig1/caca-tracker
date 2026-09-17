@@ -155,7 +155,7 @@ nav {
 [data-theme="dark"] #drawer > div { background: #1e1b4b; }
 [data-theme="dark"] .bg-white { background: #1e1b4b !important; }
 [data-theme="dark"] .border-b { border-color: rgba(99,102,241,0.2); }
-[data-theme="dark"] textarea, [data-theme="dark"] input[type="datetime-local"] {
+[data-theme="dark"] textarea, [data-theme="dark"] input[type="datetime-local"], [data-theme="dark"] input[type="number"] {
   background: #0f172a; color: #e2e8f0; border-color: #4338ca;
 }
 [data-theme="dark"] .text-slate-800 { color: #e2e8f0; }
@@ -185,7 +185,7 @@ nav {
 [data-theme="galaxy"] .bg-amber-50, [data-theme="galaxy"] .bg-yellow-50 { background: rgba(167,89,255,0.12); }
 [data-theme="galaxy"] .bg-green-50 { background: rgba(167,89,255,0.1); }
 [data-theme="galaxy"] .bg-red-50 { background: rgba(239,68,68,0.15); }
-[data-theme="galaxy"] textarea, [data-theme="galaxy"] input[type="datetime-local"] {
+[data-theme="galaxy"] textarea, [data-theme="galaxy"] input[type="datetime-local"], [data-theme="galaxy"] input[type="number"] {
   background: #0d0221; color: #e8d5ff; border-color: #7c3aed;
 }
 [data-theme="galaxy"] .texture-btn { background: #1a0533; border-color: #5b21b6; color: #e8d5ff; }
@@ -209,7 +209,7 @@ nav {
 [data-theme="neon"] .bg-amber-50, [data-theme="neon"] .bg-yellow-50 { background: rgba(0,255,136,0.08); }
 [data-theme="neon"] .bg-green-50 { background: rgba(0,255,136,0.1); }
 [data-theme="neon"] .bg-red-50 { background: rgba(239,68,68,0.12); }
-[data-theme="neon"] textarea, [data-theme="neon"] input[type="datetime-local"] {
+[data-theme="neon"] textarea, [data-theme="neon"] input[type="datetime-local"], [data-theme="neon"] input[type="number"] {
   background: #001a0a; color: #00ff88; border-color: #00ff88;
 }
 [data-theme="neon"] .texture-btn { background: #001a0a; border-color: rgba(0,255,136,0.4); color: #00ff88; }

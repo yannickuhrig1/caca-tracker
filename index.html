@@ -137,25 +137,38 @@
 
     <!-- ====== DASHBOARD ====== -->
     <section id="dashboard-tab" class="tab-content active">
-      <div class="mb-5 text-center">
-        <div class="text-sm opacity-70">✨ Mission du jour :</div>
-        <div class="font-bold text-lg">Que Clémence règne sur les statistiques 💩</div>
+      <!-- Carte « Aujourd'hui » : mascotte, message du jour, chiffres clés (v2.18.0) -->
+      <div class="card home-card p-4 rounded-[2rem] shadow-xl mb-4">
+        <div class="flex items-center gap-3">
+          <button type="button" id="mascot" class="mascot" aria-label="La mascotte"></button>
+          <div class="flex-1 min-w-0">
+            <div class="text-xs font-bold opacity-60">Aujourd'hui</div>
+            <p id="mascot-message" class="mascot-bubble text-sm font-bold">…</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mt-3 text-center">
+          <div class="home-stat">
+            <div class="home-stat-num" style="color:var(--accent)" id="today-count">0</div>
+            <div class="home-stat-label">aujourd'hui</div>
+          </div>
+          <div class="home-stat">
+            <div class="home-stat-num"><span id="home-streak">0</span> 🔥</div>
+            <div class="home-stat-label">jours de série</div>
+          </div>
+          <div class="home-stat">
+            <div class="home-stat-num" id="total-count">0</div>
+            <div class="home-stat-label"><span id="mass">0.0 kg</span></div>
+          </div>
+        </div>
+        <div id="mascot-level" class="mt-3"></div>
       </div>
 
-      <div class="grid grid-cols-2 gap-4 mb-6">
-        <div class="card p-5 rounded-[2rem] shadow-xl text-center">
-          <div class="text-4xl font-bold mb-1" style="color:var(--accent)" id="today-count">0</div>
-          <div class="text-sm" style="color:var(--text-secondary)">Aujourd'hui</div>
-        </div>
-        <div class="card p-5 rounded-[2rem] shadow-xl text-center">
-          <div class="text-4xl font-bold text-emerald-500 mb-1" id="total-count">0</div>
-          <div class="text-sm" style="color:var(--text-secondary)">Total</div>
-        </div>
-      </div>
-
-      <div class="card p-5 rounded-[2rem] shadow mb-4 text-center">
-        <div class="text-3xl font-bold text-blue-400 mb-1" id="mass">0.0 kg</div>
-        <div class="text-sm" style="color:var(--text-secondary)">⚖️ Tonnage estimé</div>
+      <!-- Caca Wrapped : visible du 15 décembre au 15 janvier -->
+      <div id="home-wrapped-card" class="hidden mb-4">
+        <button type="button" id="home-wrapped-btn" class="w-full py-4 rounded-[1.5rem] font-bold text-white shadow flex items-center justify-center gap-2"
+          style="background:linear-gradient(135deg,#7c3aed,#ec4899,#f59e0b)">
+          🎬 Ton Caca Wrapped <span id="home-wrapped-year"></span> est prêt !
+        </button>
       </div>
 
       <!-- Objectif du jour -->
@@ -191,9 +204,26 @@
       <div class="flex justify-center mb-6">
         <button id="share-stats-btn" class="py-2 px-5 rounded-full text-sm font-bold"
           style="background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1.5px solid color-mix(in srgb,var(--accent) 30%,transparent)">
-          📤 Partager mes stats
+          📤 Partager en image
         </button>
       </div>
+
+      <!-- Tendance de santé -->
+      <div id="health-trend-banner" class="hidden card p-3 rounded-[2rem] shadow mb-4 text-sm font-bold text-center"></div>
+
+      <!-- Rappel intelligent -->
+      <div id="smart-reminder-banner" class="hidden card p-3 rounded-[2rem] shadow mb-4 text-sm font-bold text-center" style="color:var(--accent)"></div>
+
+      <!-- Anniversaire de caca -->
+      <div id="anniversary-banner" class="hidden card p-4 rounded-[2rem] shadow mb-4 text-center" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff"></div>
+
+      <!-- Blocs secondaires repliés : l'accueil tient sur un écran -->
+      <details id="home-more" class="home-more mb-4">
+        <summary class="home-more-head">
+          <span>✨ Blague, prédiction, défi et semaine</span>
+          <span class="home-more-chevron" aria-hidden="true">▾</span>
+        </summary>
+        <div class="pt-3">
 
       <!-- Blague du jour -->
       <div class="card p-4 rounded-[2rem] shadow mb-4">
@@ -223,12 +253,6 @@
         </div>
       </div>
 
-      <!-- Tendance de santé -->
-      <div id="health-trend-banner" class="hidden card p-3 rounded-[2rem] shadow mb-4 text-sm font-bold text-center"></div>
-
-      <!-- Rappel intelligent -->
-      <div id="smart-reminder-banner" class="hidden card p-3 rounded-[2rem] shadow mb-4 text-sm font-bold text-center" style="color:var(--accent)"></div>
-
       <!-- Défi Streak 7 jours -->
       <div class="card p-4 rounded-[2rem] shadow mb-4">
         <div class="flex items-center gap-2 mb-2">
@@ -245,9 +269,6 @@
         <div id="streak-challenge-msg" class="text-xs opacity-60 text-center mt-1"></div>
       </div>
 
-      <!-- Anniversaire de caca -->
-      <div id="anniversary-banner" class="hidden card p-4 rounded-[2rem] shadow mb-4 text-center" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff"></div>
-
       <!-- Résumé de la semaine -->
       <div class="card p-4 rounded-[2rem] shadow mb-4">
         <div class="flex items-center gap-2 mb-3">
@@ -257,6 +278,9 @@
         </div>
         <div id="week-summary" class="grid grid-cols-3 gap-3 text-center"></div>
       </div>
+
+        </div>
+      </details>
 
       <div class="card p-5 rounded-[2rem] shadow">
         <div class="mb-3">
@@ -349,6 +373,12 @@
       <!-- Records personnels -->
       <div id="records-container" class="stats-tile mb-4" data-tile="records"></div>
 
+      <!-- Durée des séances (v2.18.0) -->
+      <div id="duration-container" class="stats-tile mb-4" data-tile="duration"></div>
+
+      <!-- Ce que j'ai remarqué : carnet de santé (v2.18.0) -->
+      <div id="insights-container" class="stats-tile mb-4" data-tile="insights"></div>
+
       <!-- Bristol Scale -->
       <div id="bristol-container" class="stats-tile mb-4" data-tile="bristol"></div>
 
@@ -394,8 +424,10 @@
 
     <!-- ====== BADGES ====== -->
     <section id="badges-tab" class="tab-content">
-      <h3 class="font-bold text-2xl mb-6 text-center">🏆 Badges de Clémence</h3>
-      <div class="grid grid-cols-2 gap-4" id="badges-grid">
+      <h3 class="font-bold text-2xl mb-4 text-center">🏆 Badges de Clémence</h3>
+      <div id="badges-summary" class="card p-4 rounded-[1.5rem] mb-3"></div>
+      <div id="badges-next" class="card p-4 rounded-[1.5rem] mb-4 hidden"></div>
+      <div class="space-y-3" id="badges-grid">
         <!-- injected by JS -->
       </div>
     </section>
@@ -494,8 +526,16 @@
           <!-- Podium -->
           <div class="card p-5 rounded-[2rem] shadow">
             <h4 class="font-bold mb-4 text-center">🏆 Podium du mois</h4>
+            <div id="group-streak" class="group-streak hidden mb-4"></div>
             <div id="podium-container" class="flex items-end justify-center gap-3 mb-4" style="min-height:160px"></div>
             <div id="podium-list" class="space-y-2"></div>
+          </div>
+
+          <!-- Reine de l'endurance (v2.18.0) — masquée sans la migration 15 -->
+          <div id="endurance-card" class="card p-5 rounded-[2rem] shadow hidden">
+            <h4 class="font-bold mb-1">⏱️ Reine de l'endurance</h4>
+            <p class="text-xs opacity-60 mb-3">La plus longue séance chronométrée du mois</p>
+            <div id="endurance-list" class="space-y-1"></div>
           </div>
 
           <!-- Historique des podiums mensuels -->
@@ -508,6 +548,13 @@
           <div id="hall-of-fame-card" class="card p-5 rounded-[2rem] shadow hidden">
             <h4 class="font-bold mb-4">🏅 Palmarès des défis</h4>
             <div id="hall-of-fame" class="space-y-1"></div>
+          </div>
+
+          <!-- Ligue entre groupes (v2.18.0) — masquée sans la migration 15 -->
+          <div id="league-card" class="card p-5 rounded-[2rem] shadow hidden">
+            <h4 class="font-bold mb-1">🏟️ Ligue des groupes</h4>
+            <p id="league-sub" class="text-xs opacity-60 mb-3"></p>
+            <div id="league-list" class="space-y-1"></div>
           </div>
 
           <!-- Comparatif 7 jours -->
@@ -744,6 +791,32 @@
       <!-- 📌 Bandeau titre persistant -->
       <div class="card p-4 rounded-[1.5rem] mb-4">
         <div class="font-bold mb-3 text-sm">📌 Affichage</div>
+        <div class="flex items-center justify-between text-sm mb-3">
+          <div>
+            <div class="font-medium">🌓 Suivre le thème du téléphone</div>
+            <div class="text-xs opacity-60">Passe en sombre quand ton téléphone l'est, ton thème revient ensuite</div>
+          </div>
+          <button id="system-theme-toggle" onclick="toggleSystemTheme()"
+            class="relative w-11 h-6 rounded-full transition-colors duration-300 focus:outline-none flex-shrink-0"
+            style="background:rgba(0,0,0,0.15)" aria-label="Suivre le thème du téléphone">
+            <span id="system-theme-knob"
+              class="absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow transition-transform duration-300"
+              style="transform:translateX(0)"></span>
+          </button>
+        </div>
+        <div class="flex items-center justify-between text-sm mb-3">
+          <div>
+            <div class="font-medium">📳 Vibrations</div>
+            <div class="text-xs opacity-60">Petit retour au toucher (Android ; l'iPhone ne les permet pas)</div>
+          </div>
+          <button id="haptics-toggle" onclick="toggleHaptics()"
+            class="relative w-11 h-6 rounded-full transition-colors duration-300 focus:outline-none flex-shrink-0"
+            style="background:#4f46e5" aria-label="Vibrations">
+            <span id="haptics-knob"
+              class="absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow transition-transform duration-300"
+              style="transform:translateX(20px)"></span>
+          </button>
+        </div>
         <div class="flex items-center justify-between text-sm">
           <div>
             <div class="font-medium">Header toujours visible</div>
@@ -759,6 +832,19 @@
         </div>
       </div>
 
+      <!-- ⚡ Raccourcis -->
+      <div class="card p-4 rounded-[1.5rem] mb-4">
+        <div class="font-bold mb-2 text-sm">⚡ Ajouter un caca en un geste</div>
+        <p class="text-xs opacity-70 mb-2"><strong>Android :</strong> appui long sur l'icône de l'app, puis « Nouveau caca » ou « Chrono ».</p>
+        <p class="text-xs opacity-70 mb-2"><strong>iPhone :</strong> app Raccourcis → « + » → action « Ouvrir les URL » avec le lien ci-dessous → « Ajouter à l'écran d'accueil ». Tu peux aussi le lancer en disant « Dis Siri » suivi du nom du raccourci.</p>
+        <div class="flex gap-2">
+          <button type="button" class="flex-1 py-2 text-xs rounded-[1rem] font-bold" data-copy-shortcut="add"
+            style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">📋 Lien « Nouveau caca »</button>
+          <button type="button" class="flex-1 py-2 text-xs rounded-[1rem] font-bold" data-copy-shortcut="timer"
+            style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">📋 Lien « Chrono »</button>
+        </div>
+      </div>
+
       <!-- 📖 Guide des fonctionnalités -->
       <div class="card p-4 rounded-[1.5rem] mb-4">
         <div class="font-bold mb-4 text-sm flex items-center gap-2">📖 Guide des fonctionnalités</div>
@@ -769,7 +855,10 @@
             🏠 Accueil
           </summary>
           <div class="px-4 pb-4 space-y-2 text-sm opacity-80 leading-relaxed">
-            <p><strong>💩 Bouton central</strong> — Enregistre un caca maintenant. Tu peux choisir la texture, la couleur et ajouter un commentaire.</p>
+            <p><strong>💩 Carte « Aujourd'hui »</strong> — La mascotte change d'humeur selon ta journée, ta série et ta santé. Elle grandit avec ton nombre de cacas (niveaux) et gagne des lunettes à 7 jours de série, une couronne à 30. Touche-la pour la faire sauter.</p>
+            <p><strong>🔥 Série en attente</strong> — Pas encore de caca aujourd'hui ? Ta série d'hier tient jusqu'à minuit : elle s'affiche pâlie au lieu de retomber à 0. Quand le joker 🃏 rattrape un jour raté, un message te le dit.</p>
+            <p><strong>💩 Bouton central</strong> — Enregistre un caca maintenant. Texture et couleur obligatoires ; durée, carnet de santé, humeur, lieu et note en option. « ⚡ Comme d'habitude » remplit tes choix les plus fréquents.</p>
+            <p><strong>✨ Blocs repliés</strong> — Blague, prédiction, défi 7 jours et résumé de la semaine sont rangés sous un seul bouton pour que l'accueil tienne sur un écran.</p>
             <p><strong>🎯 Objectif du jour</strong> — Fixe le nombre de cacas souhaités dans la journée. La barre se remplit au fil des enregistrements.</p>
             <p><strong>🔮 Prédiction</strong> — Calcule automatiquement ton prochain caca estimé en fonction de l'intervalle moyen de tes 7 derniers jours.</p>
             <p><strong>⏰ Rappel intelligent</strong> — Si l'heure à laquelle tu cacas habituellement est passée et qu'aucun caca n'est enregistré aujourd'hui, un message d'alerte s'affiche.</p>
@@ -777,8 +866,9 @@
             <p><strong>📊 Résumé de la semaine</strong> — Comparatif cette semaine vs semaine dernière + meilleur jour.</p>
             <p><strong>🤣 Blague du jour</strong> — Une blague de caca différente chaque jour. Bouton 🔄 pour en tirer une au hasard.</p>
             <p><strong>📈 Graphique 7 jours</strong> — Visualise tes cacas jour par jour sur la semaine en cours.</p>
-            <p><strong>📤 Partager mes stats</strong> — Génère une image de tes statistiques à partager sur Instagram, WhatsApp…</p>
-            <p><strong>⏱️ Chrono</strong> — Démarre un minuteur pour mesurer la durée de ta séance aux toilettes.</p>
+            <p><strong>📤 Partager en image</strong> — Une image au format story (semaine, mois ou année) avec la mascotte, prête pour Insta, Snap ou WhatsApp.</p>
+            <p><strong>⏱️ Chrono</strong> — Mesure la durée de ta séance ; en appuyant sur « Terminé », la durée est reportée dans la saisie.</p>
+            <p><strong>🎬 Caca Wrapped</strong> — Du 15 décembre au 15 janvier, ton bilan de l'année en écrans successifs, à partager.</p>
           </div>
         </details>
 
@@ -803,7 +893,9 @@
             <p><strong>📅 Calendrier mensuel</strong> — Un vrai calendrier, mois par mois : chaque jour affiche ses 💩, et un clic ouvre le détail de la journée. Les flèches ‹ › remontent dans le temps.</p>
             <p><strong>🗺️ PoopMap</strong> — Carte de tes cacas géolocalisés + classement de tes lieux (🏠 Maison, 💼 Boulot, 🍽️ Resto…). La position est facultative et s'active dans les Réglages.</p>
             <p><strong>🏴 Territoires conquis</strong> — Les communes, régions et pays où tu as cacé, avec les drapeaux. Il faut activer « Retrouver commune et pays » dans les Réglages.</p>
-            <p><strong>🏥 PDF médical</strong> — Génère un rapport imprimable avec toutes tes stats pour ton médecin.</p>
+            <p><strong>⏱️ Durée des séances</strong> — Moyenne, médiane, record et temps total passé aux toilettes.</p>
+            <p><strong>🔍 Ce que j'ai remarqué</strong> — Compare tes selles quand tu as noté un contexte (café, stress, règles…) et le reste du temps. Des coïncidences, pas un diagnostic. Privé : tes copines ne le voient jamais.</p>
+            <p><strong>🏥 PDF médical</strong> — Génère un rapport imprimable pour ton médecin : Bristol, fréquence, transit, durées et symptômes notés sur 90 jours.</p>
           </div>
         </details>
 
@@ -813,8 +905,9 @@
             🏅 Badges
           </summary>
           <div class="px-4 pb-4 space-y-2 text-sm opacity-80 leading-relaxed">
-            <p><strong>58 badges à débloquer</strong> — Récompenses basées sur la fréquence, les streaks, les textures, les heures, les records…</p>
-            <p>Chaque badge a 3 niveaux : Bronze 🥉, Argent 🥈, Or 🥇.</p>
+            <p><strong>75 badges à débloquer</strong>, rangés en 11 catégories repliables.</p>
+            <p><strong>🎯 À portée de main</strong> — Les 3 badges que tu es le plus près de gagner, avec leur progression.</p>
+            <p><strong>💎 Rareté</strong> — Dans ton groupe, chaque badge est Commun, Rare, Épique, Légendaire (tu es la seule sur 3 copines ou plus) ou Inédit (personne ne l'a).</p>
             <p>Les badges débloqués apparaissent en couleur, les autres sont grisés avec leur condition affichée.</p>
           </div>
         </details>
@@ -845,6 +938,10 @@
             <p><strong>📊 Comparatif 7 jours</strong> — Barres côte à côte pour comparer chaque membre sur les 7 derniers jours.</p>
             <p><strong>📣 Fil d'activité</strong> — Les 200 dernières activités du groupe avec filtres (Aujourd'hui / Semaine / Mois / Année) et réactions emoji.</p>
             <p><strong>🎯 Défi hebdomadaire</strong> — Challenge automatique chaque semaine. Le créateur du groupe peut personnaliser le titre.</p>
+            <p><strong>🔥 Série du groupe</strong> — Le nombre de jours où tout le monde a posté, et qui manque à l'appel aujourd'hui.</p>
+            <p><strong>⏱️ Reine de l'endurance</strong> — Classement de la plus longue séance chronométrée du mois.</p>
+            <p><strong>🎨 Stickers</strong> — Le bouton 🎨 à côté du champ de commentaire envoie un sticker.</p>
+            <p><strong>🏟️ Ligue des groupes</strong> — Si la créatrice l'inscrit, ton groupe affronte les autres groupes inscrits (cacas par membre, remise à zéro le lundi). Seuls le nom du groupe et ses totaux sont visibles.</p>
             <p><strong>🔗 Partager le lien</strong> — Copie le lien de l'app pour l'envoyer par SMS, WhatsApp, mail…</p>
             <p><strong>☁️ Sync cloud</strong> — Toutes tes données sont synchronisées dans le cloud. Si tu changes de téléphone, reconnecte-toi et tout réapparaît.</p>
           </div>
@@ -1160,19 +1257,14 @@
     </div>
   </div>
 
-  <!-- MODAL ANNÉE EN REVIEW 🎬 -->
-  <div id="wrapped-modal" class="fixed inset-0 z-[70] hidden" style="background:rgba(0,0,0,0.9);backdrop-filter:blur(8px);">
-    <div class="flex flex-col h-full p-4 max-w-sm mx-auto">
-      <div class="flex items-center justify-between mb-4 pt-2">
-        <h2 class="font-bold text-xl text-white">🎬 Mon année en review</h2>
-        <button id="close-wrapped-btn" aria-label="Fermer le récapitulatif" class="text-white opacity-60 text-2xl">✕</button>
-      </div>
-      <div id="wrapped-content" class="flex-1 overflow-y-auto space-y-3 pb-4"></div>
+  <!-- CACA WRAPPED 🎬 : écrans successifs façon stories (v2.18.0) -->
+  <div id="wrapped-modal" class="fixed inset-0 z-[80] hidden wr-modal" role="dialog" aria-modal="true" aria-label="Caca Wrapped">
+    <div class="wr-frame">
+      <div id="wrapped-progress" class="wr-progress"></div>
+      <button id="close-wrapped-btn" aria-label="Fermer le Wrapped" class="wr-close">✕</button>
+      <div id="wrapped-content" class="wr-scene"></div>
     </div>
   </div>
-
-  <!-- CANVAS PARTAGE STATS (invisible) -->
-  <canvas id="share-canvas" class="hidden" width="600" height="340"></canvas>
 
   <!-- NOUVEAU MOT DE PASSE MODAL (retour du lien de reset) -->
   <div id="new-password-modal" class="fixed inset-0 z-[70] hidden" style="background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);">
@@ -1209,6 +1301,10 @@
         <div class="px-6 pb-3 border-b border-gray-100">
           <h2 id="drawer-title" class="text-2xl font-bold text-center text-slate-900">Nouveau 💩</h2>
           <p id="drawer-subtitle" class="text-center text-slate-500 text-sm">Texture + couleur obligatoires</p>
+          <button type="button" id="usual-btn" class="hidden mx-auto mt-2 flex items-center gap-1 px-4 py-2 rounded-full text-sm font-bold text-white"
+            style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">
+            ⚡ Comme d'habitude
+          </button>
         </div>
 
         <div class="p-6 space-y-5">
@@ -1234,12 +1330,12 @@
           <div>
             <div class="text-sm font-bold mb-3 text-slate-800">Texture <span id="texture-err" class="text-red-500 text-xs hidden">← obligatoire</span></div>
             <div class="grid grid-cols-3 gap-3">
-              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="normal">💩<div class="text-xs mt-1">Normal</div></button>
-              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="dur">🗿<div class="text-xs mt-1">Dur</div></button>
-              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="mou">🍮<div class="text-xs mt-1">Mou</div></button>
-              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="spray">💦<div class="text-xs mt-1">Spray</div></button>
-              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="liquide">🌊<div class="text-xs mt-1">Liquide</div></button>
-              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="explosif">💥<div class="text-xs mt-1">Explosif</div></button>
+              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="normal"><span class="tex-art" aria-hidden="true">💩</span><div class="text-xs mt-1 font-bold">Normal</div></button>
+              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="dur"><span class="tex-art" aria-hidden="true">🗿</span><div class="text-xs mt-1 font-bold">Dur</div></button>
+              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="mou"><span class="tex-art" aria-hidden="true">🍮</span><div class="text-xs mt-1 font-bold">Mou</div></button>
+              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="spray"><span class="tex-art" aria-hidden="true">💦</span><div class="text-xs mt-1 font-bold">Spray</div></button>
+              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="liquide"><span class="tex-art" aria-hidden="true">🌊</span><div class="text-xs mt-1 font-bold">Liquide</div></button>
+              <button class="texture-btn p-3 rounded-[1.25rem] border-2 border-gray-200 text-center text-slate-800 hover:border-amber-400 transition-colors" data-texture="explosif"><span class="tex-art" aria-hidden="true">💥</span><div class="text-xs mt-1 font-bold">Explosif</div></button>
             </div>
           </div>
 
@@ -1255,6 +1351,37 @@
               <button class="color-btn w-12 h-12 rounded-[1rem] border-4 border-white shadow-md transition-transform" style="background:#ef4444" data-color="rouge" title="Rouge" aria-label="Couleur : rouge"></button>
             </div>
           </div>
+
+          <!-- Durée (optionnel) — remplie par le chrono -->
+          <div>
+            <div class="text-sm font-bold mb-2 text-slate-800 flex items-center gap-2">
+              ⏱️ Durée (optionnel) <span id="duration-hint" class="text-xs font-bold text-amber-600"></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="number" id="duration-min" min="0" max="180" inputmode="numeric" placeholder="0"
+                class="w-20 p-3 border border-gray-200 rounded-[1rem] text-center text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400" aria-label="Minutes" />
+              <span class="text-sm text-slate-600">min</span>
+              <input type="number" id="duration-sec" min="0" max="59" inputmode="numeric" placeholder="0"
+                class="w-20 p-3 border border-gray-200 rounded-[1rem] text-center text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400" aria-label="Secondes" />
+              <span class="text-sm text-slate-600">s</span>
+              <button type="button" id="duration-clear" class="ml-auto text-xs text-slate-500 px-2 py-1" aria-label="Effacer la durée">✕</button>
+            </div>
+          </div>
+
+          <!-- Carnet de santé (optionnel, privé) -->
+          <details id="health-details" class="health-details rounded-[1.25rem] border border-gray-200">
+            <summary class="px-4 py-3 text-sm font-bold text-slate-800 flex items-center gap-2 cursor-pointer select-none">
+              🩺 Santé et contexte <span class="text-xs font-normal text-slate-500">(privé)</span>
+              <span id="health-count" class="ml-auto text-xs font-bold text-amber-600"></span>
+            </summary>
+            <div class="px-4 pb-4">
+              <div class="text-xs font-bold text-slate-600 mb-2">Symptômes</div>
+              <div id="health-symptomes" class="flex flex-wrap gap-2 mb-3"></div>
+              <div class="text-xs font-bold text-slate-600 mb-2">Contexte</div>
+              <div id="health-contexte" class="flex flex-wrap gap-2"></div>
+              <div class="text-[11px] text-slate-500 mt-3">Jamais visible de tes copines. Sert à « Ce que j'ai remarqué » dans les Stats et au PDF médical.</div>
+            </div>
+          </details>
 
           <!-- Note -->
           <div>
@@ -1285,7 +1412,7 @@
           </div>
 
           <!-- Boutons -->
-          <div class="flex gap-3 pb-2">
+          <div class="drawer-actions flex gap-3 pb-2">
             <button id="cancel-drawer" class="flex-1 bg-gray-100 text-slate-700 py-4 rounded-[1.25rem] font-bold">Annuler</button>
             <button id="save-poop" class="flex-1 text-white py-4 rounded-[1.25rem] font-bold" style="background:linear-gradient(135deg,#10b981,#059669)">💥 Valider</button>
           </div>
@@ -1309,6 +1436,11 @@
   <script src="js/app/app-sync.js"></script>
   <script src="js/app/app-onboarding.js"></script>
   <script src="js/app/app-whatsnew.js"></script>
+  <!-- v2.18.0 : santé et durée, saisie, accueil, partage et Wrapped -->
+  <script src="js/app/app-sante.js"></script>
+  <script src="js/app/app-saisie.js"></script>
+  <script src="js/app/app-accueil.js"></script>
+  <script src="js/app/app-wrapped.js"></script>
 
     <!-- Modules JS — defer : ils gardent leur ordre relatif et s'exécutent tous
          avant DOMContentLoaded, donc avant le code d'amorçage d'app-core.js.
@@ -1316,6 +1448,7 @@
     <script src="vendor/supabase.min.js" defer></script>
     <script src="js/supabase-client.js" defer></script>
     <script src="js/ui.js" defer></script>
+    <script src="js/social-fun.js" defer></script>
     <script src="js/social.js" defer></script>
     <script src="js/push.js" defer></script>
     <script src="js/sounds.js" defer></script>

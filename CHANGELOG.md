@@ -5,6 +5,50 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.18.0] — 2026-09-17
+
+### Ajouté
+- **💩 Mascotte et carte « Aujourd'hui »** — l'accueil tient sur un écran :
+  humeur du jour (contente, en fête, inquiète, endormie…), niveau selon le
+  nombre total de cacas, accessoires gagnés avec la série. Blague, prédiction,
+  défi 7 jours et résumé de la semaine sont repliés sous un seul bouton.
+- **⏱️ Durée des séances** — le chrono remplit un champ dédié (avant : du texte
+  dans la note). Tuile Stats (moyenne, médiane, record, temps total), badges
+  Chronométreuse / Express / Marathon, classement « Reine de l'endurance ».
+- **🩺 Carnet de santé privé** — 7 symptômes et 13 éléments de contexte à la
+  saisie ; tuile « Ce que j'ai remarqué » qui compare les selles avec et sans
+  chaque étiquette ; alerte si du sang est noté ; section dans le PDF médical.
+  Stocké dans une table à part lisible par sa seule propriétaire.
+- **⚡ Saisie plus rapide** — « Comme d'habitude », textures dessinées, saisie
+  plein écran sur téléphone, vibrations, raccourcis d'app (Android) et liens
+  pour l'app Raccourcis (iPhone).
+- **📤 Partage en image story** (semaine, mois, année) et **🎬 Caca Wrapped**
+  en écrans successifs, partageable.
+- **👥 Social** — stickers dans les commentaires, série partagée du groupe
+  (avec qui manque à l'appel), ligue entre groupes sur inscription.
+- **🏆 Badges** — 5 nouveaux (75), catégories repliables, « à portée de main »,
+  paliers de rareté.
+- **🌓 Thème du téléphone** — option pour passer en sombre avec le téléphone.
+
+### Modifié
+- La série n'affiche plus 0 tant qu'aucun caca n'est noté aujourd'hui : celle
+  d'hier reste visible, pâlie, jusqu'à minuit. Un message annonce quand le
+  joker a sauvé la série.
+- Export CSV : colonnes `duree_s` et `sante`.
+
+### Base de données
+- Migration `15_20260917_duree-sante-ligue.sql` (`poops.duration_s`, table
+  `poop_health` + RLS propriétaire, `groups.league_opt_in`, fonction
+  `group_league`). Déploiement indifférent : sans elle, durée et santé restent
+  locales et la ligue est masquée.
+
+### Tests
+- 237 tests (+77) : santé et durée, série en attente, mascotte, Wrapped,
+  fonctions sociales, catégories et rareté des badges, lignes cloud, contraste
+  WCAG des 16 thèmes.
+
+---
+
 ## [2.17.0] — 2026-09-08
 
 ### Ajouté

@@ -108,5 +108,29 @@ window.UI = (() => {
     return overlay;
   }
 
-  return { toast, confirm, prompt, info };
+  // ---- Choix parmi plusieurs options (Promise<string|null>) ----
+  // options : [{ value, label, sub? }] — `label` peut contenir un emoji.
+  function choose({ title = '', message = '', options = [], cancelLabel = 'Annuler' } = {}) {
+    return new Promise(resolve => {
+      const overlay = buildModal({
+        title,
+        bodyHTML: `
+          ${message ? `<p class="ui-modal-text">${esc(message)}</p>` : ''}
+          <div class="ui-choices">
+            ${options.map(o => `
+              <button class="ui-choice" data-value="${esc(o.value)}">
+                <span class="ui-choice-label">${esc(o.label)}</span>
+                ${o.sub ? `<span class="ui-choice-sub">${esc(o.sub)}</span>` : ''}
+              </button>`).join('')}
+          </div>`,
+        buttonsHTML: `<button class="ui-btn ui-btn-ghost" data-act="cancel">${esc(cancelLabel)}</button>`
+      });
+      const done = v => { closeModal(overlay); resolve(v); };
+      overlay.querySelectorAll('.ui-choice').forEach(b => b.addEventListener('click', () => done(b.dataset.value)));
+      overlay.querySelector('[data-act="cancel"]').addEventListener('click', () => done(null));
+      overlay.addEventListener('click', e => { if (e.target === overlay) done(null); });
+    });
+  }
+
+  return { toast, confirm, prompt, info, choose };
 })();
