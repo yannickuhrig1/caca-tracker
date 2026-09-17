@@ -96,6 +96,9 @@ function addPoop() {
 
   geocodeInBackground(poop);
 
+  // Test du maïs : la case « Je vois du maïs » clôt le test en cours.
+  if (typeof maisOnPoopSaved === 'function') maisOnPoopSaved(poop);
+
   // Notifications : mettre à jour l'heure du dernier caca
   if (!isRetro) localStorage.setItem('notifLastPoopTime', Date.now());
 

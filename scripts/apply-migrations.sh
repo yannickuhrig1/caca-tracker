@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Applique les migrations 13, 14 (PoopMap), 15 (durée, santé, ligue) et 16
-# (Jeux du trône) sur la base du NAS.
+# Applique les migrations 13, 14 (PoopMap), 15 (durée, santé, ligue), 16
+# (Jeux du trône) et 17 (Le Grand Transit) sur la base du NAS.
 #
 # À lancer DEPUIS LE NAS, dans une copie du dépôt :
 #     ./scripts/apply-migrations.sh
@@ -25,6 +25,7 @@ MIGRATIONS=(
   "supabase/migrations/14_20260908_poopmap-conquete.sql"
   "supabase/migrations/15_20260917_duree-sante-ligue.sql"
   "supabase/migrations/16_20260917_jeux-du-trone.sql"
+  "supabase/migrations/17_20260918_grand-transit.sql"
 )
 
 psql_exec() {

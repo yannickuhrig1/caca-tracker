@@ -5,6 +5,42 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.20.0] — 2026-09-18
+
+### Ajouté
+- **🌽 Le Grand Transit** (`js/jeux/transit.js`) — on incarne un grain de maïs
+  avalé, à faire ressortir entier :
+  - Cinq organes : la bouche (molaires, et le carrefour œsophage / trachée),
+    l'œsophage (anneaux de péristaltisme qui propulsent ouverts et serrent
+    fermés, remontées acides qui font reculer), l'estomac (flaques d'acide,
+    enzymes, bulles qui réparent), l'intestin grêle (villosités qui aspirent
+    vers les parois, jets de bile, vitamines) et le côlon (bactéries,
+    bouchons, gaz qui propulsent, eau réabsorbée qui ralentit).
+  - Portes de sortie propres à chaque organe : épiglotte, cardia, pylore,
+    valvule iléo-cæcale, sphincter.
+  - **Carapace** en guise de vie, **bouclier** au toucher (recharge 3,5 s),
+    déplacement au **glissé du pouce**.
+  - **Sauvegarde à l'entrée de chaque organe** : la traversée peut s'étaler
+    sur plusieurs séances, et une digestion ne renvoie pas à la bouche.
+  - Horloge du transit (0 h → 36 h), étoiles par organe, anecdotes digestives.
+- **⏳ Test du maïs** (`js/app/app-mais.js`) — le vrai examen de transit :
+  « J'ai mangé du maïs » dans les Stats, puis « Je vois du maïs » à la saisie.
+  L'app calcule le temps réel, le commente (rapide / normal / lent), garde
+  l'historique et la moyenne. Un maïs revu en moins de 6 h est refusé (il
+  vient d'un repas précédent) et un test oublié s'arrête au bout de 5 jours.
+- **Badges** : Le Grand Transit, Ressortie Intacte, Test du Maïs (86 au total).
+
+### Technique
+- Glissement continu du doigt ajouté à l'écran des jeux (`inst.drag`), et
+  écran d'accueil propre au jeu (`inst.noReady`).
+- Migration `17_20260918_grand-transit.sql` (**pas encore appliquée**) :
+  ajoute `transit` aux jeux autorisés dans `game_scores`. Sans elle, la base
+  refuse le score (23514), le client le garde en local et cesse de réessayer.
+- Tests : `jeux-transit`, `mais`.
+- Cache SW caca-v39 → caca-v40.
+
+---
+
 ## [2.19.0] — 2026-09-17
 
 ### Ajouté

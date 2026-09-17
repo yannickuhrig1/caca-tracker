@@ -11,7 +11,7 @@ const JEUX_PAUSE_KEY = 'jeux.pauseJusqua';
 
 const JEUX_MOTEURS = () => ({
   plop: window.JeuPlop, pq: window.JeuPQ, colon: window.JeuColon,
-  course: window.JeuCourse, quiz: window.JeuQuiz, fosse: window.JeuFosse,
+  course: window.JeuCourse, quiz: window.JeuQuiz, transit: window.JeuTransit, fosse: window.JeuFosse,
 });
 
 // Libellés du record « exploit » de chaque jeu (fin de partie, story).
@@ -21,6 +21,7 @@ const JEUX_EXPLOITS = {
   colon:  { cle: 'colonLength',    label: 'de long au max',       emoji: '🐍' },
   course: { cle: 'courseDistance', label: 'mètres au max',        emoji: '🏃‍♀️' },
   quiz:   { cle: 'quizStreak',     label: 'bonnes d\'affilée',    emoji: '🕵️' },
+  transit:{ cle: 'transitCarapace', label: '% de carapace à l\'arrivée', emoji: '🌽' },
 };
 
 // ===================================================
@@ -93,6 +94,12 @@ function renderJeuxHub() {
   list.innerHTML = JeuxCore.JEUX.map(j => {
     const best = stats.best[j.id];
     let sous = j.desc;
+    if (j.id === 'transit') {
+      const cp = stats.transit?.checkpoint;
+      if (cp) sous = `Reprise : ${window.JeuTransit?.TRANSIT.NIVEAUX[cp.level]?.nom || 'en route'} · carapace ${Math.round(cp.carapace)} %`;
+      const mais = typeof maisPendingHours === 'function' ? maisPendingHours() : null;
+      if (mais !== null) sous += ` · 🌽 test en cours (${mais} h)`;
+    }
     if (j.id === 'fosse' && window.JeuFosse) {
       const f = JeuFosse.fosseState(state.logs, stats);
       sous = `${f.solde} d'engrais · ${f.owned.length}/${JeuFosse.FOSSE_ITEMS.length} plantations${f.recolteDispo ? ' · 🧺 récolte prête' : ''}`;
@@ -229,6 +236,9 @@ function launchJeu(gameId) {
     // Quiz et jardin : pas d'écran « touche pour commencer ». Le jardin n'a
     // pas de boucle : il ne réagit qu'aux boutons.
     if (!inst.idle) runJeu();
+  } else if (inst.noReady) {
+    // Le jeu a son propre écran d'accueil (Le Grand Transit et ses organes).
+    runJeu();
   } else {
     drawJeuFrame(0);
     showJeuxReady(inst.hint, 'Touche pour commencer');
@@ -346,6 +356,10 @@ function showJeuxOver(limite) {
   } else {
     ({ mood, message } = JeuxCore.gameOverMascot(lr.result.score, lr.previousBest, { plays: stats.plays[_jeux.gameId], splash: !!lr.result.splash }));
     if (lr.result.reason === 'accident') message = 'Trop tard… la jauge a débordé. Pense aux toilettes 🚽 !';
+    if (_jeux.gameId === 'transit') {
+      if (lr.result.finished) { mood = 'party'; message = `Ressorti entier avec ${lr.result.carapace} % de carapace ! Un vrai grain de maïs.`; }
+      else { mood = 'worried'; message = `Digéré dans ${window.JeuTransit?.TRANSIT.NIVEAUX[lr.result.level]?.nom || 'le ventre'}… Tu reprendras là où tu en étais.`; }
+    }
   }
   const exploit = JEUX_EXPLOITS[_jeux.gameId];
   const session = jeuxSessionNow();
@@ -601,25 +615,35 @@ function setupJeux() {
     demarrer();
     if (!jeuxInputReady()) return;
     const r = stage.getBoundingClientRect();
-    const p = { x: e.clientX - r.left, y: e.clientY - r.top, id: e.pointerId, fired: false };
+    const p = { x: e.clientX - r.left, y: e.clientY - r.top, id: e.pointerId, fired: false, t: Date.now(), bouge: 0 };
     _jeux.pointer = p;
+    const inst = _jeux.inst;
+    // Glissement continu (Le Grand Transit) : le doigt pilote en direct.
+    if (inst.drag) inst.drag(p.x, p.y, 'start');
     // Jeux sans glissement : le toucher agit tout de suite, sans attendre le relâcher.
-    if (!_jeux.inst.swipe) { p.fired = true; _jeux.inst.tap?.(p.x, p.y); }
+    else if (!inst.swipe) { p.fired = true; inst.tap?.(p.x, p.y); }
   });
   stage?.addEventListener('pointermove', e => {
     const p = _jeux.pointer;
-    if (!p || p.fired || e.pointerId !== p.id || !_jeux.inst?.swipe) return;
+    const inst = _jeux.inst;
+    if (!p || e.pointerId !== p.id || !inst) return;
     const r = stage.getBoundingClientRect();
-    const dx = e.clientX - r.left - p.x, dy = e.clientY - r.top - p.y;
-    if (Math.hypot(dx, dy) < 22) return;
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    p.bouge = Math.max(p.bouge, Math.hypot(x - p.x, y - p.y));
+    if (inst.drag) { inst.drag(x, y, 'move'); return; }
+    if (p.fired || !inst.swipe || p.bouge < 22) return;
     p.fired = true;
-    _jeux.inst.swipe(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+    const dx = x - p.x, dy = y - p.y;
+    inst.swipe(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
   });
   stage?.addEventListener('pointerup', e => {
     const p = _jeux.pointer;
+    const inst = _jeux.inst;
     _jeux.pointer = null;
-    if (!p || p.fired || e.pointerId !== p.id || !_jeux.running) return;
-    _jeux.inst?.tap?.(p.x, p.y);
+    if (!p || e.pointerId !== p.id || !_jeux.running || !inst) return;
+    if (inst.drag) inst.drag(p.x, p.y, 'end');
+    // Un appui court et immobile reste un tap (durcir la carapace, valider un écran).
+    if (!p.fired && (!inst.drag || (p.bouge < 12 && Date.now() - p.t < 350))) inst.tap?.(p.x, p.y);
   });
 
   document.addEventListener('keydown', e => {

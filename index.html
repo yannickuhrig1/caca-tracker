@@ -359,6 +359,13 @@
             <span class="text-sm font-bold text-emerald-500">~24h</span>
           </div>
         </div>
+
+        <!-- Test du maïs : le vrai transit, de la bouche à la sortie (v2.20.0) -->
+        <div class="mais-block">
+          <h5 class="font-bold text-sm">🌽 Test du maïs</h5>
+          <p class="text-xs opacity-60 mb-2">Le vrai transit, mesuré de la bouche à la sortie</p>
+          <div id="mais-card"></div>
+        </div>
       </div>
 
       <!-- Textures -->
@@ -918,7 +925,7 @@
             🏅 Badges
           </summary>
           <div class="px-4 pb-4 space-y-2 text-sm opacity-80 leading-relaxed">
-            <p><strong>83 badges à débloquer</strong>, rangés en 12 catégories repliables.</p>
+            <p><strong>86 badges à débloquer</strong>, rangés en 12 catégories repliables.</p>
             <p><strong>🎯 À portée de main</strong> — Les 3 badges que tu es le plus près de gagner, avec leur progression.</p>
             <p><strong>💎 Rareté</strong> — Dans ton groupe, chaque badge est Commun, Rare, Épique, Légendaire (tu es la seule sur 3 copines ou plus) ou Inédit (personne ne l'a). Les badges des jeux n'ont pas de rareté : leurs stats restent sur ton téléphone.</p>
             <p>Les badges débloqués apparaissent en couleur, les autres sont grisés avec leur condition affichée.</p>
@@ -935,6 +942,8 @@
             <p><strong>⏳ 8 minutes maximum</strong> — Le temps compte depuis le lancement du chrono (ou ta première partie). Au-delà, les jeux font une pause de 10 minutes : rester assise longtemps n'est pas bon pour la santé.</p>
             <p><strong>🚪 Sortie digne</strong> — Touche « ✅ Fini » ou arrête le chrono avant la limite : +20 d'engrais pour ton jardin.</p>
             <p><strong>🏆 Classement</strong> — Ton meilleur score de la semaine apparaît dans l'onglet Social, remis à zéro chaque lundi.</p>
+            <p><strong>🌽 Le Grand Transit</strong> — Tu es un grain de maïs avalé : glisse le pouce pour éviter les dents, l'acide et les bactéries, tape pour durcir ta carapace. Cinq organes (bouche, œsophage, estomac, intestin grêle, côlon), et la partie est sauvegardée à l'entrée de chacun.</p>
+            <p><strong>⏳ Test du maïs</strong> — Le vrai examen : dans Stats, touche « J'ai mangé du maïs », puis coche « Je vois du maïs » au caca où tu le retrouves. L'app calcule ton temps de transit réel.</p>
           </div>
         </details>
 
@@ -1424,6 +1433,12 @@
             </div>
           </div>
 
+          <!-- Test du maïs en cours (v2.20.0) -->
+          <label id="mais-row" class="mais-row hidden">
+            <input type="checkbox" id="mais-chk" />
+            <span>🌽 Je vois du maïs <span id="mais-row-info" class="mais-row-info"></span></span>
+          </label>
+
           <!-- Carnet de santé (optionnel, privé) -->
           <details id="health-details" class="health-details rounded-[1.25rem] border border-gray-200">
             <summary class="px-4 py-3 text-sm font-bold text-slate-800 flex items-center gap-2 cursor-pointer select-none">
@@ -1504,7 +1519,9 @@
   <script src="js/jeux/colon.js"></script>
   <script src="js/jeux/course.js"></script>
   <script src="js/jeux/quiz.js"></script>
+  <script src="js/jeux/transit.js"></script>
   <script src="js/jeux/fosse.js"></script>
+  <script src="js/app/app-mais.js"></script>
   <script src="js/app/app-jeux.js"></script>
 
     <!-- Modules JS — defer : ils gardent leur ordre relatif et s'exécutent tous

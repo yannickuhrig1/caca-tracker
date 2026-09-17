@@ -22,6 +22,7 @@ const JEUX = [
   { id: 'colon',  emoji: '🐍', nom: 'Le Côlon',              desc: 'Mange des fibres, évite le fast-food.', unite: 'pts',   trone: true,  classement: true },
   { id: 'course', emoji: '🏃‍♀️', nom: 'Course au trône',     desc: 'Saute les obstacles avant l\'accident.', unite: 'm',     trone: true,  classement: true },
   { id: 'quiz',   emoji: '🕵️', nom: 'Qui a fait ce caca ?',  desc: 'Devine quelle copine l\'a posé.',       unite: 'bonnes', trone: true,  classement: true, groupe: true },
+  { id: 'transit', emoji: '🌽', nom: 'Le Grand Transit',     desc: 'Grain de maïs : de la bouche à la sortie.', unite: 'pts', trone: true, classement: true },
   { id: 'fosse',  emoji: '🌻', nom: 'Fosse septique tycoon', desc: 'Tes cacas deviennent un jardin.',       unite: '',      trone: false, classement: false },
 ];
 
@@ -79,10 +80,29 @@ function defaultGameStats() {
       colonLength: 0,      // Le Côlon : longueur atteinte
       courseDistance: 0,   // Course au trône : mètres
       quizStreak: 0,       // Quiz : bonnes réponses d'affilée
+      transitFinished: 0,  // Grand Transit : traversées complètes
+      transitCarapace: 0,  // Grand Transit : meilleure carapace à l'arrivée
     },
     sortiesDignes: 0,      // séances de jeu terminées avant la limite
     week: { start: 0, scores: {}, synced: {} },
     fosse: { owned: [], lastHarvest: 0, harvested: 0 },
+    // Grand Transit : sauvegarde au début de l'organe en cours
+    transit: { checkpoint: null },
+  };
+}
+
+/** Sauvegarde du Grand Transit relue prudemment, ou null. */
+function normalizeTransitCheckpoint(cp) {
+  if (!cp || typeof cp !== 'object') return null;
+  const level = Number(cp.level);
+  // 5 organes dans js/jeux/transit.js (bouche → côlon)
+  if (!Number.isInteger(level) || level < 0 || level > 4) return null;
+  const nb = v => (Number.isFinite(Number(v)) ? Number(v) : 0);
+  return {
+    level,
+    carapace: Math.max(0, Math.min(100, nb(cp.carapace))),
+    score: Math.max(0, nb(cp.score)),
+    stars: Array.isArray(cp.stars) ? cp.stars.slice(0, 5).map(x => Math.max(0, Math.min(3, nb(x)))) : [],
   };
 }
 
@@ -112,6 +132,7 @@ function normalizeGameStats(raw) {
       lastHarvest: nombre(fosse.lastHarvest),
       harvested: nombre(fosse.harvested),
     },
+    transit: { checkpoint: normalizeTransitCheckpoint(raw.transit?.checkpoint) },
   };
 }
 
@@ -136,6 +157,10 @@ function recordGame(stats, gameId, result, now = Date.now()) {
   maxi('colonLength', result?.length);
   maxi('courseDistance', result?.distance);
   maxi('quizStreak', result?.streak);
+  if (gameId === 'transit' && result?.finished) {
+    r.transitFinished += 1;
+    maxi('transitCarapace', result.carapace);
+  }
 
   // Meilleur score de la semaine : c'est lui qui part au classement du groupe.
   const semaine = jeuxWeekStart(now);
@@ -179,6 +204,8 @@ function gameBadgeStates(stats) {
     sortieDigne: palier(s.sortiesDignes, 20),
     mainVerte:   palier(s.fosse.owned.length, 5),
     gameuse:     palier(totalPlays(s), 50),
+    grandTransit:   palier(s.records.transitFinished, 1),
+    ressortiIntact: palier(s.records.transitCarapace, 90),
   };
 }
 
@@ -276,6 +303,6 @@ window.JeuxCore = {
   JeuxDessin,
   JEUX, JEUX_CLASSES, JEUX_LIMITE_S, JEUX_ALERTE_S, JEUX_PAUSE_MS,
   jeuMeta, jeuxSession, formatMinSec, jeuxWeekStart,
-  defaultGameStats, normalizeGameStats, recordGame, unsyncedWeekScores, totalPlays,
+  defaultGameStats, normalizeGameStats, normalizeTransitCheckpoint, recordGame, unsyncedWeekScores, totalPlays,
   gameBadgeStates, gameBadgesDone, gameOverMascot, gameLeaderboard, mulberry32,
 };

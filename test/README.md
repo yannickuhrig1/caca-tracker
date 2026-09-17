@@ -40,6 +40,8 @@ remarque.
 | `social-fun.test.js` | `parseSticker`, `groupStreak`, `enduranceRanking`, `leagueWeekStart` | la série du groupe désigne publiquement qui manque à l'appel |
 | `jeux-core.test.js` | `jeuxSession`, `recordGame`, `unsyncedWeekScores`, `gameBadgeStates`, `gameOverMascot`, `gameLeaderboard` | le temps limité protège la santé : s'il ne coupe jamais, le jeu fait rester assise ; le classement est vu de tout le groupe |
 | `jeux-arcade.test.js` | Plop!, Tour de PQ, Le Côlon, Course au trône (logique sans dessin) | un score faux ou un obstacle infranchissable gâchent la partie sans message d'erreur |
+| `jeux-transit.test.js` | construction des organes, parois, bouclier, bonus, sauvegarde par organe | une porte qui ne s'ouvre jamais assez bloque la partie en silence ; une sauvegarde mal relue renvoie à la bouche |
+| `mais.test.js` | `maisStart`, `maisFound`, `maisPending`, `transitVerdict`, `maisFormat` | c'est une mesure de santé montrable à un médecin : un calcul faux ne doit pas passer |
 | `jeux-quiz-fosse.test.js` | `quizPool`, `quizQuestion`, `quizClues`, `quizAnswer`, `fosseGain`, `fosseBuy`, `fosseHarvest` | le quiz montre les cacas des copines : jamais les siens, jamais une donnée privée ; le jardin ne se paie pas à crédit |
 | `badges-cloud-v218.test.js` | `BADGE_CATEGORIES`, `nextBadges`, `rarityTier`, `poopRow`, `dropMissingColumns`, `applyExtraFields` | un badge sans catégorie disparaît ; une base sans migration 15 ne doit pas faire perdre de caca |
 | `themes-contrast.test.js` | variables de `css/app.css` | texte lisible (WCAG AA) sur les cartes des 16 thèmes |

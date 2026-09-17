@@ -246,6 +246,9 @@ function renderStats() {
     $id('bar-transit-me').style.width = '0%';
   }
 
+  // Test du maïs : le vrai transit mesuré (app-mais.js)
+  if (typeof renderMaisCard === 'function') renderMaisCard();
+
   // Textures
   const textures = ['normal','dur','mou','spray','liquide','explosif'];
   const total = state.logs.length || 1;

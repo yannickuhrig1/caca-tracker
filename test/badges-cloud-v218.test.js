@@ -27,8 +27,8 @@ test('chaque badge est rangé dans exactement une catégorie', () => {
   Object.keys(vus).forEach(id => assert.ok(B.BADGE_DEFS.some(b => b.id === id), `catégorie cite un badge inconnu : ${id}`));
 });
 
-test('83 badges au total (dont 8 des Jeux du trône)', () => {
-  assert.strictEqual(B.BADGE_DEFS.length, 83);
+test('86 badges au total (dont 10 des Jeux du trône)', () => {
+  assert.strictEqual(B.BADGE_DEFS.length, 86);
 });
 
 // ---------- Nouveaux badges ----------

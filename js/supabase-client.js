@@ -1081,15 +1081,20 @@ async function setUserAdmin(userId, isAdmin) {
 //  classement est masquée.
 // ============================================================
 let _gameScoresTable = true;
+// Jeux refusés par la contrainte de la base (migration plus récente que le
+// serveur) : inutile de réessayer à chaque partie.
+const _gameScoresRefuses = new Set();
 
 /** true : envoyé. null : table absente ou hors connexion (réessayer plus tard). */
 async function saveGameScore({ game, score, week_start }) {
-  const sb = getSB(); if (!sb || !_currentUser || !_gameScoresTable) return null;
+  const sb = getSB(); if (!sb || !_currentUser || !_gameScoresTable || _gameScoresRefuses.has(game)) return null;
   const { error } = await sb.from('game_scores').upsert(
     { user_id: _currentUser.id, game, week_start, score: Math.max(0, Math.floor(score)), updated_at: new Date().toISOString() },
     { onConflict: 'user_id,game,week_start' }
   );
   if (isMissingTable(error)) { _gameScoresTable = false; return null; }
+  // 23514 : jeu absent de la contrainte game_scores_game_known (migration 17)
+  if (error?.code === '23514') { _gameScoresRefuses.add(game); return null; }
   if (error) { logSbError('saveGameScore', error); return null; }
   return true;
 }
