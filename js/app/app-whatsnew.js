@@ -7,12 +7,23 @@
 
 // Source de vérité unique de la version. L'en-tête et les Réglages sont
 // remplis à partir d'ici, ce qui évite qu'ils divergent comme par le passé.
-const APP_VERSION = '2.18.0';
+const APP_VERSION = '2.19.0';
 const APP_VERSION_DATE = 'Septembre 2026';
 
 // De la plus récente à la plus ancienne. `items` reste court et écrit pour
 // Clémence, pas pour un développeur : ce que ça change pour elle, pas comment.
 const APP_CHANGELOG = [
+  {
+    version: '2.19.0',
+    date: 'Septembre 2026',
+    items: [
+      ['🎮', 'Les **Jeux du trône** : Plop!, Tour de PQ, Le Côlon et la Course au trône, pour passer le temps aux toilettes. Bouton 🎮 sur l\'accueil ou à côté du chrono.'],
+      ['🕵️', '**Qui a fait ce caca ?** Devine quelle copine a posé le caca du feed.'],
+      ['🌻', '**Fosse septique tycoon** : tes cacas deviennent de l\'engrais pour faire pousser un jardin.'],
+      ['⏳', 'Les parties s\'arrêtent au bout de **8 minutes** de séance : rester assise trop longtemps, c\'est mauvais pour les fesses. Finir avant, c\'est une **sortie digne**.'],
+      ['🏆', 'Classement des jeux de la semaine dans ton groupe, **8 nouveaux badges** et des **stickers à débloquer**.'],
+    ]
+  },
   {
     version: '2.18.0',
     date: 'Septembre 2026',

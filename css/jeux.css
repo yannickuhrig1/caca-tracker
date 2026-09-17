@@ -1,0 +1,159 @@
+/* ============================================================
+   JEUX DU TRÔNE 🎮 (v2.19.0)
+   Fond sombre fixe, indépendant du thème : lisible sur les 16 thèmes
+   et au-dessus du chrono flottant (z-index 60).
+   ============================================================ */
+body.jeux-open { overflow: hidden; }
+.jeux-modal {
+    position: fixed; inset: 0; z-index: 85;
+    background: linear-gradient(160deg, #1e1b4b, #4c1d95 55%, #831843);
+    color: #fff;
+    overscroll-behavior: contain;
+}
+.jeux-modal.hidden, .jeux-screen.hidden { display: none; }
+.jeux-screen {
+    height: 100%; max-width: 520px; margin: 0 auto;
+    display: flex; flex-direction: column;
+    padding: calc(10px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom));
+}
+#jeux-hub { overflow-y: auto; }
+.jeux-head { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.jeux-title { flex: 1; font-size: 22px; font-weight: 800; }
+.jeux-icon-btn {
+    width: 44px; height: 44px; flex-shrink: 0; border: none; border-radius: 999px;
+    background: rgba(255,255,255,.12); color: #fff; font-size: 22px; font-weight: 800; cursor: pointer;
+}
+.jeux-done {
+    min-height: 44px; padding: 0 14px; flex-shrink: 0; border: none; border-radius: 999px;
+    background: #047857; color: #fff; font-weight: 800; font-size: 14px; cursor: pointer;
+}
+.jeux-session { margin: 8px 0 12px; }
+.jeux-session-box {
+    display: block; width: 100%; text-align: center; font-size: 14px; font-weight: 700;
+    padding: 12px; border-radius: 1rem; background: rgba(255,255,255,.12); color: #fff; border: none;
+}
+.jeux-session-box.lock { background: rgba(251,191,36,.2); }
+.jeux-chrono-btn { cursor: pointer; background: rgba(16,185,129,.35); }
+.jeux-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.jeux-card {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left;
+    padding: 14px; min-height: 130px; border-radius: 1.25rem; border: 1px solid rgba(255,255,255,.14);
+    background: rgba(255,255,255,.1); color: #fff; cursor: pointer;
+    transition: transform .12s, background .2s;
+}
+.jeux-card:active { transform: scale(.97); }
+.jeux-card:hover { background: rgba(255,255,255,.16); }
+.jeux-card.dim { opacity: .6; }
+.jeux-card-emoji { font-size: 34px; line-height: 1.1; }
+.jeux-card-nom { font-weight: 800; font-size: 15px; margin-top: 4px; }
+.jeux-card-desc { font-size: 12px; opacity: .85; line-height: 1.3; }
+.jeux-card-best { margin-top: auto; padding-top: 6px; font-size: 12px; font-weight: 800; color: #fde68a; }
+.jeux-foot { font-size: 12px; opacity: .75; text-align: center; margin-top: 14px; }
+
+.jeux-play-title { flex: 1; min-width: 0; display: flex; align-items: baseline; justify-content: center; gap: 8px; font-weight: 800; }
+.jeux-play-title > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jeux-play-score { font-size: 22px; color: #fde68a; font-variant-numeric: tabular-nums; }
+.jeux-timebar {
+    position: relative; height: 18px; margin: 8px 0; border-radius: 999px; overflow: hidden;
+    background: rgba(255,255,255,.14);
+}
+.jeux-timebar.hidden { display: none; }
+.jeux-timebar-fill { height: 100%; width: 100%; background: #059669; transition: width .5s linear, background .3s; }
+.jeux-timebar.warn .jeux-timebar-fill { background: #d97706; }
+.jeux-timebar-txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
+.jeux-stage {
+    position: relative; flex: 1; min-height: 0; border-radius: 1.25rem; overflow: hidden;
+    background: rgba(0,0,0,.2); touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.jeux-canvas { display: block; }
+.jeux-canvas.hidden { display: none; }
+.jeux-dom { position: absolute; inset: 0; overflow-y: auto; padding: 14px; touch-action: pan-y; }
+.jeux-dom.hidden { display: none; }
+.jeux-ready, .jeux-over {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(15,23,42,.55); padding: 20px; text-align: center; cursor: pointer;
+}
+.jeux-ready.hidden, .jeux-over.hidden { display: none; }
+.jeux-over { cursor: default; background: rgba(15,23,42,.8); overflow-y: auto; touch-action: pan-y; }
+.jeux-ready-hint { font-size: 18px; font-weight: 700; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
+.jeux-ready-go {
+    margin-top: 14px; display: inline-block; padding: 12px 22px; border-radius: 999px;
+    background: #fff; color: #4c1d95; font-weight: 800;
+    animation: jeuxPulse 1.4s ease-in-out infinite;
+}
+@keyframes jeuxPulse { 50% { transform: scale(1.06); } }
+.jeux-over-box { width: 100%; max-width: 340px; margin: auto; }
+.jeux-over-mascot { width: 110px; height: 110px; margin: 0 auto; }
+.jeux-over-msg { font-weight: 700; margin-top: 6px; line-height: 1.35; }
+.jeux-over-score { font-size: 64px; font-weight: 800; line-height: 1; margin-top: 10px; font-variant-numeric: tabular-nums; }
+.jeux-over-score span { font-size: 18px; margin-left: 6px; opacity: .85; }
+.jeux-over-tag { display: inline-block; margin-top: 8px; padding: 4px 12px; border-radius: 999px; background: #fbbf24; color: #451a03; font-weight: 800; font-size: 13px; }
+.jeux-over-stats { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; font-size: 13px; opacity: .9; }
+.jeux-over-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.jeux-btn {
+    min-height: 46px; border: none; border-radius: 999px; font-weight: 800; font-size: 15px; cursor: pointer;
+    background: rgba(255,255,255,.16); color: #fff;
+}
+.jeux-btn.primary { background: #fff; color: #4c1d95; }
+
+/* ---- Quiz ---- */
+.quiz { display: flex; flex-direction: column; gap: 12px; }
+.quiz-top { display: flex; justify-content: space-between; font-size: 20px; font-weight: 800; min-height: 28px; }
+.quiz-lost { opacity: .25; filter: grayscale(1); }
+.quiz-timer { height: 8px; border-radius: 99px; background: rgba(255,255,255,.15); overflow: hidden; }
+.quiz-timer-fill { height: 100%; background: #fbbf24; }
+.quiz-card { background: #fff; color: #1e1b4b; border-radius: 1.25rem; padding: 16px; }
+.quiz-q { font-weight: 800; font-size: 18px; margin-bottom: 8px; }
+.quiz-clues { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; font-size: 15px; font-weight: 600; }
+.quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.quiz-opt {
+    display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 8px; min-height: 76px; min-width: 0;
+    border-radius: 1rem; border: 2px solid rgba(255,255,255,.2); background: rgba(255,255,255,.1); color: #fff;
+    font-weight: 800; cursor: pointer;
+}
+.quiz-opt:disabled { cursor: default; }
+.quiz-opt-avatar { font-size: 28px; }
+.quiz-opt-name { font-size: 14px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quiz-opt.good { background: #047857; border-color: #6ee7b7; }
+.quiz-opt.bad { background: #b91c1c; border-color: #fca5a5; }
+.quiz-opt.dim { opacity: .45; }
+.quiz-verdict { text-align: center; font-weight: 800; font-size: 18px; }
+.quiz-msg { text-align: center; padding: 40px 10px; }
+.quiz-msg-emoji { font-size: 56px; }
+.quiz-msg h3 { font-size: 20px; font-weight: 800; margin-top: 8px; }
+.quiz-msg p { opacity: .85; margin-top: 6px; }
+
+/* ---- Fosse septique tycoon ---- */
+.fosse { display: flex; flex-direction: column; gap: 12px; }
+.fosse-solde { text-align: center; font-weight: 700; }
+.fosse-solde-num { font-size: 44px; font-weight: 800; color: #fde68a; font-variant-numeric: tabular-nums; }
+.fosse-garden {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 12px; border-radius: 1.25rem;
+    background: linear-gradient(180deg, #65a30d, #3f6212);
+}
+.fosse-plot {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 26px;
+    border-radius: .75rem; background: rgba(69,26,3,.45);
+}
+.fosse-plot.on { background: rgba(255,255,255,.18); animation: fossePousse .5s cubic-bezier(.3,1.6,.5,1); }
+@keyframes fossePousse { from { transform: scale(.4); } }
+.fosse-next { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 1.25rem; background: rgba(255,255,255,.1); }
+.fosse-next-emoji { font-size: 36px; }
+.fosse-next-txt { flex: 1; min-width: 0; }
+.fosse-next-nom { font-weight: 800; }
+.fosse-next-desc { font-size: 12px; opacity: .85; }
+.fosse-btn {
+    min-height: 44px; padding: 0 14px; border: none; border-radius: 999px; font-weight: 800;
+    background: #fbbf24; color: #451a03; cursor: pointer; white-space: nowrap;
+}
+.fosse-btn:disabled { background: rgba(255,255,255,.15); color: rgba(255,255,255,.8); cursor: default; }
+.fosse-harvest { width: 100%; background: #047857; color: #fff; }
+.fosse-note { font-size: 12px; opacity: .8; text-align: center; }
+.fosse-fin { font-size: 15px; font-weight: 800; opacity: 1; }
+
+/* ---- Stickers verrouillés (débloqués par les badges de jeu) ---- */
+.sticker-pick.locked { opacity: .45; filter: grayscale(.6); }
+
+@media (prefers-reduced-motion: reduce) {
+    .jeux-ready-go, .fosse-plot.on, .jeux-card { animation: none !important; transition: none !important; }
+}

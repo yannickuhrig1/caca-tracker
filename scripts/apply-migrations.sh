@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Applique les migrations 13, 14 (PoopMap) et 15 (durée, santé, ligue) sur la base du NAS.
+# Applique les migrations 13, 14 (PoopMap), 15 (durée, santé, ligue) et 16
+# (Jeux du trône) sur la base du NAS.
 #
 # À lancer DEPUIS LE NAS, dans une copie du dépôt :
 #     ./scripts/apply-migrations.sh
@@ -23,6 +24,7 @@ MIGRATIONS=(
   "supabase/migrations/13_20260908_poopmap.sql"
   "supabase/migrations/14_20260908_poopmap-conquete.sql"
   "supabase/migrations/15_20260917_duree-sante-ligue.sql"
+  "supabase/migrations/16_20260917_jeux-du-trone.sql"
 )
 
 psql_exec() {
@@ -58,7 +60,9 @@ echo "🔍 Carnet de santé et ligue :"
 psql_exec -c "
   SELECT 'poop_health' AS objet, count(*) AS policies FROM pg_policies WHERE tablename = 'poop_health'
   UNION ALL
-  SELECT 'group_league()', count(*) FROM pg_proc WHERE proname = 'group_league';"
+  SELECT 'group_league()', count(*) FROM pg_proc WHERE proname = 'group_league'
+  UNION ALL
+  SELECT 'game_scores', count(*) FROM pg_policies WHERE tablename = 'game_scores';"
 
 # Ceinture et bretelles : les migrations envoient déjà ce signal, mais si
 # PostgREST n'écoute pas le canal (db-channel-enabled à false), il faut le

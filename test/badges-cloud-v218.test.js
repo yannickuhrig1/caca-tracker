@@ -27,8 +27,8 @@ test('chaque badge est rangé dans exactement une catégorie', () => {
   Object.keys(vus).forEach(id => assert.ok(B.BADGE_DEFS.some(b => b.id === id), `catégorie cite un badge inconnu : ${id}`));
 });
 
-test('75 badges au total', () => {
-  assert.strictEqual(B.BADGE_DEFS.length, 75);
+test('83 badges au total (dont 8 des Jeux du trône)', () => {
+  assert.strictEqual(B.BADGE_DEFS.length, 83);
 });
 
 // ---------- Nouveaux badges ----------
@@ -153,6 +153,7 @@ test('launchAction : seules les actions connues sont suivies', () => {
   assert.strictEqual(launchAction('?action=add'), 'add');
   assert.strictEqual(launchAction('?join=ABC&action=timer'), 'timer');
   assert.strictEqual(launchAction('?action=wrapped'), 'wrapped');
+  assert.strictEqual(launchAction('?action=jeux'), 'jeux');
   assert.strictEqual(launchAction('?action=supprimer-tout'), null);
   assert.strictEqual(launchAction(''), null);
 });

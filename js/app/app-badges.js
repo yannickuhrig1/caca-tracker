@@ -98,6 +98,15 @@ const BADGE_DEFS = [
   { id:'marathon',     icon:'📖', label:'Marathon',                desc:'Une séance de 15 min ou plus',      color:'#a855f7' },
   { id:'carnet',       icon:'🩺', label:'Carnet de Santé',         desc:'Contexte noté sur 10 cacas',        color:'#ef4444' },
   { id:'hydratee',     icon:'💧', label:'Bien Hydratée',           desc:'« Bien hydratée » noté 10 fois',    color:'#38bdf8' },
+  // ── Jeux du trône 🎮 (v2.19.0) ────────────────────────────
+  { id:'sniper',       icon:'🎯', label:'Sniper',                  desc:'10 Plop parfaits d\'affilée',        color:'#ef4444' },
+  { id:'architecte',   icon:'🧻', label:'Architecte',              desc:'Tour de PQ de 50 rouleaux',         color:'#0ea5e9' },
+  { id:'transit',      icon:'🐍', label:'Transit Express',         desc:'Un Côlon long de 30',               color:'#16a34a' },
+  { id:'justeATemps',  icon:'🚽', label:'Juste à Temps',           desc:'1 000 m dans la Course au trône',   color:'#f97316' },
+  { id:'detective',    icon:'🕵️', label:'Détective',               desc:'10 bonnes réponses d\'affilée au quiz', color:'#6366f1' },
+  { id:'sortieDigne',  icon:'🚪', label:'Sortie Digne',            desc:'20 séances de jeu finies avant 8 min', color:'#10b981' },
+  { id:'mainVerte',    icon:'🌻', label:'Main Verte',              desc:'5 plantations dans la fosse',       color:'#65a30d' },
+  { id:'gameuse',      icon:'🎮', label:'Gameuse',                 desc:'50 parties jouées',                 color:'#a855f7' },
 ];
 
 // Rangement de l'onglet Badges (v2.18.0) : 75 badges d'un bloc, c'était une
@@ -114,6 +123,7 @@ const BADGE_CATEGORIES = [
   { id:'speciaux',   label:'🌟 Spéciaux',              ids:['worldChamp','retroMaster','consistent','comeback','veteran50','veteran100','anniversary','bingo'] },
   { id:'lieux',      label:'🗺️ Lieux et conquête',     ids:['explorer','globetrotter','casaniere','firstDrop','cartographe','touriste','roadtrip','passeport','aventuriere','longCourrier','pleineNature'] },
   { id:'sante',      label:'⏱️ Durée et santé',        ids:['chrono','express','marathon','carnet','hydratee'] },
+  { id:'jeux',       label:'🎮 Jeux du trône',          ids:['sniper','architecte','transit','justeATemps','detective','sortieDigne','mainVerte','gameuse'] },
 ];
 
 // Badges que la rareté ne peut pas calculer honnêtement : ils dépendent de
@@ -125,6 +135,8 @@ const RARITY_SKIP = new Set([
   'aventuriere', 'longCourrier', 'pleineNature',
   // Carnet de santé : privé, jamais lu chez les copines
   'carnet', 'hydratee',
+  // Jeux du trône : statistiques gardées sur le téléphone de chacune
+  'sniper', 'architecte', 'transit', 'justeATemps', 'detective', 'sortieDigne', 'mainVerte', 'gameuse',
 ]);
 
 function badgeCardHTML(b) {
@@ -179,7 +191,7 @@ function nextBadges(etats, n = 3) {
 }
 
 function updateBadges() {
-  const badges = computeBadges(state.logs, calculateStreak());
+  const badges = computeBadges(state.logs, calculateStreak(), typeof loadGameStats === 'function' ? loadGameStats() : null);
 
   Object.entries(badges).forEach(([id, {pct, done}]) => {
     const card = document.querySelector(`[data-badge="${id}"]`);
@@ -235,7 +247,8 @@ function updateBadges() {
 // Fonction pure : l'état de chaque badge pour une liste d'entrées donnée.
 // Extraite d'updateBadges pour pouvoir la rejouer sur les entrées d'une
 // copine et en déduire la rareté d'un badge.
-function computeBadges(logs, streak) {
+// `games` : statistiques locales des Jeux du trône (null : badges de jeu à 0).
+function computeBadges(logs, streak, games = null) {
   const total = logs.length;
   const now   = new Date();
 
@@ -464,6 +477,13 @@ function computeBadges(logs, streak) {
     carnet:       { pct: Math.min(100,(avecSante/10)*100),            done: avecSante>=10 },
     hydratee:     { pct: Math.min(100,(hydratees/10)*100),            done: hydratees>=10 },
   };
+
+  // Jeux du trône : progression calculée par js/jeux/jeux-core.js. Si ce
+  // fichier manque, les badges restent à 0 plutôt que de disparaître.
+  const jeux = typeof gameBadgeStates === 'function' ? gameBadgeStates(games) : {};
+  BADGE_CATEGORIES.find(c => c.id === 'jeux').ids.forEach(id => {
+    badges[id] = jeux[id] || { pct: 0, done: false };
+  });
 
   return badges;
 }

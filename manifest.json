@@ -1,7 +1,7 @@
 {
   "name": "Caca-Tracker 3000 Deluxe",
   "short_name": "CacaTracker",
-  "version": "2.18.0",
+  "version": "2.19.0",
   "description": "Le tracker de selles ultime de Clémence 💩",
   "start_url": "./index.html",
   "display": "standalone",
@@ -47,6 +47,19 @@
       "short_name": "Chrono",
       "description": "Chronométrer la séance",
       "url": "./index.html?action=timer",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Jeux du trône",
+      "short_name": "Jeux",
+      "description": "Passer le temps aux toilettes (8 min max)",
+      "url": "./index.html?action=jeux",
       "icons": [
         {
           "src": "icons/icon-192.png",
