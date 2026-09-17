@@ -107,5 +107,14 @@ classement et garde les scores en local.
 
 `17_20260918_grand-transit.sql` remplace la contrainte `game_scores_game_known`
 pour accepter le jeu `transit` (Le Grand Transit). Rien d'autre ne change.
-**Pas encore appliquée** : sans elle, l'insertion d'un score de ce jeu est
-rejetée (23514) ; le client le garde en local et n'insiste pas.
+**Appliquée le 2026-09-17**, après un dump en `supabase_admin`. Vérifié : la
+contrainte liste `transit`, RLS et ses 4 policies inchangées, trigger
+`game_scores_keep_best` en place, table servie par PostgREST sans redémarrage
+et toujours refusée à la clé anon (42501). Le repli côté client reste : sans la
+migration, l'insertion est rejetée (23514), le score reste en local et le client
+n'insiste pas.
+
+Les migrations s'appliquent depuis le clone du dépôt sur le NAS,
+`/mnt/user/appdata/compose-stacks/caca-supabase/caca-tracker`. Le dossier
+`repo-migrations/` voisin est un instantané figé (13 → 16) qui s'exécute sans
+erreur en sautant les migrations suivantes : ne pas l'utiliser.

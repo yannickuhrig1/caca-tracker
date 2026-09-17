@@ -3,8 +3,13 @@
 # Applique les migrations 13, 14 (PoopMap), 15 (durée, santé, ligue), 16
 # (Jeux du trône) et 17 (Le Grand Transit) sur la base du NAS.
 #
-# À lancer DEPUIS LE NAS, dans une copie du dépôt :
-#     ./scripts/apply-migrations.sh
+# À lancer DEPUIS LE NAS, dans le clone du dépôt :
+#     cd /mnt/user/appdata/compose-stacks/caca-supabase/caca-tracker
+#     git pull && ./scripts/apply-migrations.sh
+#
+# ⚠️  Ne pas confondre avec le dossier repo-migrations/ voisin : c'est un
+#     instantané figé (migrations 13 → 16) avec sa propre copie de ce script.
+#     Il s'exécute sans erreur tout en sautant les migrations plus récentes.
 #
 # Chaque fichier passe dans une transaction : en cas d'erreur, rien n'est
 # appliqué. Les migrations sont idempotentes (ADD COLUMN IF NOT EXISTS), les
