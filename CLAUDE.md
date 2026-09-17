@@ -244,7 +244,7 @@ function shakeAchievement(id)
 - ➕ **Social** (`js/social-fun.js`) : stickers (`:sticker:id:`, aucun changement en base), série partagée du groupe, reine de l'endurance, **ligue entre groupes** sur inscription (`groups.league_opt_in`, fonction `group_league`)
 - ➕ **Badges** : 75 (5 nouveaux), 11 catégories repliables, « à portée de main » (`nextBadges`), paliers de rareté (`rarityTier`)
 - ➕ Thème qui **suit le téléphone** (clair/sombre) ; `UI.choose()` ; test de contraste WCAG des 16 thèmes
-- ➕ Migration `15_20260917_duree-sante-ligue.sql` — **pas encore appliquée** ; le client se passe de chaque fonctionnalité tant qu'elle manque (PGRST204/205/202), puis repousse une fois durées et santé (`maybeBackfillExtrasCloud`)
+- ➕ Migration `15_20260917_duree-sante-ligue.sql` — **appliquée en production le 2026-09-17** (dump préalable en `supabase_admin`, RLS de `poop_health` vérifiée entre deux membres d'un même groupe) ; le client garde son repli (PGRST204/205/202) et repousse une fois durées et santé (`maybeBackfillExtrasCloud`)
 - 🔧 Bump cache SW caca-v36 → caca-v37
 
 ### v2.17.0 (Septembre 2026) - 📊 REFONTE DES STATS

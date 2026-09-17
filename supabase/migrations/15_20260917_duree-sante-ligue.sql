@@ -17,6 +17,13 @@
 --     des groupes inscrits : nom, membres, cacas de la semaine. Aucune ligne
 --     de `poops` ne sort, aucun nom de membre non plus.
 --
+--  ✅ APPLIQUÉE en production le 2026-09-17 sur caca-db (NAS Unraid),
+--     après sauvegarde (pg_dump en supabase_admin : postgres n'est pas
+--     superuser sur cette image). Vérifié : colonne, 4 policies, RLS active,
+--     group_league SECURITY DEFINER non exécutable par anon, poop_health
+--     illisible par une autre membre du même groupe (test en transaction
+--     annulée), duration_s exposée par PostgREST sans redémarrage.
+--
 --  ORDRE DE DÉPLOIEMENT — indifférent. Le client détecte l'absence de la
 --  colonne (PGRST204 / 42703), de la table (PGRST205 / 42P01) ou de la
 --  fonction (PGRST202 / 42883) et se passe de la fonctionnalité : la durée

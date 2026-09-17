@@ -39,8 +39,9 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 ### Base de données
 - Migration `15_20260917_duree-sante-ligue.sql` (`poops.duration_s`, table
   `poop_health` + RLS propriétaire, `groups.league_opt_in`, fonction
-  `group_league`). Déploiement indifférent : sans elle, durée et santé restent
-  locales et la ligue est masquée.
+  `group_league`). **Appliquée en production le 2026-09-17**, après sauvegarde.
+  Déploiement indifférent : sans elle, durée et santé restent locales et la
+  ligue est masquée.
 
 ### Tests
 - 237 tests (+77) : santé et durée, série en attente, mascotte, Wrapped,

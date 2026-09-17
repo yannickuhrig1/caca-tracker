@@ -63,13 +63,23 @@ Le repli côté client (détection de PGRST204 / 42703, requête rejouée sans c
 colonnes) reste en place comme filet de sécurité pour une base neuve ou
 restaurée depuis un vieux dump.
 
-## Migration 15 (v2.18.0) — à appliquer
+## Migration 15 (v2.18.0)
 
 `15_20260917_duree-sante-ligue.sql` ajoute `poops.duration_s`, la table privée
 `poop_health` (RLS : propriétaire seulement), `groups.league_opt_in` et la
-fonction `group_league(week_start)`. **Pas encore appliquée** au moment du
-merge : `scripts/apply-migrations.sh` la joue avec 13 et 14 (idempotentes).
-Le client détecte son absence et se passe de la fonctionnalité concernée.
+fonction `group_league(week_start)`. **Appliquée le 2026-09-17**, après un
+dump complet fait en `supabase_admin` (sur cette image, `postgres` n'est pas
+superuser et un dump complet avec lui peut échouer sur les schémas internes).
+Vérifié : une membre du même groupe ne lit ni ne modifie les lignes
+`poop_health` d'une autre ; avec la clé anon, `poop_health` et `group_league`
+sont invisibles. Le repli côté client reste en place pour une base neuve.
+
+À noter, hors périmètre : comme `poops` et `comments`, `poop_health` hérite
+des droits par défaut de Supabase (`TRUNCATE`, `TRIGGER`, `REFERENCES` pour
+`authenticated`). PostgREST n'expose pas `TRUNCATE` : pas exploitable par l'API.
+
+Le worker `caca-push` n'envoie aucune notification pour les commentaires :
+les stickers (`:sticker:id:`) n'ont donc rien à adapter côté serveur.
 
 ## Convention
 
