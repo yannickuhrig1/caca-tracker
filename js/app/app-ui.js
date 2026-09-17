@@ -292,6 +292,7 @@ function openDrawer() {
   refreshRetroMax();
   refreshGeoButton();
   if (typeof refreshUsualButton === 'function') refreshUsualButton();
+  if (typeof refreshMaisRow === 'function') refreshMaisRow();
   $id('drawer').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 }
@@ -339,6 +340,7 @@ function closeDrawer() {
   pendingGeo      = null;
   if (typeof setDurationInput === 'function') setDurationInput(null);
   if (typeof setHealthSelection === 'function') setHealthSelection([]);
+  if (typeof refreshMaisRow === 'function') refreshMaisRow();
   const santeDetails = $id('health-details');
   if (santeDetails) santeDetails.open = false;
   document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('border-amber-400','bg-amber-50'));

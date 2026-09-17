@@ -193,5 +193,5 @@ test('catalogue : ids uniques, tous les jeux classés ont une unité', () => {
   const ids = J.JEUX.map(j => j.id);
   assert.strictEqual(new Set(ids).size, ids.length);
   J.JEUX.filter(j => j.classement).forEach(j => assert.ok(j.unite, j.id));
-  assert.strictEqual(J.JEUX_CLASSES.join('|'), 'plop|pq|colon|course|quiz');
+  assert.strictEqual(J.JEUX_CLASSES.join('|'), 'plop|pq|colon|course|quiz|transit');
 });

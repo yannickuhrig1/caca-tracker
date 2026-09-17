@@ -107,6 +107,10 @@ const BADGE_DEFS = [
   { id:'sortieDigne',  icon:'🚪', label:'Sortie Digne',            desc:'20 séances de jeu finies avant 8 min', color:'#10b981' },
   { id:'mainVerte',    icon:'🌻', label:'Main Verte',              desc:'5 plantations dans la fosse',       color:'#65a30d' },
   { id:'gameuse',      icon:'🎮', label:'Gameuse',                 desc:'50 parties jouées',                 color:'#a855f7' },
+  // ── Le Grand Transit et le vrai test du maïs 🌽 (v2.20.0) ──
+  { id:'grandTransit',   icon:'🌽', label:'Le Grand Transit',      desc:'Ressortir entier, bouche → sortie',  color:'#eab308' },
+  { id:'ressortiIntact', icon:'🛡️', label:'Ressortie Intacte',     desc:'Arriver avec 90 % de carapace',      color:'#0ea5e9' },
+  { id:'testMais',       icon:'⏳', label:'Test du Maïs',          desc:'Un vrai temps de transit mesuré',    color:'#f97316' },
 ];
 
 // Rangement de l'onglet Badges (v2.18.0) : 75 badges d'un bloc, c'était une
@@ -122,8 +126,8 @@ const BADGE_CATEGORIES = [
   { id:'notes',      label:'📝 Notes et humeurs',      ids:['journaliste','philosopher','novelist','moodStart','allMoods'] },
   { id:'speciaux',   label:'🌟 Spéciaux',              ids:['worldChamp','retroMaster','consistent','comeback','veteran50','veteran100','anniversary','bingo'] },
   { id:'lieux',      label:'🗺️ Lieux et conquête',     ids:['explorer','globetrotter','casaniere','firstDrop','cartographe','touriste','roadtrip','passeport','aventuriere','longCourrier','pleineNature'] },
-  { id:'sante',      label:'⏱️ Durée et santé',        ids:['chrono','express','marathon','carnet','hydratee'] },
-  { id:'jeux',       label:'🎮 Jeux du trône',          ids:['sniper','architecte','transit','justeATemps','detective','sortieDigne','mainVerte','gameuse'] },
+  { id:'sante',      label:'⏱️ Durée et santé',        ids:['chrono','express','marathon','carnet','hydratee','testMais'] },
+  { id:'jeux',       label:'🎮 Jeux du trône',          ids:['sniper','architecte','transit','justeATemps','detective','sortieDigne','mainVerte','gameuse','grandTransit','ressortiIntact'] },
 ];
 
 // Badges que la rareté ne peut pas calculer honnêtement : ils dépendent de
@@ -137,6 +141,9 @@ const RARITY_SKIP = new Set([
   'carnet', 'hydratee',
   // Jeux du trône : statistiques gardées sur le téléphone de chacune
   'sniper', 'architecte', 'transit', 'justeATemps', 'detective', 'sortieDigne', 'mainVerte', 'gameuse',
+  'grandTransit', 'ressortiIntact',
+  // Test du maïs : mesure personnelle, gardée sur le téléphone
+  'testMais',
 ]);
 
 function badgeCardHTML(b) {
@@ -484,6 +491,8 @@ function computeBadges(logs, streak, games = null) {
   BADGE_CATEGORIES.find(c => c.id === 'jeux').ids.forEach(id => {
     badges[id] = jeux[id] || { pct: 0, done: false };
   });
+  // Test du maïs (app-mais.js) : mesure locale, pas une statistique de jeu.
+  badges.testMais = typeof maisBadgeState === 'function' ? maisBadgeState() : { pct: 0, done: false };
 
   return badges;
 }

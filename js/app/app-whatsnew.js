@@ -7,12 +7,22 @@
 
 // Source de vérité unique de la version. L'en-tête et les Réglages sont
 // remplis à partir d'ici, ce qui évite qu'ils divergent comme par le passé.
-const APP_VERSION = '2.19.0';
+const APP_VERSION = '2.20.0';
 const APP_VERSION_DATE = 'Septembre 2026';
 
 // De la plus récente à la plus ancienne. `items` reste court et écrit pour
 // Clémence, pas pour un développeur : ce que ça change pour elle, pas comment.
 const APP_CHANGELOG = [
+  {
+    version: '2.20.0',
+    date: 'Septembre 2026',
+    items: [
+      ['🌽', '**Le Grand Transit** : tu es un grain de maïs avalé. Glisse le pouce pour éviter les molaires, l\'acide et les bactéries, tape pour durcir ta carapace. Bouche, estomac, côlon, et la sortie !'],
+      ['💾', 'La partie est **sauvegardée à l\'entrée de chaque organe** : tu reprends où tu en étais à la séance suivante.'],
+      ['⏳', 'Le **vrai test du maïs** : dans Stats, touche « J\'ai mangé du maïs », puis coche « Je vois du maïs » au caca où tu le retrouves. L\'app calcule ton **temps de transit réel**, celui que mesurent les médecins.'],
+      ['🏅', '3 nouveaux badges : Le Grand Transit, Ressortie Intacte et Test du Maïs.'],
+    ]
+  },
   {
     version: '2.19.0',
     date: 'Septembre 2026',

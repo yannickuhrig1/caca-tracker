@@ -1,4 +1,4 @@
-const CACHE = 'caca-v39';
+const CACHE = 'caca-v40';
 const ASSETS = [
   './',
   './index.html',
@@ -46,7 +46,9 @@ const ASSETS = [
   './js/jeux/colon.js',
   './js/jeux/course.js',
   './js/jeux/quiz.js',
+  './js/jeux/transit.js',
   './js/jeux/fosse.js',
+  './js/app/app-mais.js',
   './js/app/app-jeux.js',
   './js/jokes.js',
   './js/achievements.js',

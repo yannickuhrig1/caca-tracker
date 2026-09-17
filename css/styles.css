@@ -1334,3 +1334,67 @@
     .mascot-body, .mascot-jump, .wr-slide, .group-streak-flame, #streak-badge.streak-pending { animation: none !important; }
     .wr-bar-fill.run { animation-duration: 1ms; }
 }
+
+/* ============================================================
+   TEST DU MAÏS 🌽 (v2.20.0) — carte des Stats et case de la saisie
+   ============================================================ */
+.mais-block {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--card-border);
+}
+.mais-btn {
+    width: 100%;
+    min-height: 46px;
+    border: none;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 15px;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--header-from), var(--header-to));
+    color: #fff;
+}
+.mais-btn.ghost {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+    min-height: 38px;
+    font-size: 13px;
+}
+.mais-result { text-align: center; }
+.mais-hours {
+    font-size: 44px;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+}
+.mais-verdict {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    padding: 10px 12px;
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.mais-run {
+    padding: 12px;
+    border-radius: 1.25rem;
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+/* Saisie : le drawer est clair, on garde les couleurs des autres champs. */
+.mais-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 1.25rem;
+    border: 1.5px solid #fcd34d;
+    background: #fffbeb;
+    color: #1f2937;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.mais-row.hidden { display: none; }
+.mais-row input { width: 20px; height: 20px; accent-color: #f59e0b; flex-shrink: 0; }
+.mais-row-info { font-weight: 500; opacity: .7; font-size: 12px; }

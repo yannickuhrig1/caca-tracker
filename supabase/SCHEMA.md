@@ -102,3 +102,10 @@ primaire, 4 policies, RLS active, trigger, score plus bas ignoré à l'upsert
 (transaction annulée), table illisible avec la clé anon via l'API, table vue
 par PostgREST sans redémarrage. Sans la table, le client masque la carte du
 classement et garde les scores en local.
+
+## Migration 17 (v2.20.0)
+
+`17_20260918_grand-transit.sql` remplace la contrainte `game_scores_game_known`
+pour accepter le jeu `transit` (Le Grand Transit). Rien d'autre ne change.
+**Pas encore appliquée** : sans elle, l'insertion d'un score de ce jeu est
+rejetée (23514) ; le client le garde en local et n'insiste pas.
