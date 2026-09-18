@@ -5,6 +5,32 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.21.0] — 2026-09-18
+
+### Modifié
+- **👤 Profil rangé en trois onglets** (Avatar, Thème, Compte) au lieu d'une
+  colonne de sept blocs. L'identité reste en haut, la connexion devient un seul
+  bouton pour les invitées, les actions de compte sont groupées en liste et
+  « Tout supprimer » / « Se déconnecter » sont mis à part, en rouge. Hauteur
+  fixe : les onglets ne bougent pas quand on passe de l'un à l'autre.
+- **🔐 Connexion** : titre, champs avec libellés, bouton de fermeture, Entrée
+  valide le formulaire. Les deux fenêtres suivent le thème (plus de fond blanc
+  forcé).
+
+### Ajouté
+- **20 nouveaux avatars** (50 au total), dans `js/app/app-avatars.js`.
+- **12 avatars animés**, chacun débloqué par un badge (🕺 TGIF, 🔥 Semaine
+  Parfaite, 🏆 Mois de Feu, 💎 Diamant, 🚀 Astronaute, 🌪️ Tornade, 🦉 Hibou,
+  🌋 Volcan, 🎨 Tableau de Maître, 🧭 Cartographe, 🎮 Gameuse, 🌽 Le Grand
+  Transit). Un cadenas indique le badge et la progression.
+- En base, l'avatar reste un emoji : aucune migration. Un emoji animé
+  n'appartient à aucune autre liste, donc `avatarHTML()` l'anime partout où un
+  avatar s'affiche (en-tête, podium, fil, commentaires, classements). Animations
+  coupées si le téléphone demande moins de mouvement.
+- Cache SW caca-v41 → caca-v42.
+
+---
+
 ## [2.20.1] — 2026-09-18
 
 ### Corrigé

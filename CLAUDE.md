@@ -1,4 +1,4 @@
-# 💩 Caca-Tracker 3000 Deluxe - v2.20.1
+# 💩 Caca-Tracker 3000 Deluxe - v2.21.0
 
 > ☁️ **Backend** : Supabase **auto-hébergé sur le NAS Unraid** depuis v2.9.0 (2026-07-14) — API `https://caca-api.yannick-uhrig.com` (Traefik + Cloudflare Tunnel → Postgres/GoTrue/PostgREST, stack `compose-stacks/caca-supabase`). L'ancien projet cloud `fnljhknjmmteawwomehb` est en pause.
 >
@@ -232,6 +232,13 @@ function shakeAchievement(id)
 - Poids total : ~50KB
 
 ## 🆗 Changelog
+
+### v2.21.0 (Septembre 2026) - 👤 PROFIL RANGÉ + AVATARS ANIMÉS
+
+- 🔄 **Modale profil en trois onglets** (`showProfileTab` dans `app-notifications.js`, classes `.pf-*` dans `styles.css`) ; connexion refaite sur le même gabarit, couleurs du thème au lieu de `bg-white`
+- ➕ `js/app/app-avatars.js` : `AVATARS_FIXES` (50), `AVATARS_ANIMES` (12, un badge chacun), `avatarHTML()` / `setAvatarEl()` pour tout affichage d'avatar, `renderAvatarPicker()`
+- ➕ Aucune migration : l'avatar reste un emoji dans `profiles.avatar` ; un emoji animé n'existe dans aucune autre liste (test `avatars.test.js`)
+- 🔧 Bump cache SW caca-v41 → caca-v42
 
 ### v2.20.1 (Septembre 2026) - 🌽 PLUS DE MORTS FORCÉES
 
