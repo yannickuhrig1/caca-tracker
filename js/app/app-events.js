@@ -151,8 +151,12 @@ function setupEvents() {
   $id('auth-tab-login')?.addEventListener('click', () => switchAuthTab('login'));
   $id('auth-tab-signup')?.addEventListener('click', () => switchAuthTab('signup'));
 
-  // Auth guest
+  // Auth guest / fermeture
   $id('auth-guest-btn')?.addEventListener('click', closeAuthModal);
+  $id('auth-close')?.addEventListener('click', closeAuthModal);
+  // Entrée valide le formulaire affiché
+  $id('form-login')?.addEventListener('keydown', e => { if (e.key === 'Enter') $id('auth-submit').click(); });
+  $id('form-signup')?.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') $id('signup-submit').click(); });
 
   // Auth submit (login)
   $id('auth-submit')?.addEventListener('click', async () => {
@@ -261,13 +265,23 @@ function setupEvents() {
     });
   });
 
-  // Avatar picker
-  document.querySelectorAll('.avatar-opt').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.avatar-opt').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
+  // Avatar à l'inscription : les 12 premiers, le reste se choisit dans le profil
+  const signupAv = $id('avatar-picker');
+  if (signupAv) {
+    signupAv.innerHTML = AVATARS_FIXES.slice(0, 12).map((a, i) =>
+      `<button type="button" class="av-opt avatar-opt${i === 0 ? ' is-on selected' : ''}" data-avatar="${a}" aria-label="Choisir l'avatar ${a}">${a}</button>`).join('');
+    signupAv.addEventListener('click', e => {
+      const btn = e.target.closest('.avatar-opt');
+      if (!btn) return;
+      signupAv.querySelectorAll('.avatar-opt').forEach(b => b.classList.toggle('selected', b === btn));
+      signupAv.querySelectorAll('.avatar-opt').forEach(b => b.classList.toggle('is-on', b === btn));
     });
-  });
+  }
+
+  // Onglets du profil
+  document.querySelectorAll('[data-pf-tab]').forEach(btn =>
+    btn.addEventListener('click', () => showProfileTab(btn.dataset.pfTab)));
+  $id('profile-modal')?.addEventListener('click', e => { if (e.target === $id('profile-modal')) closeProfileModal(); });
 
   // Profile modal
   $id('close-profile-modal')?.addEventListener('click', closeProfileModal);
@@ -310,29 +324,6 @@ function setupEvents() {
   $id('whatsnew-close')?.addEventListener('click', closeWhatsNew);
   $id('replay-whatsnew-btn')?.addEventListener('click', () => window.replayWhatsNew());
   $id('qr-modal')?.addEventListener('click', e => { if (e.target === $id('qr-modal')) $id('qr-modal').classList.add('hidden'); });
-
-  // ── Avatar picker (profile modal) ────────────────────────
-  const AVATARS = ['💩','🐻','🦊','🐼','🐱','🐶','🐸','🐷','🐮','🦁','🐯','🐻‍❄️','🦄','🐙','🦋','🌸','🌙','⭐','🌈','🎀','👑','🍦','🎸','🧁','🌺','🦩','🐢','🦀','🧸','🎭'];
-  const avatarGrid = $id('avatar-picker-grid');
-  if (avatarGrid) {
-    avatarGrid.innerHTML = AVATARS.map(a => `
-      <button class="profile-avatar-opt w-10 h-10 rounded-[0.75rem] flex items-center justify-center text-xl hover:scale-110 transition-transform"
-        data-av="${a}" aria-label="Choisir l'avatar ${a}"
-        style="background:color-mix(in srgb,var(--accent) 8%,transparent)">${a}</button>`
-    ).join('');
-    avatarGrid.querySelectorAll('.profile-avatar-opt').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const av = btn.dataset.av;
-        avatarGrid.querySelectorAll('.profile-avatar-opt').forEach(b =>
-          b.style.outline = b.dataset.av === av ? '2px solid var(--accent)' : 'none');
-        $id('profile-avatar-display').textContent = av;
-        $id('user-avatar').textContent = av;
-        if (window.SupabaseClient?.isLoggedIn()) {
-          try { await window.SupabaseClient.updateProfile({ avatar: av }); } catch(e) {}
-        }
-      });
-    });
-  }
 
   // ── Theme picker (profile modal) ─────────────────────────
   const ALL_THEMES = [

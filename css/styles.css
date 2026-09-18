@@ -1398,3 +1398,109 @@
 .mais-row.hidden { display: none; }
 .mais-row input { width: 20px; height: 20px; accent-color: #f59e0b; flex-shrink: 0; }
 .mais-row-info { font-weight: 500; opacity: .7; font-size: 12px; }
+
+/* ============================================================
+   Profil et connexion (v2.21.0) : une fiche, trois onglets
+   ============================================================ */
+.pf-modal { background: rgba(0,0,0,.7); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.pf-modal.hidden { display: none; }
+.pf-sheet {
+  width: 100%; max-width: 24rem; max-height: min(90vh, 720px);
+  display: flex; flex-direction: column; overflow: hidden;
+  border-radius: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,.4);
+  background: var(--bg-via); color: var(--text-primary); border: 1px solid var(--card-border);
+}
+/* Hauteur fixe : les onglets ne sautent pas d'un onglet court à un long */
+#profile-modal .pf-sheet { height: min(90vh, 720px); }
+.pf-head { display: flex; align-items: center; gap: 14px; padding: 20px 56px 12px 20px; position: relative; }
+.pf-avatar {
+  width: 64px; height: 64px; flex-shrink: 0; border-radius: 20px; font-size: 38px; line-height: 64px; text-align: center;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.pf-id { flex: 1; min-width: 0; }
+.pf-name { font-weight: 800; font-size: 1.15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-mail { font-size: .75rem; opacity: .6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-status { display: inline-block; margin-top: 4px; font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 99px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+.pf-close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 99px; font-size: 1rem; opacity: .55; }
+.pf-close:hover { opacity: 1; background: color-mix(in srgb, var(--text-primary) 8%, transparent); }
+.pf-cta {
+  display: block; width: calc(100% - 40px); margin: 4px 20px 8px; padding: 14px; border-radius: 1.25rem;
+  font-weight: 700; color: #fff; text-align: center;
+  background: linear-gradient(135deg, var(--header-from), var(--header-to));
+}
+.pf-body .pf-cta { width: 100%; margin: 0; }
+.pf-cta.hidden { display: none; }
+.pf-tabs { display: flex; gap: 4px; margin: 4px 20px 0; padding: 4px; border-radius: 1rem;
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent); }
+.pf-tab { flex: 1; padding: 8px 4px; border-radius: .8rem; font-size: .8rem; font-weight: 700; opacity: .6; transition: background .15s, opacity .15s; }
+.pf-tab.is-on { opacity: 1; background: var(--bg-via); color: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.pf-body { padding: 16px 20px 20px; overflow-y: auto; overscroll-behavior: contain; }
+.pf-pane.hidden { display: none; }
+.pf-sub { font-size: .75rem; font-weight: 700; opacity: .65; margin: 14px 0 8px; }
+.pf-pane > .pf-sub:first-child { margin-top: 0; }
+.pf-sub-row { display: flex; justify-content: space-between; gap: 8px; }
+.pf-count { color: var(--accent); }
+.pf-hint { font-size: .7rem; opacity: .5; margin-top: 8px; text-align: center; }
+.pf-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 15%, transparent); }
+.pf-group { border-radius: 1.1rem; overflow: hidden; background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
+.pf-group + .pf-sub, .pf-group + .pf-group { margin-top: 14px; }
+.pf-group:not(:has(.pf-item:not(.hidden))) { display: none; }
+.pf-item { display: block; width: 100%; text-align: left; padding: 13px 14px; font-size: .9rem; font-weight: 600; }
+.pf-item.hidden { display: none; }
+.pf-item:not(.hidden) ~ .pf-item:not(.hidden) { border-top: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent); }
+.pf-item:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.pf-group.pf-danger { margin-top: 20px; }
+.pf-danger .pf-item { color: #dc2626; }
+.pf-link { display: block; width: 100%; padding: 6px; font-size: .8rem; font-weight: 600; opacity: .6; text-align: center; }
+.pf-link:hover { opacity: 1; text-decoration: underline; }
+.pf-auth-head { position: relative; text-align: center; padding: 22px 48px 10px; display: grid; gap: 4px; justify-items: center; }
+.pf-field { display: block; }
+.pf-field > span { display: block; font-size: .75rem; font-weight: 700; opacity: .7; margin: 0 0 4px 4px; }
+.pf-field em { font-weight: 400; opacity: .7; }
+.pf-field input {
+  width: 100%; padding: 12px 14px; border-radius: 1rem; font-size: 1rem; color: inherit;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+}
+.pf-field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+
+/* Grille d'avatars */
+.av-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.av-opt {
+  position: relative; aspect-ratio: 1; border-radius: .8rem; font-size: 1.5rem; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--accent) 8%, transparent); border: 2px solid transparent;
+  transition: transform .12s;
+}
+.av-opt:active { transform: scale(.92); }
+.av-opt.is-on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.av-locked-emoji { filter: grayscale(1); opacity: .35; }
+.av-lock { position: absolute; right: 2px; bottom: 1px; font-size: .7rem; }
+
+/* Avatars animés */
+.av-anim { display: inline-block; }
+.av-anim-danse     { animation: avDanse 1.1s ease-in-out infinite; transform-origin: 50% 90%; }
+.av-anim-flamme    { animation: avFlamme .9s ease-in-out infinite alternate; transform-origin: 50% 100%; }
+.av-anim-brille    { animation: avBrille 2.2s ease-in-out infinite; }
+.av-anim-scintille { animation: avScintille 1.6s ease-in-out infinite; }
+.av-anim-decolle   { animation: avDecolle 1.4s ease-in-out infinite; }
+.av-anim-tourne    { animation: avTourne 1.2s linear infinite; }
+.av-anim-hoche     { animation: avHoche 2.4s ease-in-out infinite; }
+.av-anim-tremble   { animation: avTremble .35s linear infinite; }
+.av-anim-arcenciel { animation: avArcEnCiel 3s linear infinite; }
+.av-anim-aiguille  { animation: avAiguille 2s ease-in-out infinite; }
+.av-anim-saute     { animation: avSaute .8s cubic-bezier(.3,.6,.5,1) infinite; }
+@keyframes avDanse { 0%,100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg) translateY(-6%); } }
+@keyframes avFlamme { from { transform: scale(1,1); } to { transform: scale(.94,1.12); filter: brightness(1.2); } }
+@keyframes avBrille { 0%,70%,100% { transform: scale(1) rotate(0); filter: none; } 80% { transform: scale(1.15) rotate(-8deg); filter: brightness(1.35) drop-shadow(0 0 4px gold); } 90% { transform: scale(1.1) rotate(8deg); } }
+@keyframes avScintille { 0%,100% { filter: brightness(1); transform: scale(1); } 50% { filter: brightness(1.5) drop-shadow(0 0 5px #7dd3fc); transform: scale(1.08); } }
+@keyframes avDecolle { 0%,100% { transform: translate(0,0); } 50% { transform: translate(4%,-14%); } 60% { transform: translate(2%,-10%) rotate(3deg); } }
+@keyframes avTourne { to { transform: rotate(360deg); } }
+@keyframes avHoche { 0%,40%,100% { transform: rotate(0); } 50% { transform: rotate(-18deg); } 65% { transform: rotate(14deg); } 80% { transform: rotate(0); } }
+@keyframes avTremble { 0%,100% { transform: translate(0,0); } 25% { transform: translate(-3%,2%); } 50% { transform: translate(3%,-2%); } 75% { transform: translate(-2%,-3%); } }
+@keyframes avArcEnCiel { to { filter: hue-rotate(360deg); } }
+@keyframes avAiguille { 0%,100% { transform: rotate(-25deg); } 50% { transform: rotate(25deg); } }
+@keyframes avSaute { 0%,100% { transform: translateY(0) scale(1,1); } 15% { transform: translateY(0) scale(1.1,.9); } 50% { transform: translateY(-22%) scale(.95,1.05); } }
+@media (prefers-reduced-motion: reduce) { .av-anim { animation: none !important; } }

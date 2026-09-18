@@ -329,22 +329,31 @@ function switchAuthTab(tab) {
   const isLogin = tab === 'login';
   $id('form-login').classList.toggle('hidden', !isLogin);
   $id('form-signup').classList.toggle('hidden', isLogin);
-  $id('auth-tab-login').style.borderColor = isLogin ? 'var(--accent)' : 'transparent';
-  $id('auth-tab-login').style.color = isLogin ? 'var(--accent)' : '';
-  $id('auth-tab-login').style.opacity = isLogin ? '1' : '0.6';
-  $id('auth-tab-signup').style.borderColor = !isLogin ? 'var(--accent)' : 'transparent';
-  $id('auth-tab-signup').style.color = !isLogin ? 'var(--accent)' : '';
-  $id('auth-tab-signup').style.opacity = !isLogin ? '1' : '0.6';
+  [['auth-tab-login', isLogin], ['auth-tab-signup', !isLogin]].forEach(([id, on]) => {
+    $id(id).classList.toggle('is-on', on);
+    $id(id).setAttribute('aria-selected', String(on));
+  });
+}
+
+/** Onglet de la modale profil : avatar, thème ou compte. */
+function showProfileTab(tab) {
+  document.querySelectorAll('[data-pf-tab]').forEach(b => {
+    const on = b.dataset.pfTab === tab;
+    b.classList.toggle('is-on', on);
+    b.setAttribute('aria-selected', String(on));
+  });
+  ['avatar', 'theme', 'compte'].forEach(t => $id('profile-pane-' + t)?.classList.toggle('hidden', t !== tab));
+  if (tab === 'avatar' && typeof renderAvatarPicker === 'function') renderAvatarPicker();
 }
 
 function updateUserBadge(profile) {
   const avatar = $id('user-avatar');
   const name = $id('user-name');
   if (profile) {
-    if (avatar) avatar.textContent = profile.avatar || '👤';
+    if (avatar) setAvatarEl(avatar, profile.avatar || '👤');
     if (name) name.textContent = profile.username || 'Moi';
   } else {
-    if (avatar) avatar.textContent = '👤';
+    if (avatar) setAvatarEl(avatar, '👤');
     if (name) name.textContent = 'Connexion';
     document.getElementById('queen-crown')?.remove();
   }

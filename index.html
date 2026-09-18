@@ -1075,103 +1075,94 @@
   </nav>
 
   <!-- AUTH MODAL -->
-  <div id="auth-modal" class="fixed inset-0 z-[60] hidden" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);">
-    <div class="flex items-center justify-center h-full p-4">
-      <div id="auth-inner" class="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden">
+  <div id="auth-modal" class="pf-modal fixed inset-0 z-[60] hidden" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <div id="auth-inner" class="pf-sheet pf-sheet-auth">
+      <div class="pf-auth-head">
+        <div class="text-5xl" aria-hidden="true">💩</div>
+        <h3 id="auth-title" class="font-extrabold text-xl">Rejoins tes copines</h3>
+        <p class="text-xs opacity-60">Un compte sert au classement, au fil du groupe et à garder tes cacas sur tous tes appareils.</p>
+        <button type="button" id="auth-close" class="pf-close" aria-label="Fermer">✕</button>
+      </div>
 
-        <!-- Tabs -->
-        <div class="flex border-b border-gray-100">
-          <button id="auth-tab-login" class="flex-1 py-4 text-sm font-bold border-b-2 transition" style="border-color:var(--accent);color:var(--accent)">
-            Connexion
-          </button>
-          <button id="auth-tab-signup" class="flex-1 py-4 text-sm font-bold border-b-2 border-transparent opacity-60 transition">
-            Créer un compte
-          </button>
+      <div class="pf-tabs" role="tablist">
+        <button type="button" id="auth-tab-login" class="pf-tab is-on" role="tab" aria-selected="true">Connexion</button>
+        <button type="button" id="auth-tab-signup" class="pf-tab" role="tab" aria-selected="false">Créer un compte</button>
+      </div>
+
+      <div class="pf-body space-y-3">
+        <!-- LOGIN FORM -->
+        <div id="form-login" class="space-y-3">
+          <label class="pf-field"><span>Email</span>
+            <input id="auth-email" type="email" placeholder="toi@exemple.fr" autocomplete="email" /></label>
+          <label class="pf-field"><span>Mot de passe</span>
+            <input id="auth-password" type="password" autocomplete="current-password" /></label>
+          <div id="auth-error" class="hidden text-xs text-red-500 font-bold px-1"></div>
+          <button id="auth-submit" class="pf-cta">Se connecter</button>
+          <button id="forgot-password-btn" type="button" class="pf-link">Mot de passe oublié ?</button>
         </div>
 
-        <div class="p-6 space-y-4">
-
-          <!-- LOGIN FORM -->
-          <div id="form-login" class="space-y-3">
-            <input id="auth-email" type="email" placeholder="Email" autocomplete="email"
-              class="w-full p-3 border border-gray-200 rounded-[1rem] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
-            <input id="auth-password" type="password" placeholder="Mot de passe" autocomplete="current-password"
-              class="w-full p-3 border border-gray-200 rounded-[1rem] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
-            <div id="auth-error" class="hidden text-xs text-red-500 font-bold px-1"></div>
-            <div class="text-right -mt-1">
-              <button id="forgot-password-btn" type="button" class="text-xs opacity-50 hover:opacity-100 underline">Mot de passe oublié ?</button>
-            </div>
-            <button id="auth-submit" class="w-full py-4 rounded-[1.25rem] font-bold text-white"
-              style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">
-              Se connecter
-            </button>
+        <!-- SIGNUP FORM (hidden by default) -->
+        <div id="form-signup" class="space-y-3 hidden">
+          <label class="pf-field"><span>Pseudo</span>
+            <input id="signup-username" type="text" placeholder="ex : Clémence" maxlength="20" autocomplete="nickname" /></label>
+          <label class="pf-field"><span>Email</span>
+            <input id="signup-email" type="email" placeholder="toi@exemple.fr" autocomplete="email" /></label>
+          <label class="pf-field"><span>Mot de passe <em>(6 caractères min.)</em></span>
+            <input id="signup-password" type="password" autocomplete="new-password" /></label>
+          <div>
+            <div class="pf-sub">Avatar <em class="font-normal opacity-60">(plein d'autres dans ton profil)</em></div>
+            <div id="avatar-picker" class="av-grid"></div>
           </div>
-
-          <!-- SIGNUP FORM (hidden by default) -->
-          <div id="form-signup" class="space-y-3 hidden">
-            <input id="signup-username" type="text" placeholder="Pseudo (ex: Clémence)" maxlength="20"
-              class="w-full p-3 border border-gray-200 rounded-[1rem] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
-            <input id="signup-email" type="email" placeholder="Email" autocomplete="email"
-              class="w-full p-3 border border-gray-200 rounded-[1rem] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
-            <input id="signup-password" type="password" placeholder="Mot de passe (min. 6 caractères)"
-              class="w-full p-3 border border-gray-200 rounded-[1rem] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
-            <div>
-              <div class="text-xs font-bold mb-2 opacity-70">Avatar</div>
-              <div id="avatar-picker" class="flex gap-2 flex-wrap">
-                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400 selected" data-avatar="💩" aria-label="Choisir l'avatar 💩">💩</button>
-                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="🦄" aria-label="Choisir l'avatar 🦄">🦄</button>
-                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="🌸" aria-label="Choisir l'avatar 🌸">🌸</button>
-                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="🔥" aria-label="Choisir l'avatar 🔥">🔥</button>
-                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="⭐" aria-label="Choisir l'avatar ⭐">⭐</button>
-                <button class="avatar-opt text-2xl p-2 rounded-xl border-2 border-transparent hover:border-amber-400" data-avatar="🎀" aria-label="Choisir l'avatar 🎀">🎀</button>
-              </div>
-            </div>
-            <div id="signup-error" class="hidden text-xs text-red-500 font-bold px-1"></div>
-            <button id="signup-submit" class="w-full py-4 rounded-[1.25rem] font-bold text-white"
-              style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">
-              Créer mon compte
-            </button>
-          </div>
-
-          <button id="auth-guest-btn" class="w-full py-3 text-sm opacity-60 font-bold">
-            Continuer sans compte →
-          </button>
+          <div id="signup-error" class="hidden text-xs text-red-500 font-bold px-1"></div>
+          <button id="signup-submit" class="pf-cta">Créer mon compte</button>
         </div>
+
+        <button id="auth-guest-btn" class="pf-link">Continuer sans compte</button>
       </div>
     </div>
   </div>
 
-  <!-- PROFILE MODAL -->
-  <div id="profile-modal" class="fixed inset-0 z-[60] hidden" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);">
-    <div class="flex items-center justify-center h-full p-4">
-      <div class="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-6 space-y-4 overflow-y-auto" style="max-height:90vh">
-        <div class="text-center">
-          <div id="profile-avatar-display" class="text-5xl mb-2">💩</div>
-          <div id="profile-username-display" class="font-bold text-xl"></div>
-          <div id="profile-email-display" class="text-xs opacity-60 mt-1"></div>
+  <!-- PROFILE MODAL (v2.21.0 : trois onglets au lieu d'une longue colonne) -->
+  <div id="profile-modal" class="pf-modal fixed inset-0 z-[60] hidden" role="dialog" aria-modal="true" aria-labelledby="profile-username-display">
+    <div class="pf-sheet">
+      <div class="pf-head">
+        <div id="profile-avatar-display" class="pf-avatar" aria-hidden="true">💩</div>
+        <div class="pf-id">
+          <div id="profile-username-display" class="pf-name"></div>
+          <div id="profile-email-display" class="pf-mail"></div>
+          <div id="profile-stats-display" class="pf-status"></div>
         </div>
-        <div class="p-3 rounded-2xl text-sm text-center" style="background:color-mix(in srgb,var(--accent) 10%,transparent)">
-          <span id="profile-stats-display"></span>
-        </div>
+        <button type="button" id="close-profile-modal" class="pf-close" aria-label="Fermer le profil">✕</button>
+      </div>
 
-        <!-- Photo de profil -->
-        <div class="rounded-[1.5rem] p-4 space-y-2" style="background:color-mix(in srgb,var(--accent) 5%,transparent);border:1.5px solid color-mix(in srgb,var(--accent) 15%,transparent)">
-          <div class="font-bold text-sm opacity-70">🖼️ Photo de profil</div>
-          <div id="avatar-picker-grid" class="grid grid-cols-6 gap-1.5 text-2xl text-center"></div>
+      <button id="profile-login-btn" class="hidden pf-cta">👤 Se connecter ou créer un compte</button>
+
+      <div class="pf-tabs" role="tablist">
+        <button type="button" class="pf-tab is-on" role="tab" aria-selected="true" data-pf-tab="avatar">🖼️ Avatar</button>
+        <button type="button" class="pf-tab" role="tab" aria-selected="false" data-pf-tab="theme">🎨 Thème</button>
+        <button type="button" class="pf-tab" role="tab" aria-selected="false" data-pf-tab="compte">⚙️ Compte</button>
+      </div>
+
+      <div class="pf-body">
+        <!-- Avatar -->
+        <div id="profile-pane-avatar" class="pf-pane" role="tabpanel">
+          <div class="pf-sub">Classiques</div>
+          <div id="avatar-picker-grid" class="av-grid"></div>
+          <div class="pf-sub pf-sub-row"><span>✨ Animés, à débloquer avec les badges</span><span id="avatar-anim-count" class="pf-count"></span></div>
+          <div id="avatar-anim-grid" class="av-grid"></div>
+          <p class="pf-hint">Touche un cadenas pour savoir quel badge le débloque.</p>
         </div>
 
         <!-- Thème -->
-        <div class="rounded-[1.5rem] p-4 space-y-3" style="background:color-mix(in srgb,var(--accent) 5%,transparent);border:1.5px solid color-mix(in srgb,var(--accent) 15%,transparent)">
-          <div class="font-bold text-sm opacity-70">🎨 Thème</div>
+        <div id="profile-pane-theme" class="pf-pane hidden" role="tabpanel">
           <div id="profile-theme-grid" class="grid grid-cols-4 gap-2"></div>
-          <!-- Toggle mode nuit auto -->
-          <div class="flex items-center justify-between pt-2 border-t" style="border-color:color-mix(in srgb,var(--accent) 15%,transparent)">
+          <div class="pf-row">
             <div>
               <div class="text-sm font-bold">🌙 Mode nuit auto</div>
               <div class="text-xs opacity-60">Thème sombre de 22h à 7h</div>
             </div>
             <button id="auto-night-toggle" onclick="toggleAutoNight()"
-              class="relative w-11 h-6 rounded-full transition-colors duration-300 focus:outline-none"
+              class="relative w-11 h-6 rounded-full transition-colors duration-300 focus:outline-none shrink-0"
               style="background:rgba(0,0,0,0.15)" aria-label="Mode nuit auto">
               <span id="auto-night-knob"
                 class="absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow transition-transform duration-300"></span>
@@ -1179,37 +1170,26 @@
           </div>
         </div>
 
-        <!-- Sync cloud -->
-        <button id="sync-cloud-btn" class="w-full py-3 rounded-[1.25rem] font-bold text-sm"
-          style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">
-          ☁️ Synchroniser mes données
-        </button>
-        <div id="sync-error-msg" class="hidden text-xs text-red-500 text-center -mt-2 px-2"></div>
-
-        <!-- Gestion des données -->
-        <div class="rounded-[1.5rem] p-4 space-y-3" style="background:color-mix(in srgb,var(--accent) 5%,transparent);border:1.5px solid color-mix(in srgb,var(--accent) 15%,transparent)">
-          <div class="font-bold text-sm opacity-70">🗂️ Gestion des données</div>
-          <button id="export-btn" class="w-full bg-blue-500 text-white py-2.5 rounded-[1rem] font-bold text-sm">📤 Exporter JSON</button>
-          <label class="w-full bg-green-500 text-white py-2.5 rounded-[1rem] font-bold text-sm cursor-pointer flex items-center justify-center gap-2">
-            📥 Importer JSON
-            <input type="file" id="import-input" accept=".json" class="hidden" />
-          </label>
-          <button id="clear-btn" class="w-full bg-red-500 text-white py-2.5 rounded-[1rem] font-bold text-sm">🗑️ Tout supprimer</button>
+        <!-- Compte -->
+        <div id="profile-pane-compte" class="pf-pane hidden" role="tabpanel">
+          <div class="pf-group">
+            <button id="sync-cloud-btn" class="pf-item">☁️ Synchroniser mes données</button>
+            <div id="sync-error-msg" class="hidden text-xs text-red-500 px-3 pb-2"></div>
+            <a id="admin-link" href="admin.html" class="hidden pf-item">⚙️ Administration</a>
+          </div>
+          <div class="pf-sub">Mes données</div>
+          <div class="pf-group">
+            <button id="export-btn" class="pf-item">📤 Exporter en JSON</button>
+            <label class="pf-item cursor-pointer">
+              📥 Importer un JSON
+              <input type="file" id="import-input" accept=".json" class="hidden" />
+            </label>
+          </div>
+          <div class="pf-group pf-danger">
+            <button id="signout-btn" class="hidden pf-item">🚪 Se déconnecter</button>
+            <button id="clear-btn" class="pf-item">🗑️ Tout supprimer</button>
+          </div>
         </div>
-
-        <a id="admin-link" href="admin.html"
-           class="hidden w-full py-3 rounded-[1.25rem] font-bold text-sm text-center block"
-           style="background:color-mix(in srgb,#7c3aed 12%,transparent);color:#7c3aed">
-          ⚙️ Administration
-        </a>
-        <button id="profile-login-btn" class="hidden w-full py-3 rounded-[1.25rem] font-bold text-sm text-white"
-          style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">
-          👤 Se connecter / Créer un compte
-        </button>
-        <button id="signout-btn" class="hidden w-full py-3 rounded-[1.25rem] font-bold text-sm bg-red-50 text-red-500">
-          🚪 Se déconnecter
-        </button>
-        <button id="close-profile-modal" class="w-full py-2 text-sm opacity-50">Fermer</button>
       </div>
     </div>
   </div>
@@ -1504,6 +1484,7 @@
   <script src="js/app/app-entries.js"></script>
   <script src="js/app/app-render.js"></script>
   <script src="js/app/app-badges.js"></script>
+  <script src="js/app/app-avatars.js"></script>
   <script src="js/app/app-sync.js"></script>
   <script src="js/app/app-onboarding.js"></script>
   <script src="js/app/app-whatsnew.js"></script>

@@ -147,6 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupWrapped();
   setupJeux();
   setupMais();
+  setupAvatars();
   setupSystemTheme();
   setupGoal();
   startCountdown();

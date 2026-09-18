@@ -170,7 +170,7 @@ const SocialModule = (() => {
         <div class="flex items-start justify-between gap-3 py-2 border-b last:border-b-0" style="border-color:rgba(0,0,0,0.07)">
           <div class="font-semibold text-sm capitalize whitespace-nowrap">${m.label}</div>
           <div class="text-sm text-right space-y-0.5">
-            ${m.ranking.map((r, i) => `<div>${medals[i]} ${r.avatar} <span class="font-medium">${r.username}</span> <span class="opacity-60">— ${r.count}</span></div>`).join('')}
+            ${m.ranking.map((r, i) => `<div>${medals[i]} ${avatarHTML(r.avatar)} <span class="font-medium">${r.username}</span> <span class="opacity-60">— ${r.count}</span></div>`).join('')}
           </div>
         </div>`).join('');
     } catch (e) {
@@ -226,7 +226,7 @@ const SocialModule = (() => {
         const rank = top3.indexOf(m);
         return `
           <div class="flex flex-col items-center gap-1 flex-1">
-            <div class="text-2xl">${m.avatar}</div>
+            <div class="text-2xl">${avatarHTML(m.avatar)}</div>
             <div class="text-xs font-bold truncate max-w-[70px] text-center">${esc(m.username)}</div>
             <div class="text-xs font-bold" style="color:${colors[rank] || '#64748b'}">${medals[rank] || ''} ${m.month}</div>
             <div class="w-full rounded-t-xl" style="height:${heights[rank] || '40px'};background:${colors[rank] || '#e2e8f0'}"></div>
@@ -240,7 +240,7 @@ const SocialModule = (() => {
         return `
         <div class="flex items-center gap-3 p-2 rounded-[1rem] text-sm">
           <span class="text-lg w-8 text-center">${medals[i] || String(i+1)}</span>
-          <span class="text-xl">${m.avatar}</span>
+          <span class="text-xl">${avatarHTML(m.avatar)}</span>
           <div class="flex-1 min-w-0">
             <div class="font-bold flex items-center gap-1">${esc(m.username)}${tro > 0 ? ` <span class="trophy-count">🏆${tro}</span>` : ''}</div>
             <div class="text-xs opacity-60">${m.streak > 0 ? '🔥' + m.streak + 'j ' : ''}${(m.month * 0.15).toFixed(1)}kg ce mois</div>
@@ -307,7 +307,7 @@ const SocialModule = (() => {
       list.innerHTML = classement.map((m, i) => `
         <div class="flex items-center gap-3 p-2 rounded-[1rem] text-sm">
           <span class="text-lg w-8 text-center">${medals[i] || i + 1}</span>
-          <span class="text-xl">${m.avatar || '💩'}</span>
+          <span class="text-xl">${avatarHTML(m.avatar)}</span>
           <div class="flex-1 min-w-0">
             <div class="font-bold truncate">${esc(m.username)}</div>
             <div class="text-xs opacity-60">${m.count} séance${m.count > 1 ? 's' : ''} · moyenne ${fmt(m.avg)}</div>
@@ -368,7 +368,7 @@ const SocialModule = (() => {
       list.innerHTML = classement.map((m, i) => `
         <div class="flex items-center gap-3 p-2 rounded-[1rem] text-sm${m.id === myId ? ' league-mine' : ''}">
           <span class="text-lg w-8 text-center">${medals[i] || i + 1}</span>
-          <span class="text-xl">${esc(m.avatar)}</span>
+          <span class="text-xl">${avatarHTML(m.avatar)}</span>
           <div class="flex-1 min-w-0 font-bold truncate">${esc(m.username)}</div>
           <span class="font-bold" style="color:var(--accent)">${m.score} <span class="text-xs opacity-70">${esc(meta.unite)}</span></span>
         </div>`).join('') + jouer;
@@ -438,7 +438,7 @@ const SocialModule = (() => {
         return `
           <div>
             <div class="flex items-center justify-between mb-1">
-              <span class="text-sm font-bold">${m.avatar} ${esc(m.username)} ${isMe ? '← toi' : ''}</span>
+              <span class="text-sm font-bold">${avatarHTML(m.avatar)} ${esc(m.username)} ${isMe ? '← toi' : ''}</span>
               <span class="text-sm font-bold" style="color:var(--accent)">${m.week7}/j${m.week7 !== 1 ? '' : ''}</span>
             </div>
             <div style="height:10px;background:rgba(0,0,0,0.08);border-radius:99px;overflow:hidden">
@@ -486,7 +486,7 @@ const SocialModule = (() => {
       <div class="p-2 rounded-[1rem] text-sm" data-feed-poop="${esc(item.id)}"
            style="background:color-mix(in srgb,var(--text-secondary) 6%,transparent)">
         <div class="flex items-center gap-2">
-          <span class="text-xl flex-shrink-0">${item.avatar}</span>
+          <span class="text-xl flex-shrink-0">${avatarHTML(item.avatar)}</span>
           <div class="flex-1 min-w-0">
             <span class="font-bold">${esc(item.username)}</span>
             <span class="opacity-70"> a fait un caca ${textureEmoji(item.texture)} ${esc(item.texture)}</span>
@@ -643,7 +643,7 @@ const SocialModule = (() => {
       };
       thread.innerHTML = comments.map(c => `
         <div class="comment-item">
-          <span>${c.avatar}</span>
+          <span>${avatarHTML(c.avatar)}</span>
           <div class="c-body"><span class="font-bold">${esc(c.username)}</span> ${corps(c.body)}</div>
           ${(c.user_id === myId || iOwnPoop) ? `<span class="c-del" data-del-comment="${c.id}">✕</span>` : ''}
         </div>`).join('') + `
@@ -789,7 +789,7 @@ const SocialModule = (() => {
         return `
           <div>
             <div class="flex items-center justify-between mb-1">
-              <span class="text-sm font-bold">${medal} ${p.avatar} ${esc(p.username)}${isMe ? ' (toi)' : ''}</span>
+              <span class="text-sm font-bold">${medal} ${avatarHTML(p.avatar)} ${esc(p.username)}${isMe ? ' (toi)' : ''}</span>
               <span class="text-sm font-bold" style="color:var(--accent)">${p.count} ${meta.unit}</span>
             </div>
             <div style="height:10px;background:rgba(0,0,0,0.08);border-radius:99px;overflow:hidden">
@@ -821,7 +821,7 @@ const SocialModule = (() => {
           <div class="hof-row">
             <span class="text-lg">${meta.emoji}</span>
             <div class="flex-1 min-w-0">
-              <div class="font-bold">${w.avatar} ${esc(w.username)}</div>
+              <div class="font-bold">${avatarHTML(w.avatar)} ${esc(w.username)}</div>
               <div class="text-xs opacity-60">${esc(meta.desc)} · ${w.score ?? 0} ${esc(meta.unit)}</div>
             </div>
             <span class="hof-week">sem. ${wk}</span>
@@ -849,7 +849,7 @@ const SocialModule = (() => {
           <div class="text-xs opacity-90 mt-1">${esc(recap.label)}</div>
           <div class="wrapped-grid">
             <div class="wrapped-stat"><div class="ws-val">${recap.total} 💩</div><div class="ws-label">${recap.kg} kg au total</div></div>
-            <div class="wrapped-stat"><div class="ws-val">${recap.champ.avatar || '👑'} ${esc(recap.champ.username || '—')}</div><div class="ws-label">👑 Championne (${recap.champ.count})</div></div>
+            <div class="wrapped-stat"><div class="ws-val">${avatarHTML(recap.champ.avatar, '👑')} ${esc(recap.champ.username || '—')}</div><div class="ws-label">👑 Championne (${recap.champ.count})</div></div>
             ${recap.topDay ? `<div class="wrapped-stat"><div class="ws-val" style="text-transform:capitalize">${esc(recap.topDay.day)}</div><div class="ws-label">Jour le + actif (${recap.topDay.count})</div></div>` : ''}
             ${recap.topEmoji ? `<div class="wrapped-stat"><div class="ws-val">${recap.topEmoji.emoji} ×${recap.topEmoji.count}</div><div class="ws-label">Réaction star de la semaine</div></div>` : ''}
           </div>
@@ -1009,7 +1009,7 @@ const SocialModule = (() => {
         return `
           <div class="flex items-center gap-2 p-2 rounded-[1rem] text-sm"
                style="background:color-mix(in srgb,var(--accent) 5%,transparent)">
-            <span class="text-lg">${m.avatar || '👤'}</span>
+            <span class="text-lg">${avatarHTML(m.avatar, '👤')}</span>
             <span class="flex-1 font-bold">${esc(m.username)}${isMe ? ' (toi)' : ''}${group?.created_by === m.id ? ' 👑' : ''}</span>
             ${canRemove ? `<button class="remove-member-btn text-xs text-red-400 font-bold px-2 py-1 rounded-lg"
               style="background:rgba(239,68,68,0.1)" data-user-id="${m.id}" data-username="${esc(m.username)}">
@@ -1057,21 +1057,19 @@ const SocialModule = (() => {
     if (loginBtn)   loginBtn.classList.toggle('hidden', loggedIn);
     if (adminLink)  adminLink.classList.toggle('hidden', !profile?.is_admin);
 
+    const avEl = document.getElementById('profile-avatar-display');
     if (profile) {
-      document.getElementById('profile-avatar-display').textContent  = profile.avatar || '💩';
+      setAvatarEl(avEl, profile.avatar || '💩');
       document.getElementById('profile-username-display').textContent = profile.username || '';
       document.getElementById('profile-email-display').textContent    = profile.email || '';
-      document.getElementById('profile-stats-display').textContent   = '☁️ Données synchronisées avec Supabase';
-      // Highlight current avatar in picker
-      document.querySelectorAll('.profile-avatar-opt').forEach(b => {
-        b.style.outline = b.dataset.av === (profile.avatar||'💩') ? '2px solid var(--accent)' : 'none';
-      });
+      document.getElementById('profile-stats-display').textContent   = '☁️ Synchronisée';
     } else {
-      document.getElementById('profile-avatar-display').textContent  = '👤';
-      document.getElementById('profile-username-display').textContent = 'Invité';
-      document.getElementById('profile-email-display').textContent    = 'Non connecté';
-      document.getElementById('profile-stats-display').textContent   = '⚡ Thème et données locaux uniquement';
+      setAvatarEl(avEl, localStorage.getItem('profile.avatar') || '👤');
+      document.getElementById('profile-username-display').textContent = 'Invitée';
+      document.getElementById('profile-email-display').textContent    = 'Pas de compte';
+      document.getElementById('profile-stats-display').textContent   = '📱 Données sur ce téléphone';
     }
+    showProfileTab('avatar');
     modal.classList.remove('hidden');
   }
 
