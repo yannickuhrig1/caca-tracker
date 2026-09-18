@@ -5,6 +5,18 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.21.1] — 2026-09-18
+
+### Modifié
+- **💖 Titre personnalisé** : l'en-tête affiche « Les cacas de <pseudo> » pour
+  la personne connectée (mis à jour par `updateUserBadge`), « Mes cacas » sans
+  connexion. Le prénom n'est plus écrit en dur dans le titre.
+
+### Technique
+- Bump cache SW caca-v42 → caca-v43
+
+---
+
 ## [2.21.0] — 2026-09-18
 
 ### Modifié
