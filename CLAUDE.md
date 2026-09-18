@@ -1,4 +1,4 @@
-# 💩 Caca-Tracker 3000 Deluxe - v2.21.0
+# 💩 Caca-Tracker 3000 Deluxe - v2.21.1
 
 > ☁️ **Backend** : Supabase **auto-hébergé sur le NAS Unraid** depuis v2.9.0 (2026-07-14) — API `https://caca-api.yannick-uhrig.com` (Traefik + Cloudflare Tunnel → Postgres/GoTrue/PostgREST, stack `compose-stacks/caca-supabase`). L'ancien projet cloud `fnljhknjmmteawwomehb` est en pause.
 >
@@ -232,6 +232,11 @@ function shakeAchievement(id)
 - Poids total : ~50KB
 
 ## 🆗 Changelog
+
+### v2.21.1 (Septembre 2026) - 💖 TITRE AU PSEUDO
+
+- 🔧 En-tête « Les cacas de <pseudo> » (`#app-title`, rempli par `updateUserBadge`), « Mes cacas » sans connexion
+- 🔧 Bump cache SW caca-v42 → caca-v43
 
 ### v2.21.0 (Septembre 2026) - 👤 PROFIL RANGÉ + AVATARS ANIMÉS
 

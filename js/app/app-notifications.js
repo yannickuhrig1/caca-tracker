@@ -357,6 +357,10 @@ function updateUserBadge(profile) {
     if (name) name.textContent = 'Connexion';
     document.getElementById('queen-crown')?.remove();
   }
+  // Titre de l'en-tête : prénom de la personne connectée
+  const title = $id('app-title');
+  const username = profile?.username?.trim();
+  if (title) title.textContent = username ? 'Les cacas de ' + username : 'Mes cacas';
   // Lien admin visible uniquement pour les admins
   const adminLink = $id('admin-link');
   if (adminLink) adminLink.classList.toggle('hidden', !profile?.is_admin);

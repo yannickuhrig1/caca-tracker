@@ -1,6 +1,6 @@
 {
   "name": "caca-tracker",
-  "version": "2.21.0",
+  "version": "2.21.1",
   "description": "Caca-Tracker 3000 Deluxe — PWA vanilla JS de suivi des selles",
   "scripts": {
     "build:css": "tailwindcss -i ./src/tailwind.css -o ./css/tailwind.css --minify",

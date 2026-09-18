@@ -7,12 +7,19 @@
 
 // Source de vérité unique de la version. L'en-tête et les Réglages sont
 // remplis à partir d'ici, ce qui évite qu'ils divergent comme par le passé.
-const APP_VERSION = '2.21.0';
+const APP_VERSION = '2.21.1';
 const APP_VERSION_DATE = 'Septembre 2026';
 
 // De la plus récente à la plus ancienne. `items` reste court et écrit pour
 // Clémence, pas pour un développeur : ce que ça change pour elle, pas comment.
 const APP_CHANGELOG = [
+  {
+    version: '2.21.1',
+    date: 'Septembre 2026',
+    items: [
+      ['💖', 'Le titre en haut de l\'app porte maintenant **ton pseudo** : « Les cacas de … ». Sans connexion, c\'est « Mes cacas ».'],
+    ]
+  },
   {
     version: '2.21.0',
     date: 'Septembre 2026',
