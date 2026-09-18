@@ -84,6 +84,104 @@ test('la carapace ne descend pas sous zéro et la fin arrive', () => {
   if (s.phase === 'dead') assert.ok(evs.some(e => e.type === 'digere'));
 });
 
+// ---------- Allure : freiner ou pousser ----------
+
+/**
+ * Traverse une mâchoire posée 60 unités plus bas. `pilote(s, machoire)`
+ * choisit l'allure à chaque instant. Rend true si le grain s'est fait croquer.
+ */
+function traverseMachoire(pilote, phase) {
+  const s = T.transitNew();
+  T.transitStartLevel(s, J.mulberry32(31));
+  const machoire = { kind: 'machoire', y: s.y + 60, h: 12, x: 50, min: 2, max: 16, periode: 2, phase };
+  s.objets = [machoire];
+  s.x = 50; s.target = 50;
+  s.allureTenue = true;            // pouce maintenu
+  let croque = false;
+  for (let i = 0; i < 60 * 20 && s.y < machoire.y + 30; i++) {
+    T.transitSetAllure(s, pilote(s, machoire));
+    if (T.transitStep(s, 1 / 60).some(e => e.type === 'degat')) croque = true;
+  }
+  return croque;
+}
+
+test('freiner puis foncer rend franchissable un passage perdu d\'avance', () => {
+  // Cette mâchoire se referme pile au moment où le grain arrive à vitesse
+  // normale : sans commande d'allure, il n'y avait aucune issue.
+  assert.strictEqual(traverseMachoire(() => 1, 0.25), true, 'à vitesse imposée, on se fait croquer');
+
+  // Freiner seul ne suffit pas : trop lent, on reste entre les dents pendant
+  // qu'elles se referment. C'est voulu, le frein n'est pas une pause.
+  assert.strictEqual(traverseMachoire(() => T.TRANSIT.ALLURE_MIN, 0.25), true, 'traverser au ralenti, c\'est se faire croquer');
+
+  // Le bon geste : freiner à l'approche, attendre l'ouverture, puis foncer
+  // et ne plus lâcher une fois engagé entre les dents.
+  const technique = (s, m) => {
+    const dist = m.y - s.y;
+    const engage = Math.abs(dist) < m.h / 2 + T.TRANSIT.RAYON + 2;
+    if (engage || T.transitOpen(m, s.t) > 0.6) return T.TRANSIT.ALLURE_MAX;
+    return dist < 30 ? T.TRANSIT.ALLURE_MIN : 1;
+  };
+  assert.strictEqual(traverseMachoire(technique, 0.25), false, 'freiner puis foncer : on passe');
+});
+
+test('les mâchoires laissent le temps de freiner entre deux', () => {
+  // Deux mâchoires trop proches, déphasées : à peine sorti de l'une, la
+  // suivante se referme. Le joueur automatique y perdait sa partie.
+  for (let g = 1; g <= 40; g++) {
+    const m = T.transitBuildLevel(0, J.mulberry32(g)).filter(o => o.kind === 'machoire');
+    m.slice(1).forEach((o, i) => assert.ok(o.y - m[i].y >= 80, `graine ${g} : ${Math.round(o.y - m[i].y)} unités entre deux mâchoires`));
+  }
+});
+
+test('les méchantes bactéries s\'engagent : un écart de dernière seconde les évite', () => {
+  const s = T.transitNew({ level: 4, carapace: 100, score: 0, stars: [3, 3, 3, 3] });
+  T.transitStartLevel(s, J.mulberry32(34));
+  // De loin, elle vise le grain…
+  const xLoin = s.x + 20;
+  const loin = { kind: 'mechante', y: s.y + 50, x: xLoin, r: 5 };
+  s.objets = [loin];
+  T.transitStep(s, 0.1);
+  assert.ok(loin.x < xLoin, 'elle corrige sa trajectoire de loin');
+  // …mais tout près, elle ne corrige plus : on peut encore l'esquiver.
+  const xPres = s.x + 12;
+  const pres = { kind: 'mechante', y: s.y + 15, x: xPres, r: 5 };
+  s.objets = [pres];
+  T.transitStep(s, 0.1);
+  assert.strictEqual(pres.x, xPres, 'elle garde sa trajectoire dans les derniers mètres');
+});
+
+test('transitSetAllure : bornée, et l\'allure change vraiment la vitesse', () => {
+  const s = T.transitNew();
+  T.transitStartLevel(s, J.mulberry32(32));
+  const normale = T.transitSpeed(s);
+  assert.strictEqual(T.transitSetAllure(s, 0.01), T.TRANSIT.ALLURE_MIN, 'on ne s\'arrête jamais');
+  assert.ok(T.transitSpeed(s) > 0);
+  assert.ok(T.transitSpeed(s) < normale);
+  assert.strictEqual(T.transitSetAllure(s, 99), T.TRANSIT.ALLURE_MAX);
+  assert.ok(T.transitSpeed(s) > normale);
+  assert.strictEqual(T.transitAllureLabel(s), 'pousse');
+  T.transitSetAllure(s, 0.5);
+  assert.strictEqual(T.transitAllureLabel(s), 'freine');
+  T.transitSetAllure(s, 1);
+  assert.strictEqual(T.transitAllureLabel(s), 'normal');
+});
+
+test('pouce levé : l\'allure revient d\'elle-même à la normale', () => {
+  const s = T.transitNew();
+  T.transitStartLevel(s, J.mulberry32(33));
+  T.transitSetAllure(s, T.TRANSIT.ALLURE_MIN);
+  s.allureTenue = false;
+  for (let i = 0; i < 60; i++) T.transitStep(s, 1 / 60);   // 1 seconde
+  assert.strictEqual(Math.round(s.allure * 100) / 100, 1);
+
+  // Tant que le pouce tient, elle ne bouge pas toute seule.
+  T.transitSetAllure(s, 1.8);
+  s.allureTenue = true;
+  for (let i = 0; i < 60; i++) T.transitStep(s, 1 / 60);
+  assert.strictEqual(s.allure, 1.8);
+});
+
 // ---------- Bouclier ----------
 
 test('le bouclier bloque les dégâts, puis se recharge', () => {

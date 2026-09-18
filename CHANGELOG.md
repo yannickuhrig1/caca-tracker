@@ -5,6 +5,28 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.20.1] — 2026-09-18
+
+### Corrigé
+- **🌽 Le Grand Transit : des morts impossibles à éviter.** À vitesse imposée,
+  arriver sur une mâchoire fermée au mauvais moment ne laissait aucune issue.
+  Mesuré avec un joueur automatique sur 40 parcours par organe : 38 morts sur
+  40 dans la bouche, 34 sur 40 dans le côlon.
+  - **Allure au pouce** : monter le pouce freine (jusqu'à 0,4×, on ne s'arrête
+    jamais), le descendre accélère (jusqu'à 1,8×). Pouce levé, l'allure revient
+    d'elle-même à la normale. Jauge d'allure à droite de l'écran, flèches haut
+    et bas au clavier. Traverser au ralenti reste risqué : le bon geste est de
+    freiner à l'approche, puis de foncer une fois la voie ouverte.
+  - **Méchantes bactéries** : elles visent de loin mais ne corrigent plus leur
+    trajectoire dans les 25 dernières unités. Avant, elles suivaient le grain
+    jusqu'au contact.
+  - **Mâchoires** : au moins 80 unités entre deux, le temps de freiner.
+  - Résultat avec le même joueur automatique : 1 mort sur 40 dans la bouche,
+    0 dans les quatre autres organes.
+- Cache SW caca-v40 → caca-v41.
+
+---
+
 ## [2.20.0] — 2026-09-18
 
 ### Ajouté

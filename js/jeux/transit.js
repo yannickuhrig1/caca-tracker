@@ -12,6 +12,12 @@
 const TRANSIT = {
   RAYON: 4,
   VITESSE_X: 170,          // unités/s vers la cible du pouce
+  // Freiner ou pousser : le pouce monte pour ralentir, descend pour accélérer.
+  // Sans ça, arriver sur une mâchoire fermée au mauvais moment ne laissait
+  // aucune issue. On ne s'arrête jamais complètement : le transit continue.
+  ALLURE_MIN: 0.4,
+  ALLURE_MAX: 1.8,
+  ALLURE_RETOUR: 1.6,      // vitesse de retour à l'allure normale, pouce levé
   BOUCLIER_S: 0.9,
   RECHARGE_S: 3.5,
   INVULN_S: 1,
@@ -149,7 +155,9 @@ function transitBuildLevel(index, rng = Math.random) {
     } else if (kind === 'gaz') {
       objets.push({ kind, y, x: dansLeTube(y, 8), r: 4 });
     }
-    y += 55 + rng() * 45 - Math.min(20, index * 6);
+    // Après une mâchoire, un peu plus d'air : il faut le temps de freiner
+    // pour la suivante, sinon deux mâchoires rapprochées ne laissent aucune issue.
+    y += 55 + rng() * 45 - Math.min(20, index * 6) + (kind === 'machoire' ? 25 : 0);
   }
   const yPorte = niv.longueur - 120;
   if (niv.id === 'bouche') {
@@ -181,7 +189,7 @@ function transitNew(checkpoint = null) {
     score: cp ? Math.max(0, cp.score) : 0,
     levelStart: null,       // { carapace, score } au début de l'organe (sauvegarde)
     stars: cp && Array.isArray(cp.stars) ? [...cp.stars] : [],
-    x: 50, target: 50, y: 0, t: 0,
+    x: 50, target: 50, y: 0, t: 0, allure: 1,
     shield: 0, recharge: 0, invuln: 0, boost: 0,
     objets: [],
     over: false, finished: false,
@@ -194,7 +202,7 @@ function transitLevel(s) { return TRANSIT.NIVEAUX[s.level]; }
 function transitStartLevel(s, rng = Math.random) {
   s.objets = transitBuildLevel(s.level, rng);
   s.y = 0; s.t = 0;
-  s.x = 50; s.target = 50;
+  s.x = 50; s.target = 50; s.allure = 1;
   s.shield = 0; s.recharge = 0; s.invuln = 0; s.boost = 0;
   s.levelStart = { level: s.level, carapace: s.carapace, score: s.score, stars: [...s.stars] };
   s.phase = 'play';
@@ -212,6 +220,19 @@ function transitSetTarget(s, x) {
   s.target = Math.max(0, Math.min(100, x));
 }
 
+/** Allure choisie par la joueuse : 0,4 (freine) à 1,8 (pousse). */
+function transitSetAllure(s, a) {
+  s.allure = Math.max(TRANSIT.ALLURE_MIN, Math.min(TRANSIT.ALLURE_MAX, a));
+  return s.allure;
+}
+
+/** Libellé de l'allure, pour l'indicateur à l'écran. */
+function transitAllureLabel(s) {
+  if (s.allure < 0.85) return 'freine';
+  if (s.allure > 1.15) return 'pousse';
+  return 'normal';
+}
+
 /** Tape : durcit la carapace si la recharge est finie. Rend true si activé. */
 function transitShield(s) {
   if (s.phase !== 'play' || s.recharge > 0) return false;
@@ -220,10 +241,13 @@ function transitShield(s) {
   return true;
 }
 
-/** Vitesse de descente : le côlon ralentit à mesure qu'il réabsorbe l'eau ; le gaz propulse. */
+/**
+ * Vitesse de descente : l'allure choisie au pouce, le côlon qui ralentit à
+ * mesure qu'il réabsorbe l'eau, et les propulsions (vague, gaz).
+ */
 function transitSpeed(s) {
   const niv = transitLevel(s);
-  let v = niv.vitesse;
+  let v = niv.vitesse * s.allure;
   if (niv.id === 'colon') v *= 1 - 0.25 * Math.min(1, s.y / niv.longueur);
   if (s.boost > 0) v *= 1.8;
   return v;
@@ -256,6 +280,12 @@ function transitStep(s, dt) {
   s.invuln = Math.max(0, s.invuln - dt);
   s.boost = Math.max(0, s.boost - dt);
 
+  // Pouce levé : l'allure revient d'elle-même à la normale.
+  if (!s.allureTenue && s.allure !== 1) {
+    const ecart = 1 - s.allure;
+    s.allure += Math.sign(ecart) * Math.min(Math.abs(ecart), TRANSIT.ALLURE_RETOUR * dt);
+  }
+
   // Déplacement latéral vers le pouce, borné par les parois
   const pas = TRANSIT.VITESSE_X * dt;
   s.x += Math.max(-pas, Math.min(pas, s.target - s.x));
@@ -280,8 +310,12 @@ function transitStep(s, dt) {
       s.x += Math.sign(vers - s.x) * Math.min(Math.abs(vers - s.x), force);
       if (!o.vu) { o.vu = true; evs.push({ type: 'aspire', cote: o.cote }); }
     }
-    if (o.kind === 'mechante' && o.y > s.y && o.y - s.y < 70) {
-      o.x += Math.sign(s.x - o.x) * Math.min(Math.abs(s.x - o.x), 14 * dt);
+    // Les méchantes bactéries visent le grain de loin, puis s'engagent : dans
+    // les 25 dernières unités elles ne corrigent plus, ce qui laisse un écart
+    // de dernière seconde. Avant, elles suivaient jusqu'au contact et le
+    // côlon devenait une mort certaine, quel que soit le talent.
+    if (o.kind === 'mechante' && o.y - s.y > 25 && o.y - s.y < 70) {
+      o.x += Math.sign(s.x - o.x) * Math.min(Math.abs(s.x - o.x), 10 * dt);
     }
     if (dy > 20) continue;
 
@@ -546,17 +580,30 @@ function transitCreate(env) {
   return {
     // Le jeu affiche lui-meme son ecran d'organe avant chaque niveau.
     noReady: true,
-    hint: 'Glisse le pouce pour bouger, tape pour durcir ta carapace',
+    hint: 'Glisse le pouce : gauche-droite pour viser, haut pour freiner, bas pour foncer. Tape pour durcir ta carapace.',
     drag(x, y, etape) {
       if (s.phase !== 'play') return;
-      if (etape === 'start') pouce = { x0: x, cible0: s.target };
-      else if (etape === 'move' && pouce) transitSetTarget(s, pouce.cible0 + ((x - pouce.x0) / k()) * 1.2);
-      else if (etape === 'end') pouce = null;
+      if (etape === 'start') { pouce = { x0: x, y0: y, cible0: s.target }; s.allureTenue = true; }
+      else if (etape === 'move' && pouce) {
+        transitSetTarget(s, pouce.cible0 + ((x - pouce.x0) / k()) * 1.2);
+        // Monter le pouce freine, le descendre pousse. Un tiers de la hauteur
+        // de l'écran suffit à atteindre l'extrême : le geste reste court.
+        const course = Math.max(60, env.H / 3);
+        const dy = Math.max(-1, Math.min(1, (y - pouce.y0) / course));
+        transitSetAllure(s, 1 + dy * (dy < 0 ? 1 - TRANSIT.ALLURE_MIN : TRANSIT.ALLURE_MAX - 1));
+      } else if (etape === 'end') { pouce = null; s.allureTenue = false; }
     },
     swipe(dir) {
       if (s.phase !== 'play') return;
       if (dir === 'left') transitSetTarget(s, s.target - 12);
       if (dir === 'right') transitSetTarget(s, s.target + 12);
+      // Au clavier : flèches haut et bas pour l'allure, le temps d'un instant.
+      if (dir === 'up' || dir === 'down') {
+        s.allureTenue = true;
+        transitSetAllure(s, s.allure + (dir === 'up' ? -0.35 : 0.35));
+        clearTimeout(s.allureTimer);
+        s.allureTimer = setTimeout(() => { s.allureTenue = false; }, 700);
+      }
     },
     tap(x, y) {
       if (s.phase === 'play') { if (transitShield(s)) env.haptic([6, 20, 6]); return; }
@@ -726,6 +773,17 @@ function transitCreate(env) {
       D.texte(ctx, `⏱ ${heure(transitClock(s))}`, W - 16, 46, { size: 14, align: 'right', color: '#fff' });
       if (s.phase === 'play') {
         D.texte(ctx, s.recharge > 0 ? `🛡 ${s.recharge.toFixed(1)} s` : '🛡 prêt : tape', W - 16, H - 16, { size: 13, align: 'right', color: '#fff' });
+        // Allure : jauge verticale à droite, centrée sur la vitesse normale
+        const jh = Math.min(140, H * 0.22), jy = H / 2 - jh / 2, jx = W - 14;
+        ctx.fillStyle = 'rgba(0,0,0,.25)';
+        D.rrect(ctx, jx - 4, jy, 8, jh, 4); ctx.fill();
+        const part = (s.allure - TRANSIT.ALLURE_MIN) / (TRANSIT.ALLURE_MAX - TRANSIT.ALLURE_MIN);
+        const cy = jy + jh * (1 - part);
+        ctx.fillStyle = 'rgba(255,255,255,.55)';
+        ctx.fillRect(jx - 9, jy + jh * (1 - (1 - TRANSIT.ALLURE_MIN) / (TRANSIT.ALLURE_MAX - TRANSIT.ALLURE_MIN)), 18, 2);
+        ctx.fillStyle = s.allure < 0.85 ? '#38bdf8' : s.allure > 1.15 ? '#fb923c' : '#fff';
+        ctx.beginPath(); ctx.arc(jx, cy, 7, 0, Math.PI * 2); ctx.fill();
+        D.texte(ctx, transitAllureLabel(s), jx - 14, cy, { size: 11, align: 'right', color: '#fff' });
         const p = Math.min(1, s.y / niv.longueur);
         ctx.fillStyle = 'rgba(255,255,255,.35)';
         ctx.fillRect(8, 60, 4, H - 100);
@@ -745,7 +803,8 @@ function transitCreate(env) {
           '',
           niv.intro,
           '',
-          'Glisse le pouce pour bouger. Tape pour durcir ta carapace.',
+          'Glisse le pouce : gauche-droite pour viser, haut pour freiner, bas pour foncer.',
+          'Tape pour durcir ta carapace.',
         ], actions);
       } else if (s.phase === 'clear') {
         carte(ctx, `${'★'.repeat(s.lastLevelStars)}${'☆'.repeat(3 - s.lastLevelStars)}`, [
@@ -761,6 +820,6 @@ function transitCreate(env) {
 
 window.JeuTransit = {
   TRANSIT, transitWalls, transitOpen, transitGapHalf, transitBuildLevel, transitNew, transitStartLevel,
-  transitClock, transitSetTarget, transitShield, transitSpeed, transitStars, transitStep, transitNextLevel,
+  transitClock, transitSetTarget, transitSetAllure, transitAllureLabel, transitShield, transitSpeed, transitStars, transitStep, transitNextLevel,
   transitCheckpoint, transitResult, create: transitCreate,
 };

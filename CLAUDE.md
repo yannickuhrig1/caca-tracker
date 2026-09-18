@@ -1,4 +1,4 @@
-# 💩 Caca-Tracker 3000 Deluxe - v2.20.0
+# 💩 Caca-Tracker 3000 Deluxe - v2.20.1
 
 > ☁️ **Backend** : Supabase **auto-hébergé sur le NAS Unraid** depuis v2.9.0 (2026-07-14) — API `https://caca-api.yannick-uhrig.com` (Traefik + Cloudflare Tunnel → Postgres/GoTrue/PostgREST, stack `compose-stacks/caca-supabase`). L'ancien projet cloud `fnljhknjmmteawwomehb` est en pause.
 >
@@ -232,6 +232,14 @@ function shakeAchievement(id)
 - Poids total : ~50KB
 
 ## 🆗 Changelog
+
+### v2.20.1 (Septembre 2026) - 🌽 PLUS DE MORTS FORCÉES
+
+- 🔧 **Allure au pouce** dans Le Grand Transit : glissé vertical = frein (0,4×) ou accélérateur (1,8×), `transitSetAllure` / `s.allure`, retour auto à 1 quand le pouce est levé (`s.allureTenue`). Jauge à droite, flèches haut/bas au clavier
+- 🔧 Méchantes bactéries : ne corrigent plus leur visée dans les 25 dernières unités (avant : poursuite jusqu'au contact, côlon quasi impossible)
+- 🔧 Mâchoires espacées d'au moins 80 unités
+- 📊 Joueur automatique sur 40 parcours par organe : bouche 38 → 1 mort, côlon 34 → 0
+- 🔧 Bump cache SW caca-v40 → caca-v41
 
 ### v2.20.0 (Septembre 2026) - 🌽 LE GRAND TRANSIT
 

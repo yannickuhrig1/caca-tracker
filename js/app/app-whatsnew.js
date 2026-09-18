@@ -7,12 +7,21 @@
 
 // Source de vérité unique de la version. L'en-tête et les Réglages sont
 // remplis à partir d'ici, ce qui évite qu'ils divergent comme par le passé.
-const APP_VERSION = '2.20.0';
+const APP_VERSION = '2.20.1';
 const APP_VERSION_DATE = 'Septembre 2026';
 
 // De la plus récente à la plus ancienne. `items` reste court et écrit pour
 // Clémence, pas pour un développeur : ce que ça change pour elle, pas comment.
 const APP_CHANGELOG = [
+  {
+    version: '2.20.1',
+    date: 'Septembre 2026',
+    items: [
+      ['🌽', 'Le Grand Transit : tu contrôles enfin ta **vitesse**. Monte le pouce pour **freiner**, descends-le pour **foncer**. Freine avant des dents fermées, fonce quand elles s\'ouvrent.'],
+      ['🦠', 'Les méchantes bactéries du côlon ne te suivent plus jusqu\'au contact : un écart de dernière seconde suffit à les éviter.'],
+      ['🦷', 'Plus d\'espace entre deux molaires dans la bouche.'],
+    ]
+  },
   {
     version: '2.20.0',
     date: 'Septembre 2026',
