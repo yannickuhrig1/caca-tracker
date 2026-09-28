@@ -79,6 +79,10 @@
 - **Feed 📣** : activité du groupe avec onglets (Aujourd'hui / Semaine / Mois / Année) + filtre par membre
 - **Défi hebdomadaire 🎯** : qui fera le plus cette semaine ?
 - **Réactions emoji** : 💩🔥👑🤣❤️ sur les entrées du feed
+- **Chat de groupe 💬** : fil de discussion temps réel (migration 18)
+- **Carte du groupe 🗺️** : les cacas géolocalisés des copines (opt-in « Partager ma position », migration 19)
+- **Fiche membre 📊** : clic sur une copine → ses stats détaillées (série, records, répartition)
+- **Partager mes stats 📤** : publie un résumé du mois dans le feed
 - **Mot de passe oublié** : réinitialisation par email
 
 ### Historique & Paramètres

@@ -101,4 +101,97 @@ function leagueWeekStart(now = Date.now()) {
   return d.getTime();
 }
 
-window.SocialFun = { STICKERS, stickerBody, stickerUnlocked, parseSticker, groupStreak, enduranceRanking, leagueWeekStart };
+// ---- Fiche membre (stats détaillées vues par les copines, v2.22.0) ----
+// Fonction pure : les données viennent d'en haut (getGroupBadgeData +
+// getGroupStats + getGroupTrophies), le rendu DOM reste dans social.js.
+const TEXTURE_META = {
+  normal:   ['💩', 'Normal'], dur: ['🗿', 'Dur'], mou: ['🍮', 'Mou'],
+  spray:    ['💦', 'Spray'], liquide: ['🌊', 'Liquide'], explosif: ['💥', 'Explosif'],
+};
+const COLOR_META = {
+  marron: ['🟤', 'Marron'], jaune: ['🟡', 'Jaune'], vert: ['🟢', 'Vert'],
+  noir:   ['⚫', 'Noir'], 'arc-en-ciel': ['🌈', 'Arc-en-ciel'], rouge: ['🔴', 'Rouge'],
+};
+
+function buildMemberCard(member, logs, stats = {}, trophies = 0, now = Date.now()) {
+  const entries = (logs || []).slice().sort((a, b) => a.date - b.date);
+  // Les logs détaillés ne sont servis qu'à partir de 2 membres (getGroupBadgeData).
+  // Seule dans son groupe, une membre verrait sinon « 0 caca » malgré un total réel.
+  const total = entries.length || (stats.total || 0);
+
+  const texCount = {}, colCount = {}, moods = {};
+  entries.forEach(l => {
+    const t = l.texture || 'normal'; texCount[t] = (texCount[t] || 0) + 1;
+    const c = l.color   || 'marron'; colCount[c] = (colCount[c] || 0) + 1;
+    if (l.mood) moods[l.mood] = (moods[l.mood] || 0) + 1;
+  });
+  const pct = n => total ? Math.round(n / total * 100) : 0;
+  const breakdown = (counts, meta) => Object.entries(counts)
+    .map(([id, n]) => ({ id, emoji: (meta[id] || [id])[0], label: (meta[id] || [id, id])[1], count: n, pct: pct(n) }))
+    .sort((a, b) => b.count - a.count);
+
+  // Journée / semaine / mois les plus actifs
+  const byDay = {}, byWeek = {}, byMonth = {};
+  entries.forEach(l => {
+    const d = new Date(l.date);
+    const day = d.toDateString(); byDay[day] = (byDay[day] || 0) + 1;
+    const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - (d.getDay() === 0 ? 6 : d.getDay() - 1));
+    byWeek[monday.getTime()] = (byWeek[monday.getTime()] || 0) + 1;
+    const m = `${d.getFullYear()}-${d.getMonth()}`; byMonth[m] = (byMonth[m] || 0) + 1;
+  });
+  const maxOf = obj => Object.values(obj).reduce((b, v) => Math.max(b, v), 0);
+
+  // Série courante (jours d'affilée jusqu'à aujourd'hui)
+  const days = new Set(entries.map(l => new Date(l.date).toDateString()));
+  let streak = 0;
+  const today = new Date(now);
+  if (days.has(today.toDateString())) {
+    streak = 1;
+    for (let i = 1; i < 90; i++) {
+      const d = new Date(now); d.setDate(d.getDate() - i);
+      if (days.has(d.toDateString())) streak++; else break;
+    }
+  }
+
+  // Jours actifs et moyenne/jour sur 30 jours glissants
+  const since30 = now - 30 * 86400000;
+  const last30 = entries.filter(l => l.date >= since30);
+  const active30 = new Set(last30.map(l => new Date(l.date).toDateString())).size;
+
+  return {
+    id:       member?.id,
+    username: member?.username,
+    avatar:   member?.avatar || '💩',
+    trophies: trophies || 0,
+    total,
+    month:    stats.month || 0,
+    week7:    stats.week7 || 0,
+    streak,
+    bestDay:    maxOf(byDay),
+    bestWeek:   maxOf(byWeek),
+    bestMonth:  maxOf(byMonth),
+    active30,
+    avg30:      +(last30.length / 30).toFixed(1),
+    textures:   breakdown(texCount, TEXTURE_META),
+    colors:     breakdown(colCount, COLOR_META),
+    topMood:    Object.entries(moods).sort((a, b) => b[1] - a[1])[0] || null,
+    firstPoop:  entries[0]?.date || null,
+    lastPoop:   entries[entries.length - 1]?.date || null,
+  };
+}
+
+/** Résumé textuel du partage de stats mensuel (rejouable : ref stable par mois). */
+function statsShareText(card, now = Date.now()) {
+  const d = new Date(now);
+  const ref = `month_${d.getFullYear()}_${d.getMonth() + 1}`;
+  const bits = [`${card.month} caca${card.month > 1 ? 's' : ''} ce mois`];
+  if (card.streak > 0) bits.push(`🔥 ${card.streak} j de série`);
+  if (card.topMood) bits.push(`humeur ${card.topMood[0]}`);
+  return { ref, emoji: '📊', title: bits.join(' · ') };
+}
+
+window.SocialFun = {
+  STICKERS, stickerBody, stickerUnlocked, parseSticker, groupStreak,
+  enduranceRanking, leagueWeekStart,
+  buildMemberCard, statsShareText,
+};

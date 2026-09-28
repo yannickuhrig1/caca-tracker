@@ -1,4 +1,4 @@
-const CACHE = 'caca-v43';
+const CACHE = 'caca-v44';
 const ASSETS = [
   './',
   './index.html',
@@ -56,6 +56,8 @@ const ASSETS = [
   './js/predictions.js',
   './js/charts.js',
   './js/poopmap.js',
+  './js/chat.js',
+  './js/group-map.js',
   './js/sounds.js',
   './js/animations.js',
   './js/supabase-client.js',

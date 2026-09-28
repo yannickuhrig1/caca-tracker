@@ -894,6 +894,26 @@
     text-decoration: none;
 }
 
+/* === CHAT DE GROUPE === */
+.chat-row { display: flex; gap: 8px; align-items: flex-end; }
+.chat-row-mine { flex-direction: row-reverse; }
+.chat-avatar { font-size: 20px; flex-shrink: 0; }
+.chat-bubble-wrap { max-width: 78%; }
+.chat-author { font-size: 11px; opacity: .6; margin-bottom: 2px; }
+.chat-bubble {
+    padding: 8px 12px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.35;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.chat-time { font-size: 10px; opacity: .4; margin-top: 2px; }
+
+/* === FICHE MEMBRE (lignes cliquables du podium) === */
+.member-row { cursor: pointer; transition: background .15s ease; }
+.member-row:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+
 /* === ÉCHELLE DE BRISTOL === */
 .br-row {
     display: grid;

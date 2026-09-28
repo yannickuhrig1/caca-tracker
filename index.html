@@ -511,6 +511,16 @@
               title="Gérer le groupe" aria-label="Gérer le groupe">
               ⚙️
             </button>
+            <button id="open-chat-btn" class="p-3 rounded-[1rem]"
+              style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)"
+              title="Discuter avec le groupe" aria-label="Discuter avec le groupe">
+              💬
+            </button>
+            <button id="open-group-map-btn" class="p-3 rounded-[1rem]"
+              style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)"
+              title="Carte des cacas du groupe" aria-label="Carte des cacas du groupe">
+              🗺️
+            </button>
           </div>
 
           <!-- Panel de gestion du groupe (masqué par défaut) -->
@@ -537,7 +547,14 @@
 
           <!-- Podium -->
           <div class="card p-5 rounded-[2rem] shadow">
-            <h4 class="font-bold mb-4 text-center">🏆 Podium du mois</h4>
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="font-bold">🏆 Podium du mois</h4>
+              <button id="share-stats-btn" class="text-xs font-bold px-3 py-1.5 rounded-full"
+                style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)"
+                title="Publier un résumé de tes stats dans le feed">
+                📤 Partager mes stats
+              </button>
+            </div>
             <div id="group-streak" class="group-streak hidden mb-4"></div>
             <div id="podium-container" class="flex items-end justify-center gap-3 mb-4" style="min-height:160px"></div>
             <div id="podium-list" class="space-y-2"></div>
@@ -1185,6 +1202,29 @@
               <input type="file" id="import-input" accept=".json" class="hidden" />
             </label>
           </div>
+          <div class="pf-sub">Partage avec mes groupes</div>
+          <div class="pf-group">
+            <div class="pf-row">
+              <div>
+                <div class="text-sm font-bold">📍 Partager ma position</div>
+                <div class="text-xs opacity-60">Apparaître sur la carte du groupe</div>
+              </div>
+              <button id="geo-share-toggle" class="relative w-11 h-6 rounded-full transition-colors duration-300 focus:outline-none shrink-0"
+                style="background:rgba(0,0,0,0.15)" aria-label="Partager ma position">
+                <span id="geo-share-knob" class="absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow transition-transform duration-300"></span>
+              </button>
+            </div>
+            <div class="pf-row">
+              <div>
+                <div class="text-sm font-bold">📊 Stats détaillées</div>
+                <div class="text-xs opacity-60">Laisser les copines voir mes stats complètes</div>
+              </div>
+              <button id="stats-share-toggle" class="relative w-11 h-6 rounded-full transition-colors duration-300 focus:outline-none shrink-0"
+                style="background:rgba(0,0,0,0.15)" aria-label="Partager mes stats détaillées">
+                <span id="stats-share-knob" class="absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow transition-transform duration-300"></span>
+              </button>
+            </div>
+          </div>
           <div class="pf-group pf-danger">
             <button id="signout-btn" class="hidden pf-item">🚪 Se déconnecter</button>
             <button id="clear-btn" class="pf-item">🗑️ Tout supprimer</button>
@@ -1204,6 +1244,60 @@
         <div class="font-mono text-xl font-bold tracking-widest px-4 py-2 rounded-2xl bg-gray-50" id="qr-code-text"></div>
         <p class="text-xs opacity-50">Tes amies scannent le QR code ou saisissent le code pour rejoindre</p>
         <button id="close-qr-modal" class="w-full py-3 rounded-[1.25rem] font-bold text-sm" style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT DE GROUPE MODAL -->
+  <div id="chat-modal" class="fixed inset-0 z-[80] hidden" style="background:rgba(0,0,0,0.85);backdrop-filter:blur(8px)"
+       role="dialog" aria-modal="true" aria-labelledby="chat-title">
+    <div class="flex flex-col h-full max-w-md mx-auto" style="background:var(--bg-via)">
+      <div class="flex items-center gap-3 px-4 py-3" style="border-bottom:1px solid var(--card-border)">
+        <button id="chat-close" class="p-2 text-xl" aria-label="Fermer le chat">‹</button>
+        <div class="text-2xl" aria-hidden="true">💬</div>
+        <div class="flex-1 min-w-0">
+          <div id="chat-title" class="font-bold truncate">Chat</div>
+          <div id="chat-subtitle" class="text-xs opacity-60"></div>
+        </div>
+      </div>
+      <div id="chat-messages" class="flex-1 overflow-y-auto px-4 py-3 space-y-3"></div>
+      <div class="flex gap-2 px-3 py-3" style="border-top:1px solid var(--card-border)">
+        <input id="chat-input" type="text" maxlength="500" placeholder="Écris un message…"
+          class="flex-1 p-3 rounded-[1.25rem] border focus:outline-none text-sm"
+          style="background:var(--card-bg);color:var(--text-primary);border-color:var(--card-border)" />
+        <button id="chat-send" class="px-4 py-3 rounded-[1.25rem] font-bold text-white text-sm"
+          style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARTE DU GROUPE MODAL -->
+  <div id="group-map-modal" class="fixed inset-0 z-[80] hidden" style="background:rgba(0,0,0,0.85);backdrop-filter:blur(8px)"
+       role="dialog" aria-modal="true" aria-labelledby="group-map-title">
+    <div class="flex flex-col h-full max-w-md mx-auto" style="background:var(--bg-via)">
+      <div class="flex items-center gap-3 px-4 py-3" style="border-bottom:1px solid var(--card-border)">
+        <button id="group-map-close" class="p-2 text-xl" aria-label="Fermer la carte">‹</button>
+        <div class="text-2xl" aria-hidden="true">🗺️</div>
+        <div class="flex-1 min-w-0">
+          <div id="group-map-title" class="font-bold">Carte du groupe</div>
+          <div id="group-map-members" class="text-xs opacity-60"></div>
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 space-y-3">
+        <div id="group-map-legend" class="flex flex-wrap gap-x-3 gap-y-1"></div>
+        <div id="group-map-map" class="rounded-[1.5rem] overflow-hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FICHE MEMBRE MODAL (stats détaillées d'une copine) -->
+  <div id="member-modal" class="fixed inset-0 z-[80] hidden" style="background:rgba(0,0,0,0.85);backdrop-filter:blur(8px)"
+       role="dialog" aria-modal="true" aria-labelledby="member-modal-title">
+    <div class="flex items-center justify-center h-full p-4">
+      <div class="rounded-[2rem] p-6 w-full max-w-sm space-y-4 max-h-[85vh] overflow-y-auto shadow-2xl"
+           style="background:var(--bg-via);border:1px solid var(--card-border);color:var(--text-primary)">
+        <button id="member-modal-close" class="block ml-auto p-1 text-xl" aria-label="Fermer">✕</button>
+        <div id="member-modal-body"></div>
       </div>
     </div>
   </div>
@@ -1520,6 +1614,8 @@
     <script src="js/predictions.js" defer></script>
     <script src="js/charts.js" defer></script>
     <script src="js/poopmap.js" defer></script>
+    <script src="js/chat.js" defer></script>
+    <script src="js/group-map.js" defer></script>
     <script src="js/animations.js" defer></script>
 
   <!-- Rapport médical (caché, imprimé via @media print) -->

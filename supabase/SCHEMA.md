@@ -114,6 +114,24 @@ et toujours refusée à la clé anon (42501). Le repli côté client reste : san
 migration, l'insertion est rejetée (23514), le score reste en local et le client
 n'insiste pas.
 
+## Migration 18 (v2.22.0)
+
+`18_20260928_group-chat.sql` crée `group_messages` (id, group_id, user_id,
+body ≤ 500, created_at) : le chat de groupe. RLS : lecture et envoi réservés
+aux membres du groupe (`is_group_member`), suppression de ses propres messages.
+La table est ajoutée de façon idempotente à la publication `supabase_realtime`
+pour le fil en direct. **Non encore appliquée** : à jouer sur le NAS, comme
+pour 15/16/17, avec un dump préalable en `supabase_admin`.
+
+## Migration 19 (v2.22.0)
+
+`19_20260928_group-map.sql` ajoute `profiles.geo_shared` (opt-in du partage de
+position, défaut false) et `profiles.show_detailed_stats` (opt-out du détail
+des stats, défaut true), et la fonction SECURITY DEFINER
+`get_group_geo_poops(gid, since)` — l'unique porte d'accès aux coordonnées des
+autres membres, qui n'applique l'opt-in qu'en base et ne remonte que la fenêtre
+temporelle demandée. **Non encore appliquée.**
+
 Les migrations s'appliquent depuis le clone du dépôt sur le NAS,
 `/mnt/user/appdata/compose-stacks/caca-supabase/caca-tracker`. Le dossier
 `repo-migrations/` voisin est un instantané figé (13 → 16) qui s'exécute sans
