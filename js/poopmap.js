@@ -232,6 +232,32 @@ window.PoopMapModule = (() => {
   }
 
   // ===================================================
+  //  STYLES DE CARTE
+  // ===================================================
+  // Deux rendus au choix : les tuiles classiques d'OpenStreetMap, ou un style
+  // clair type « Plans Apple » (Carto Voyager). Le choix est mémorisé.
+  const MAP_STYLES = {
+    classique: {
+      label: 'Classique',
+      tile: (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`,
+      attrib: '© OpenStreetMap',
+    },
+    iphone: {
+      label: 'iPhone',
+      tile: (z, x, y) => `https://basemaps.cartocdn.com/rastertiles/voyager/${z}/${x}/${y}.png`,
+      attrib: '© OpenStreetMap © CARTO',
+    },
+  };
+  const MAP_STYLE_KEY = 'poopmap.style';
+  const getMapStyle = () => {
+    let s = null;
+    try { s = localStorage.getItem(MAP_STYLE_KEY); } catch {}
+    return MAP_STYLES[s] ? s : 'classique';
+  };
+  const setMapStyle = s => { if (MAP_STYLES[s]) { try { localStorage.setItem(MAP_STYLE_KEY, s); } catch {} } };
+  const mapStyle = () => MAP_STYLES[getMapStyle()];
+
+  // ===================================================
   //  RENDU
   // ===================================================
   const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c =>
@@ -315,6 +341,30 @@ window.PoopMapModule = (() => {
       </div>`;
   }
 
+  /** Sélecteur de style (Classique / iPhone) affiché en haut à gauche de la carte. */
+  function styleSwitcherHTML() {
+    return `
+      <div class="poopmap-style" role="group" aria-label="Style de carte">
+        ${Object.entries(MAP_STYLES).map(([id, s]) =>
+          `<button type="button" data-style="${id}" class="${getMapStyle() === id ? 'is-on' : ''}">${s.label}</button>`).join('')}
+      </div>`;
+  }
+
+  /** Change le style au clic : met à jour l'onglet actif, l'attribution et les tuiles. */
+  function wireStyleSwitcher(canvas, clusters, width, height) {
+    canvas?.querySelectorAll('.poopmap-style button').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        setMapStyle(btn.dataset.style);
+        canvas.querySelectorAll('.poopmap-style button').forEach(b =>
+          b.classList.toggle('is-on', b.dataset.style === getMapStyle()));
+        const attrib = canvas.querySelector('.poopmap-attrib');
+        if (attrib) attrib.textContent = mapStyle().attrib;
+        drawLayer(canvas, clusters, width, height);
+      });
+    });
+  }
+
   function renderMap(logs, geo, el) {
     if (!el) return;
 
@@ -344,13 +394,14 @@ window.PoopMapModule = (() => {
     el.innerHTML = `
       <div id="poopmap-canvas" class="poopmap-canvas" style="height:${height}px">
         <div id="poopmap-layer" class="poopmap-layer"></div>
+        ${styleSwitcherHTML()}
         <div class="poopmap-controls">
           <button type="button" data-map="in"     aria-label="Zoomer">＋</button>
           <button type="button" data-map="out"    aria-label="Dézoomer">−</button>
           <button type="button" data-map="reset"  aria-label="Recadrer">🎯</button>
         </div>
         <a class="poopmap-attrib" href="https://www.openstreetmap.org/copyright"
-           target="_blank" rel="noopener">© OpenStreetMap</a>
+           target="_blank" rel="noopener">${mapStyle().attrib}</a>
       </div>
       <div class="grid grid-cols-3 gap-2 mt-3 text-center">
         <div class="p-2 rounded-[1rem]" style="background:color-mix(in srgb,var(--accent) 8%,transparent)">
@@ -390,7 +441,7 @@ window.PoopMapModule = (() => {
         if (y < 0 || y >= maxTile) continue;           // au-delà des pôles
         const wrapped = ((x % maxTile) + maxTile) % maxTile;  // tour du monde
         html += `<img class="poopmap-tile" alt="" aria-hidden="true" loading="lazy"
-          src="https://tile.openstreetmap.org/${zoom}/${wrapped}/${y}.png"
+          src="${mapStyle().tile(zoom, wrapped, y)}"
           style="left:${x * TILE - originX}px;top:${y * TILE - originY}px">`;
       }
     }
@@ -454,7 +505,7 @@ window.PoopMapModule = (() => {
     };
 
     canvas.addEventListener('pointerdown', e => {
-      if (e.target.closest('.poopmap-controls, .poopmap-attrib')) return;
+      if (e.target.closest('.poopmap-controls, .poopmap-attrib, .poopmap-style')) return;
       dragging = true; panning = false; moved = 0;
       lastX = e.clientX; lastY = e.clientY;
       // Sur window : le doigt qui sort de la carte continue de la déplacer.
@@ -464,6 +515,7 @@ window.PoopMapModule = (() => {
     });
 
     wirePins(canvas, clusters);
+    wireStyleSwitcher(canvas, clusters, width, height);
   }
 
   function wirePins(canvas, clusters) {
@@ -515,6 +567,7 @@ window.PoopMapModule = (() => {
     geoEnabled, setGeoEnabled, capturePosition, roundCoord, hasGeo,
     geocodeEnabled, setGeocodeEnabled, reverseGeocode, fillMissingZones,
     hasZone, conquestStats, flagEmoji,
+    MAP_STYLES, getMapStyle, setMapStyle, mapStyle,
     lonToTileX, latToTileY, tileXToLon, tileYToLat, distanceKm,
     fitView, clusterPoints, geoStats, forgetAllPositions,
     renderCard,

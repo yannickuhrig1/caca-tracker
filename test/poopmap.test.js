@@ -163,3 +163,25 @@ test('forgetAllPositions retire les coordonnées mais garde les lieux', () => {
   assert.strictEqual(logs.map(l => l.place).join('|'), 'maison|boulot|resto');
   assert.ok(logs[0].updated_at > 0, 'updated_at doit avancer pour que le cloud reprenne la version vidée');
 });
+
+// ---------- Styles de carte ----------
+
+test('getMapStyle : classique par défaut, retombe dessus si valeur inconnue', () => {
+  assert.strictEqual(PM.getMapStyle(), 'classique');
+  PM.setMapStyle('nimporte quoi');   // ignoré : ce n'est pas un style connu
+  assert.strictEqual(PM.getMapStyle(), 'classique');
+});
+
+test('setMapStyle mémorise le style choisi', () => {
+  PM.setMapStyle('iphone');
+  assert.strictEqual(PM.getMapStyle(), 'iphone');
+  PM.setMapStyle('classique');       // remettre l'état d'origine
+  assert.strictEqual(PM.getMapStyle(), 'classique');
+});
+
+test('mapStyle expose un libellé, une attribution et une URL de tuile', () => {
+  const s = PM.mapStyle();
+  assert.ok(s.label && s.attrib, 'style sans libellé ni attribution');
+  assert.strictEqual(typeof s.tile, 'function');
+  assert.match(s.tile(12, 2074, 1409), /^https:\/\/.+\.png$/);
+});

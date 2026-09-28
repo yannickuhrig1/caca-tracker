@@ -91,6 +91,32 @@ window.GroupMapModule = (() => {
          + 'Tes copines doivent faire pareil de leur côté.';
   }
 
+  /** Sélecteur de style (Classique / iPhone), via le module PoopMap. */
+  function styleSwitcherHTML() {
+    const styles = PM().MAP_STYLES || { classique: { label: 'Classique' }, iphone: { label: 'iPhone' } };
+    const current = PM().getMapStyle ? PM().getMapStyle() : 'classique';
+    return `
+      <div class="poopmap-style" role="group" aria-label="Style de carte">
+        ${Object.entries(styles).map(([id, s]) =>
+          `<button type="button" data-style="${id}" class="${current === id ? 'is-on' : ''}">${s.label}</button>`).join('')}
+      </div>`;
+  }
+
+  /** Change le style au clic : onglet actif, attribution et tuiles. */
+  function wireStyleSwitcher(canvas, groups, colors, width, height) {
+    canvas?.querySelectorAll('.poopmap-style button').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        PM().setMapStyle?.(btn.dataset.style);
+        canvas.querySelectorAll('.poopmap-style button').forEach(b =>
+          b.classList.toggle('is-on', b.dataset.style === PM().getMapStyle?.()));
+        const attrib = canvas.querySelector('.poopmap-attrib');
+        if (attrib) attrib.textContent = PM().mapStyle?.().attrib || '© OpenStreetMap';
+        drawLayer(canvas, groups, colors, width, height);
+      });
+    });
+  }
+
   function renderMap(groups, colors, el) {
     const points = allPoints(groups);
     if (!points.length) {
@@ -108,13 +134,14 @@ window.GroupMapModule = (() => {
     el.innerHTML = `
       <div class="poopmap-canvas" style="height:${height}px">
         <div class="poopmap-layer"></div>
+        ${styleSwitcherHTML()}
         <div class="poopmap-controls">
           <button type="button" data-gmap="in"    aria-label="Zoomer">＋</button>
           <button type="button" data-gmap="out"   aria-label="Dézoomer">−</button>
           <button type="button" data-gmap="reset" aria-label="Recadrer">🎯</button>
         </div>
         <a class="poopmap-attrib" href="https://www.openstreetmap.org/copyright"
-           target="_blank" rel="noopener">© OpenStreetMap</a>
+           target="_blank" rel="noopener">${PM().mapStyle?.().attrib || '© OpenStreetMap'}</a>
       </div>`;
 
     const canvas = el.querySelector('.poopmap-canvas');
@@ -143,7 +170,7 @@ window.GroupMapModule = (() => {
         if (y < 0 || y >= maxTile) continue;
         const wrapped = ((x % maxTile) + maxTile) % maxTile;
         html += `<img class="poopmap-tile" alt="" aria-hidden="true" loading="lazy"
-          src="https://tile.openstreetmap.org/${zoom}/${wrapped}/${y}.png"
+          src="${PMm.mapStyle().tile(zoom, wrapped, y)}"
           style="left:${x * 256 - originX}px;top:${y * 256 - originY}px">`;
       }
     }
@@ -206,7 +233,7 @@ window.GroupMapModule = (() => {
     };
 
     canvas.addEventListener('pointerdown', e => {
-      if (e.target.closest('.poopmap-controls, .poopmap-attrib')) return;
+      if (e.target.closest('.poopmap-controls, .poopmap-attrib, .poopmap-style')) return;
       dragging = true; panning = false; moved = 0;
       lastX = e.clientX; lastY = e.clientY;
       window.addEventListener('pointermove', onMove);
@@ -215,6 +242,7 @@ window.GroupMapModule = (() => {
     });
 
     wirePins(canvas, groups);
+    wireStyleSwitcher(canvas, groups, colors, width, height);
   }
 
   function wirePins(canvas, groups) {
