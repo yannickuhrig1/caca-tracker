@@ -1466,7 +1466,7 @@
   border-top: 1px solid color-mix(in srgb, var(--accent) 15%, transparent); }
 .pf-group { border-radius: 1.1rem; overflow: hidden; background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
 .pf-group + .pf-sub, .pf-group + .pf-group { margin-top: 14px; }
-.pf-group:not(:has(.pf-item:not(.hidden))) { display: none; }
+.pf-group:not(:has(.pf-item:not(.hidden))):not(:has(.pf-row)) { display: none; }
 .pf-item { display: block; width: 100%; text-align: left; padding: 13px 14px; font-size: .9rem; font-weight: 600; }
 .pf-item.hidden { display: none; }
 .pf-item:not(.hidden) ~ .pf-item:not(.hidden) { border-top: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent); }
