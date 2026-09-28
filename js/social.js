@@ -238,7 +238,7 @@ const SocialModule = (() => {
         const tro = trophies[m.id] || 0;
         const canNudge = m.id !== myId && (m.today || 0) === 0;
         return `
-        <div class="flex items-center gap-3 p-2 rounded-[1rem] text-sm">
+        <div class="flex items-center gap-3 p-2 rounded-[1rem] text-sm member-row cursor-pointer" data-member="${esc(m.id)}">
           <span class="text-lg w-8 text-center">${medals[i] || String(i+1)}</span>
           <span class="text-xl">${avatarHTML(m.avatar)}</span>
           <div class="flex-1 min-w-0">
@@ -251,7 +251,11 @@ const SocialModule = (() => {
       }).join('');
 
       listEl.querySelectorAll('[data-nudge]').forEach(btn =>
-        btn.addEventListener('click', () => onNudge(btn, groupId)));
+        btn.addEventListener('click', e => { e.stopPropagation(); onNudge(btn, groupId); }));
+
+      // Clic sur une membre → sa fiche (sans passer par le bouton nudge)
+      listEl.querySelectorAll('[data-member]').forEach(row =>
+        row.addEventListener('click', () => openMemberModal(row.dataset.member, groupId)));
 
     } catch(e) {
       container.innerHTML = `<div class="text-xs text-red-500">${esc(e.message)}</div>`;
@@ -478,6 +482,18 @@ const SocialModule = (() => {
       </div>`;
   }
 
+  function renderStatsItem(item) {
+    return `
+      <div class="feed-badge">
+        <span class="fb-emoji">${item.emoji || '📊'}</span>
+        <div class="flex-1 min-w-0">
+          <span class="font-bold">${esc(item.username)}</span>
+          <span class="opacity-80"> a partagé : </span><span class="font-bold">${esc(item.title || '')}</span>
+        </div>
+        <span class="text-xs opacity-50 flex-shrink-0">${timeAgo(item.date)}</span>
+      </div>`;
+  }
+
   function renderPoopItem(item) {
     const reactionBtns = REACTION_EMOJIS.map(e => reactionBtnHTML(item, e)).join('');
     const open = _openComments.has(item.id);
@@ -543,7 +559,9 @@ const SocialModule = (() => {
       }
 
       el.innerHTML = filtered.map(item =>
-        item.kind === 'badge' ? renderBadgeItem(item) : renderPoopItem(item)
+        item.kind === 'badge'  ? renderBadgeItem(item)
+        : item.kind === 'stats' ? renderStatsItem(item)
+        : renderPoopItem(item)
       ).join('');
 
       // Clics réactions (mise à jour optimiste — feature #9)
@@ -1070,6 +1088,7 @@ const SocialModule = (() => {
       document.getElementById('profile-stats-display').textContent   = '📱 Données sur ce téléphone';
     }
     showProfileTab('avatar');
+    applySharingToggles();
     modal.classList.remove('hidden');
   }
 
@@ -1229,7 +1248,178 @@ const SocialModule = (() => {
       if (!_activeGroupId) return;
       renderFeed(_activeGroupId, _feedPeriod, e.target.value);
     });
+
+    // Chat du groupe (v2.22.0)
+    document.getElementById('open-chat-btn')?.addEventListener('click', () => {
+      if (_activeGroupId) window.ChatModule?.open(_activeGroupId);
+    });
+
+    // Carte du groupe (v2.22.0)
+    document.getElementById('open-group-map-btn')?.addEventListener('click', () => {
+      if (_activeGroupId) window.GroupMapModule?.open(_activeGroupId);
+    });
+
+    // Partager mes stats (v2.22.0)
+    document.getElementById('share-stats-btn')?.addEventListener('click', shareMyStats);
+
+    // Fiche membre : fermeture
+    document.getElementById('member-modal-close')?.addEventListener('click', () =>
+      document.getElementById('member-modal')?.classList.add('hidden'));
+    document.getElementById('member-modal')?.addEventListener('click', e => {
+      if (e.target === e.currentTarget) document.getElementById('member-modal').classList.add('hidden');
+    });
+
+    // Réglages de partage (profil)
+    document.getElementById('geo-share-toggle')?.addEventListener('click', toggleGeoSharing);
+    document.getElementById('stats-share-toggle')?.addEventListener('click', toggleStatsSharing);
   });
+
+  // ============================================================
+  //  FICHE MEMBRE + PARTAGE DE STATS + RÉGLAGES DE PARTAGE (v2.22.0)
+  // ============================================================
+  function fmtShort(ts) {
+    if (!ts) return '—';
+    return new Date(ts).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  async function openMemberModal(memberId, groupId) {
+    const body = document.getElementById('member-modal-body');
+    if (!body) return;
+    body.innerHTML = '<div class="text-sm opacity-50 text-center py-6">Chargement…</div>';
+    document.getElementById('member-modal')?.classList.remove('hidden');
+
+    try {
+      const members  = await window.SupabaseClient.getGroupMembers(groupId);
+      const member   = members.find(m => m.id === memberId) || { id: memberId, username: '???', avatar: '💩' };
+      const statsAll = await window.SupabaseClient.getGroupStats(groupId);
+      const stats    = statsAll[memberId] || {};
+      const badges   = await window.SupabaseClient.getGroupBadgeData(groupId).catch(() => []);
+      const badgeRow = badges.find(b => b.id === memberId);
+      const trophies = await window.SupabaseClient.getGroupTrophies(groupId).catch(() => ({}));
+
+      const card = window.SocialFun.buildMemberCard(member, badgeRow?.logs || [], stats, trophies[memberId] || 0);
+      renderMemberModal(card);
+    } catch (e) {
+      body.innerHTML = `<div class="text-xs text-red-500">${esc(e.message)}</div>`;
+    }
+  }
+
+  function renderMemberModal(card) {
+    const body = document.getElementById('member-modal-body');
+    if (!body) return;
+
+    const bar = (label, n, pct) => `
+      <div class="mb-2">
+        <div class="flex justify-between text-xs mb-1">
+          <span>${label}</span><span class="font-bold">${n} · ${pct}%</span>
+        </div>
+        <div class="h-2 rounded-full" style="background:color-mix(in srgb,var(--accent) 12%,transparent)">
+          <div class="h-2 rounded-full" style="width:${pct}%;background:var(--accent)"></div>
+        </div>
+      </div>`;
+
+    const textures = card.textures.length
+      ? card.textures.map(t => bar(`${t.emoji} ${esc(t.label)}`, t.count, t.pct)).join('')
+      : '<div class="text-xs opacity-50">Pas encore de données</div>';
+    const colors = card.colors.length
+      ? card.colors.map(c => bar(`${c.emoji} ${esc(c.label)}`, c.count, c.pct)).join('')
+      : '<div class="text-xs opacity-50">Pas encore de données</div>';
+
+    body.innerHTML = `
+      <div class="text-center space-y-1">
+        <div class="text-5xl">${avatarHTML(card.avatar)}</div>
+        <h3 id="member-modal-title" class="font-extrabold text-xl">${esc(card.username)}</h3>
+        ${card.trophies > 0 ? `<div class="text-sm">🏆 × ${card.trophies}</div>` : ''}
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="p-3 rounded-[1rem]" style="background:color-mix(in srgb,var(--accent) 8%,transparent)">
+          <div class="font-bold text-xl">${card.total}</div>
+          <div class="text-xs opacity-60">cacas au total</div>
+        </div>
+        <div class="p-3 rounded-[1rem]" style="background:color-mix(in srgb,var(--accent) 8%,transparent)">
+          <div class="font-bold text-xl">${card.streak}</div>
+          <div class="text-xs opacity-60">jours de série 🔥</div>
+        </div>
+        <div class="p-3 rounded-[1rem]" style="background:color-mix(in srgb,var(--accent) 8%,transparent)">
+          <div class="font-bold text-xl">${card.month}</div>
+          <div class="text-xs opacity-60">ce mois-ci</div>
+        </div>
+        <div class="p-3 rounded-[1rem]" style="background:color-mix(in srgb,var(--accent) 8%,transparent)">
+          <div class="font-bold text-xl">${card.avg30}</div>
+          <div class="text-xs opacity-60">moyenne / jour (30 j)</div>
+        </div>
+      </div>
+      <div>
+        <div class="text-sm font-bold mb-2">📈 Records</div>
+        <div class="text-xs space-y-1 opacity-80">
+          <div>Meilleur jour : <b>${card.bestDay}</b> caca${card.bestDay > 1 ? 's' : ''}</div>
+          <div>Meilleure semaine : <b>${card.bestWeek}</b></div>
+          <div>Meilleur mois : <b>${card.bestMonth}</b></div>
+          <div>Premier caca : <b>${fmtShort(card.firstPoop)}</b></div>
+          ${card.topMood ? `<div>Humeur préférée : <b>${esc(card.topMood[0])}</b> (${card.topMood[1]}×)</div>` : ''}
+        </div>
+      </div>
+      <div>
+        <div class="text-sm font-bold mb-2">💩 Textures</div>
+        ${textures}
+      </div>
+      <div>
+        <div class="text-sm font-bold mb-2">🎨 Couleurs</div>
+        ${colors}
+      </div>`;
+  }
+
+  async function shareMyStats() {
+    const groupId = _activeGroupId;
+    if (!groupId) return;
+    try {
+      const myId   = window.SupabaseClient.getCurrentProfile()?.id;
+      const profile = window.SupabaseClient.getCurrentProfile();
+      const statsAll = await window.SupabaseClient.getGroupStats(groupId);
+      const stats  = statsAll[myId] || {};
+      const badges = await window.SupabaseClient.getGroupBadgeData(groupId).catch(() => []);
+      const row    = badges.find(b => b.id === myId);
+      const card   = window.SocialFun.buildMemberCard(profile, row?.logs || [], stats);
+      const { ref, title, emoji } = window.SocialFun.statsShareText(card);
+      await window.SupabaseClient.shareStatsEvent(title, ref, emoji);
+      window.UI.toast('Tes stats sont partagées dans le feed 📊', 'success', 3500);
+      renderFeed(groupId);
+    } catch (e) {
+      window.UI.toast('Partage impossible : ' + e.message, 'error');
+    }
+  }
+
+  // Réglages de partage (profil) : position + stats détaillées
+  function applySharingToggles() {
+    const geoOn   = window.SupabaseClient.geoSharingEnabled();
+    const statsOn = window.SupabaseClient.detailedStatsEnabled();
+    const gBtn = document.getElementById('geo-share-toggle');
+    const gKnob = document.getElementById('geo-share-knob');
+    const sBtn = document.getElementById('stats-share-toggle');
+    const sKnob = document.getElementById('stats-share-knob');
+    if (gBtn) { gBtn.style.background = geoOn ? '#4f46e5' : 'rgba(0,0,0,0.15)'; if (gKnob) gKnob.style.transform = geoOn ? 'translateX(20px)' : 'translateX(0)'; }
+    if (sBtn) { sBtn.style.background = statsOn ? '#4f46e5' : 'rgba(0,0,0,0.15)'; if (sKnob) sKnob.style.transform = statsOn ? 'translateX(20px)' : 'translateX(0)'; }
+  }
+
+  async function toggleGeoSharing() {
+    try {
+      await window.SupabaseClient.setGeoSharing(!window.SupabaseClient.geoSharingEnabled());
+      applySharingToggles();
+      window.UI.toast(window.SupabaseClient.geoSharingEnabled()
+        ? 'Ta position est maintenant visible sur la carte du groupe 📍'
+        : 'Ta position n\'est plus partagée', 'success');
+    } catch (e) { window.UI.toast(e.message, 'error'); }
+  }
+
+  async function toggleStatsSharing() {
+    try {
+      await window.SupabaseClient.setDetailedStatsSharing(!window.SupabaseClient.detailedStatsEnabled());
+      applySharingToggles();
+      window.UI.toast(window.SupabaseClient.detailedStatsEnabled()
+        ? 'Tes stats détaillées sont visibles par le groupe 📊'
+        : 'Tes stats détaillées sont masquées', 'success');
+    } catch (e) { window.UI.toast(e.message, 'error'); }
+  }
 
   // ============================================================
   //  QR CODE MODAL

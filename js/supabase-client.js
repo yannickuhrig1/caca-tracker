@@ -667,7 +667,7 @@ async function getGroupFeed(groupId, limit = 30) {
     .order('created_at', { ascending: false })
     .limit(limit);
   const events = (evData || []).map(e => ({
-    kind:     'badge',
+    kind:     e.type === 'stats_share' ? 'stats' : 'badge',
     id:       e.id,
     user_id:  e.user_id,
     username: profileMap[e.user_id]?.username || '???',
@@ -1137,6 +1137,106 @@ async function getQuizData(groupId, days = 30) {
 }
 
 // ============================================================
+//  CHAT DE GROUPE 💬 (migration 18)
+// ============================================================
+let _groupChatTable = true;   // table absente (base neuve) : le chat est masqué
+
+/** Les derniers messages d'un groupe, du plus ancien au plus récent. */
+async function getGroupMessages(groupId, limit = 50, before = null) {
+  const sb = getSB(); if (!sb || !_groupChatTable) return [];
+  const members = await getGroupMembers(groupId);
+  const profileMap = Object.fromEntries(members.map(m => [m.id, m]));
+
+  let query = sb.from('group_messages')
+    .select('id, user_id, body, created_at')
+    .eq('group_id', groupId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (before) query = query.lt('created_at', before);
+
+  const { data, error } = await query;
+  if (isMissingTable(error)) { _groupChatTable = false; return []; }
+  logSbError('getGroupMessages', error);
+  if (error) throw new Error(error.message);
+
+  return (data || []).map(m => ({
+    ...m,
+    username: profileMap[m.user_id]?.username || '???',
+    avatar:   profileMap[m.user_id]?.avatar   || '💩',
+    mine:     m.user_id === _currentUser?.id,
+  })).reverse();
+}
+
+async function sendGroupMessage(groupId, body) {
+  const sb = getSB(); if (!sb || !_currentUser || !_groupChatTable) throw new Error('Chat indisponible');
+  const clean = String(body || '').trim().slice(0, 500);
+  if (!clean) return null;
+  const { data, error } = await sb.from('group_messages')
+    .insert({ group_id: groupId, user_id: _currentUser.id, body: clean })
+    .select('id, user_id, body, created_at').single();
+  if (isMissingTable(error)) { _groupChatTable = false; throw new Error('Chat indisponible'); }
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+async function deleteGroupMessage(messageId) {
+  const sb = getSB(); if (!sb || !_currentUser) return;
+  const { error } = await sb.from('group_messages')
+    .delete().eq('id', messageId).eq('user_id', _currentUser.id);
+  logSbError('deleteGroupMessage', error);
+}
+
+// ============================================================
+//  CARTE DU GROUPE 🗺️ (migration 19)
+// ============================================================
+let _groupGeoFn = true;   // fonction SQL absente (base neuve) : la carte est masquée
+
+/**
+ * Poops géolocalisés des membres du groupe ayant activé geo_shared.
+ * La fonction SQL applique l'opt-in EN BASE ; sans elle, on rend null et
+ * le client masque la carte (aucune lecture directe des positions d'autrui).
+ */
+async function getGroupGeoPoops(groupId, days = 30) {
+  const sb = getSB(); if (!sb || !_groupGeoFn) return null;
+  const since = Date.now() - days * 86400000;
+  const { data, error } = await sb.rpc('get_group_geo_poops', { gid: groupId, since });
+  if (error) {
+    // PGRST202 / 42883 : fonction inconnue (migration 19 non appliquée).
+    if (['PGRST202', '42883', '42703'].includes(error.code)) { _groupGeoFn = false; return null; }
+    logSbError('getGroupGeoPoops', error);
+    return null;
+  }
+  return data || [];
+}
+
+/** L'utilisatrice partage-t-elle ses positions avec ses groupes ? */
+const geoSharingEnabled = () => !!_currentProfile?.geo_shared;
+
+async function setGeoSharing(enabled) {
+  return updateProfile({ geo_shared: !!enabled });
+}
+
+/** Les copines peuvent-elles voir ses stats détaillées ? */
+const detailedStatsEnabled = () => _currentProfile?.show_detailed_stats !== false;
+
+async function setDetailedStatsSharing(enabled) {
+  return updateProfile({ show_detailed_stats: !!enabled });
+}
+
+// ============================================================
+//  PARTAGE DE STATS 📊 (feed_events, type stats_share)
+// ============================================================
+async function shareStatsEvent(title, ref, emoji = '📊') {
+  const sb = getSB(); if (!sb || !_currentUser) return;
+  try {
+    await sb.from('feed_events').upsert(
+      { user_id: _currentUser.id, type: 'stats_share', ref, title, emoji },
+      { onConflict: 'user_id,type,ref', ignoreDuplicates: true }
+    );
+  } catch (e) { console.warn('shareStatsEvent', e.message); }
+}
+
+// ============================================================
 //  EXPORT GLOBAL
 // ============================================================
 window.SupabaseClient = {
@@ -1196,5 +1296,18 @@ window.SupabaseClient = {
   getAllProfiles,
   getAllUsersGroups,
   setUserAdmin,
-  updateProfile
+  updateProfile,
+  // Chat de groupe (migration 18)
+  getGroupMessages,
+  sendGroupMessage,
+  deleteGroupMessage,
+  groupChatAvailable: () => _groupChatTable,
+  // Carte du groupe + partage de stats (migration 19)
+  getGroupGeoPoops,
+  geoSharingEnabled,
+  setGeoSharing,
+  detailedStatsEnabled,
+  setDetailedStatsSharing,
+  groupGeoAvailable: () => _groupGeoFn,
+  shareStatsEvent
 };

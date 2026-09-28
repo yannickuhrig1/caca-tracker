@@ -5,6 +5,35 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.22.0] — 2026-09-28
+
+### Ajouté
+- **💬 Chat de groupe** : fil de discussion temps réel par groupe (table
+  `group_messages`, migration `18`). Ouvert depuis le bouton 💬 du sélecteur de
+  groupe ; les messages arrivent en direct (Realtime) et se suppriment à la
+  demande. Sans la table, le bouton reste muet et le chat explique l'indispo.
+- **🗺️ Carte du groupe** : les cacas géolocalisés des copines sur une carte
+  commune, colorés par membre (migration `19`, fonction SQL
+  `get_group_geo_poops`). **Opt-in strict** : on n'apparaît qu'après avoir
+  activé « 📍 Partager ma position » dans le profil ; seuls les 30 derniers
+  jours sont remontés. Sans la fonction, la carte est masquée.
+- **📊 Fiche membre** : clic sur une copine du podium → ses stats détaillées
+  (total, série, records, répartition textures/couleurs, humeur préférée).
+- **📤 Partager mes stats** : bouton sur le podium qui publie un résumé du mois
+  dans le feed (événement `stats_share`, dédoublé par mois).
+- **🔒 Réglages de partage** dans le profil : « Partager ma position » et
+  « Stats détaillées », désactivés/activés par défaut respectivement.
+- Cache SW caca-v43 → caca-v44.
+
+### Technique
+- Migrations `18_20260928_group-chat.sql` et `19_20260928_group-map.sql`
+  (RLS via `is_group_member`/`auth.uid()`, jamais de `USING (true)`).
+- Nouveaux modules `js/chat.js` et `js/group-map.js` ; fonctions pures
+  `buildMemberCard` / `statsShareText` dans `js/social-fun.js`.
+- Tests : `member-stats.test.js`, `group-map.test.js`, `chat.test.js`.
+
+---
+
 ## [2.21.1] — 2026-09-18
 
 ### Modifié
