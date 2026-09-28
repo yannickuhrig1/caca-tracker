@@ -48,6 +48,18 @@ test('groupGeoSummary : liste vide ou null', () => {
   assert.strictEqual(G.groupGeoSummary([]).members, 0);
 });
 
+test('emptyStateHTML : message adapté à la situation de partage', () => {
+  // Serveur sans la migration 19 → indisponible.
+  assert.match(G.emptyStateHTML(true, true), /pas encore disponible/);
+  // L'utilisatrice n'a pas activé le partage → on lui dit d'activer.
+  assert.match(G.emptyStateHTML(false, false), /Partager ma position/);
+  // L'utilisatrice a DÉJÀ activé le partage → on ne lui redemande pas,
+  // on lui explique qu'il faut enregistrer des positions.
+  const msg = G.emptyStateHTML(false, true);
+  assert.match(msg, /Enregistrer la position/);
+  assert.doesNotMatch(msg, /Personne n'a encore partagé sa position/);
+});
+
 test('clusterByMember : regroupe les points par membre, sans les mélanger', () => {
   const rows = [
     row('a', 'Léa', 48.8, 2.3, 'maison'),

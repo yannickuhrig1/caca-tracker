@@ -76,13 +76,27 @@ window.GroupMapModule = (() => {
       </span>`).join('');
   }
 
+  // Message d'état vide adapté à la situation réelle (v2.22.2).
+  // « Partager ma position » (profil) et « Enregistrer la position » (Réglages)
+  // sont deux choses différentes : le premier message prêtait à confusion en
+  // demandant de partager alors que c'était déjà fait.
+  function emptyStateHTML(rowsNull, sharingEnabled) {
+    if (rowsNull) return 'La carte du groupe n\'est pas encore disponible sur ce serveur.';
+    if (!sharingEnabled) {
+      return 'Personne n\'a encore partagé sa position, toi y compris. '
+           + 'Active « 📍 Partager ma position » dans ton profil pour apparaître ici.';
+    }
+    return 'Tu partages bien ta position 👍, mais aucun caca géolocalisé sur les 30 derniers jours. '
+         + 'Active « 🗺️ Enregistrer la position » dans ⚙️ Réglages, puis touche 📍 en ajoutant un caca. '
+         + 'Tes copines doivent faire pareil de leur côté.';
+  }
+
   function renderMap(groups, colors, el) {
     const points = allPoints(groups);
     if (!points.length) {
       el.innerHTML = `
         <div class="text-center text-sm opacity-60 py-8">
-          Personne n'a encore partagé sa position. Active « Partager ma position »
-          dans le profil pour apparaître ici.
+          ${emptyStateHTML(false, window.SupabaseClient?.geoSharingEnabled?.())}
         </div>`;
       return;
     }
@@ -249,9 +263,7 @@ window.GroupMapModule = (() => {
     if (!rows || !summary.total) {
       if (mapEl) mapEl.innerHTML = `
         <div class="text-center text-sm opacity-60 py-8">
-          ${rows === null
-            ? 'La carte du groupe n\'est pas encore disponible sur ce serveur.'
-            : 'Personne n\'a encore partagé sa position. Active « Partager ma position » dans ton profil pour apparaître ici.'}
+          ${emptyStateHTML(rows === null, window.SupabaseClient?.geoSharingEnabled?.())}
         </div>`;
       return;
     }
@@ -274,5 +286,5 @@ window.GroupMapModule = (() => {
     });
   });
 
-  return { memberColorMap, groupGeoSummary, clusterByMember, allPoints, open, close };
+  return { memberColorMap, groupGeoSummary, clusterByMember, allPoints, emptyStateHTML, open, close };
 })();
