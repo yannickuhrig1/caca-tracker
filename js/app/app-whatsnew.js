@@ -7,12 +7,31 @@
 
 // Source de vérité unique de la version. L'en-tête et les Réglages sont
 // remplis à partir d'ici, ce qui évite qu'ils divergent comme par le passé.
-const APP_VERSION = '2.21.1';
+const APP_VERSION = '2.22.1';
 const APP_VERSION_DATE = 'Septembre 2026';
 
 // De la plus récente à la plus ancienne. `items` reste court et écrit pour
 // Clémence, pas pour un développeur : ce que ça change pour elle, pas comment.
 const APP_CHANGELOG = [
+  {
+    version: '2.22.1',
+    date: 'Septembre 2026',
+    items: [
+      ['📤', 'Le bouton « **Partager mes stats** » du podium ne faisait rien quand on le touchait : réparé.'],
+      ['🆕', 'Cette fenêtre ne s\'était pas ouverte à la mise à jour précédente. Les nouveautés de la 2.22.0 sont juste en dessous.'],
+    ]
+  },
+  {
+    version: '2.22.0',
+    date: 'Septembre 2026',
+    items: [
+      ['💬', '**Chat de groupe** : le bouton 💬 à côté du sélecteur de groupe ouvre un fil de discussion. Les messages arrivent en direct, et tu peux supprimer les tiens.'],
+      ['🗺️', '**Carte du groupe** : le bouton 🗺️ montre les cacas des copines sur une même carte, une couleur par copine. Il faut d\'abord activer « 📍 Partager ma position » dans ton profil, sinon tu n\'apparais pas.'],
+      ['📊', '**Fiche copine** : touche une copine dans le podium du mois pour voir ses stats détaillées, ses records et ses badges.'],
+      ['📤', '**Partager mes stats** : le bouton du podium publie un résumé de ton mois dans le feed du groupe.'],
+      ['🔒', 'Deux nouveaux réglages dans ton profil : **partager ta position** (désactivé par défaut) et **montrer tes stats détaillées** aux copines (activé).'],
+    ]
+  },
   {
     version: '2.21.1',
     date: 'Septembre 2026',

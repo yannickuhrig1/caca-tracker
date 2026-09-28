@@ -5,6 +5,35 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.22.1] — 2026-09-28
+
+### Corrigé
+- **🆕 La popup « Quoi de neuf » ne s'ouvrait pas** à la mise à jour 2.22.0.
+  `js/app/app-whatsnew.js` porte la source de vérité de la version et n'avait
+  pas été bumpé : `APP_VERSION` valait encore `2.21.1`, donc
+  `compareVersions(APP_VERSION, déjàVu)` rendait 0 et `maybeShowWhatsNew`
+  sortait immédiatement. Les Réglages annonçaient aussi l'ancienne version.
+  L'entrée 2.22.0 du changelog de l'app manquait par la même occasion.
+- **📤 Le bouton « Partager mes stats » du podium ne faisait rien** : il portait
+  l'identifiant `share-stats-btn`, déjà utilisé par « 📤 Partager en image » sur
+  l'accueil. `getElementById` ne renvoyant que le premier élément, le bouton du
+  podium n'avait aucun gestionnaire, tandis que celui de l'accueil héritait en
+  plus de `shareMyStats` et publiait dans le feed à chaque partage d'image. Le
+  bouton du podium devient `share-stats-feed-btn`.
+- Deux clés `"version"` traînaient dans `package.json`, restes d'une résolution
+  de conflit. JSON l'accepte et garde la dernière, d'où le silence complet.
+
+### Technique
+- Nouveaux garde-fous : `test/version-coherence.test.js` (clés JSON en double,
+  accord package/manifest, entrée de changelog, format du cache SW),
+  `test/index-html.test.js` (identifiants uniques) et une assertion liant
+  `APP_VERSION` à `package.json` dans `whatsnew.test.js`. Les tests existants
+  ne comparaient le changelog de l'app qu'à `APP_VERSION` : périmés ensemble,
+  ils restaient verts.
+- Cache SW caca-v44 → caca-v45.
+
+---
+
 ## [2.22.0] — 2026-09-28
 
 ### Ajouté
