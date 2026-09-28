@@ -66,6 +66,19 @@ test('changelogSince — le plus récent en premier', () => {
   }
 });
 
+test('APP_VERSION suit package.json', () => {
+  // Le piège de la v2.22.0 : package.json est passé à 2.22.0 sans qu'APP_VERSION
+  // bouge. compareVersions(APP_VERSION, déjàVu) valait donc 0, `maybeShowWhatsNew`
+  // sortait aussitôt, et la popup n'est jamais apparue — les Réglages annonçaient
+  // même encore l'ancienne version. Les deux doivent rester d'accord.
+  //
+  // Les tests ci-dessous ne comparent qu'APP_CHANGELOG à APP_VERSION : périmés
+  // ensemble, ils restaient verts. Celui-ci est le seul lien avec l'extérieur.
+  const pkg = require('../package.json');
+  assert.strictEqual(APP_VERSION, pkg.version,
+    'bump oublié dans js/app/app-whatsnew.js : la popup « Quoi de neuf » resterait muette');
+});
+
 test('le changelog décrit bien la version courante', () => {
   assert.strictEqual(APP_CHANGELOG[0].version, APP_VERSION,
     'la première entrée doit correspondre à APP_VERSION — sinon la popup annonce une version qui n\'existe pas');

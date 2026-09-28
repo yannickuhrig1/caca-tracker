@@ -1260,7 +1260,7 @@ const SocialModule = (() => {
     });
 
     // Partager mes stats (v2.22.0)
-    document.getElementById('share-stats-btn')?.addEventListener('click', shareMyStats);
+    document.getElementById('share-stats-feed-btn')?.addEventListener('click', shareMyStats);
 
     // Fiche membre : fermeture
     document.getElementById('member-modal-close')?.addEventListener('click', () =>

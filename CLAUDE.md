@@ -1,4 +1,4 @@
-# 💩 Caca-Tracker 3000 Deluxe - v2.21.1
+# 💩 Caca-Tracker 3000 Deluxe - v2.22.1
 
 > ☁️ **Backend** : Supabase **auto-hébergé sur le NAS Unraid** depuis v2.9.0 (2026-07-14) — API `https://caca-api.yannick-uhrig.com` (Traefik + Cloudflare Tunnel → Postgres/GoTrue/PostgREST, stack `compose-stacks/caca-supabase`). L'ancien projet cloud `fnljhknjmmteawwomehb` est en pause.
 >
@@ -232,6 +232,24 @@ function shakeAchievement(id)
 - Poids total : ~50KB
 
 ## 🆗 Changelog
+
+### v2.22.1 (Septembre 2026) - 🔧 LA 2.22.0 FINIE
+
+- 🔧 **Popup « Quoi de neuf » muette** à la 2.22.0 : `APP_VERSION` d'`app-whatsnew.js` (source de vérité) était resté à `2.21.1`, donc `compareVersions(APP_VERSION, déjàVu)` rendait 0 et `maybeShowWhatsNew` sortait aussitôt — sans même mettre à jour `cacaTracker.lastSeenVersion`, ce qui a permis au correctif d'afficher quand même les nouveautés de la 2.22.0. Entrée 2.22.0 ajoutée à `APP_CHANGELOG`
+- 🔧 **Identifiant en double** `share-stats-btn` : porté par « 📤 Partager en image » (accueil, `openShareChooser` dans `app-core.js`) **et** par le nouveau « 📤 Partager mes stats » (podium, `shareMyStats` dans `social.js`). `getElementById` ne rendant que le premier, le bouton du podium était mort et celui de l'accueil publiait en plus dans le feed. Le podium devient `share-stats-feed-btn`
+- 🔧 Deux clés `"version"` dans `package.json` (reste d'une résolution de conflit) : JSON valide, dernière clé gagnante, donc zéro signal
+- ➕ Garde-fous : `test/version-coherence.test.js`, `test/index-html.test.js`, et `APP_VERSION` comparé à `package.json` dans `whatsnew.test.js`. Les tests existants ne comparaient `APP_CHANGELOG` qu'à `APP_VERSION` : périmés ensemble, ils restaient verts
+- 🔧 Bump cache SW caca-v44 → caca-v45
+
+### v2.22.0 (Septembre 2026) - 💬 CHAT + CARTE DU GROUPE
+
+- ➕ **Chat de groupe** (`js/chat.js`, bouton 💬 du sélecteur de groupe) : fil temps réel par groupe via Realtime, suppression de ses propres messages. Sans la table, le chat explique l'indispo
+- ➕ **Carte du groupe** (`js/group-map.js`, bouton 🗺️) : cacas géolocalisés des membres sur une carte commune, une couleur par membre, 30 derniers jours. **Opt-in strict** : `profiles.geo_shared`, désactivé par défaut. Sans la fonction SQL, la carte est masquée
+- ➕ **Fiche membre** : clic sur une copine du podium → stats détaillées, records, badges (`buildMemberCard` dans `social-fun.js`), soumise à `profiles.show_detailed_stats`
+- ➕ **Partager mes stats** : résumé du mois publié dans le feed (`stats_share`, dédoublé par mois)
+- ➕ Migrations `18_20260928_group-chat.sql` (`group_messages`, RLS + 3 policies via `is_group_member`/`auth.uid()`, publication `supabase_realtime`) et `19_20260928_group-map.sql` (`profiles.geo_shared` / `show_detailed_stats`, `get_group_geo_poops(uuid,bigint)` en SECURITY DEFINER, EXECUTE révoqué pour public/anon) — **appliquées en production le 2026-09-28**. ⚠️ Piège du NAS : la publication `supabase_realtime` appartient à `supabase_admin` et `postgres` n'en est pas membre, donc le premier passage de la 18 exige `supabase_admin` puis `ALTER TABLE public.group_messages OWNER TO postgres;` (documenté dans `scripts/apply-migrations.sh`)
+- 🔧 Migration `16` rendue rejouable : elle recréait `game_scores_game_known` sans `'transit'`, ce qui bloquait `apply-migrations.sh` sur une base où la `17` était déjà passée
+- 🔧 Bump cache SW caca-v43 → caca-v44
 
 ### v2.21.1 (Septembre 2026) - 💖 TITRE AU PSEUDO
 
