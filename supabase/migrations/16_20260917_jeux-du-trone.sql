@@ -41,7 +41,10 @@ CREATE TABLE IF NOT EXISTS public.game_scores (
 ALTER TABLE public.game_scores DROP CONSTRAINT IF EXISTS game_scores_game_known;
 ALTER TABLE public.game_scores
   ADD CONSTRAINT game_scores_game_known
-  CHECK (game IN ('plop', 'pq', 'colon', 'course', 'quiz'));
+  -- 'transit' vient de la migration 17, mais il est listé ici pour que ce
+  -- fichier reste rejouable : sans lui, recréer la contrainte sur une base où
+  -- la 17 est déjà passée échoue sur les scores de transit existants.
+  CHECK (game IN ('plop', 'pq', 'colon', 'course', 'quiz', 'transit'));
 
 -- Bornes larges : on arrête les valeurs absurdes, pas les bonnes joueuses.
 ALTER TABLE public.game_scores DROP CONSTRAINT IF EXISTS game_scores_score_range;
