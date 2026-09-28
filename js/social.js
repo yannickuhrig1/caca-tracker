@@ -47,6 +47,11 @@ const SocialModule = (() => {
   let _feedPeriod    = 'today';
   let _feedMemberId  = '';
 
+  // ---- Sous-onglets du groupe (v2.23.0) ----
+  let _socialPane        = 'activite';   // chat | activite | classements
+  let _chatUnread        = {};           // groupId -> messages non lus
+  let _chatUnreadChannel = null;
+
   // ============================================================
   //  RENDU PRINCIPAL
   // ============================================================
@@ -149,6 +154,82 @@ const SocialModule = (() => {
     ]);
     updateQueenCrown();
     checkWinnerCelebration(groupId);
+
+    // Appliquer l'onglet actif + ouvrir le chat / compter les non-lus (v2.23.0)
+    setSocialPane(_socialPane);
+    subscribeChatUnread(groupId);
+    updateChatBadge();
+  }
+
+  // ============================================================
+  //  SOUS-ONGLETS DU GROUPE (v2.23.0) : chat, activité, classements
+  // ============================================================
+  function setSocialPane(pane) {
+    if (!['chat', 'activite', 'classements'].includes(pane)) pane = 'activite';
+    _socialPane = pane;
+
+    const scope = document.getElementById('group-content');
+    if (scope) {
+      scope.querySelectorAll('.social-pane').forEach(el => {
+        el.classList.toggle('hidden', el.dataset.pane !== pane);
+      });
+    }
+    document.querySelectorAll('.social-tab-btn').forEach(btn => {
+      const on = btn.dataset.pane === pane;
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+
+    if (pane === 'chat') {
+      markChatRead(_activeGroupId);
+      window.ChatModule?.open?.(_activeGroupId);
+    } else {
+      window.ChatModule?.close?.();
+    }
+  }
+
+  function chatUnreadCount(groupId) {
+    return _chatUnread[groupId] || 0;
+  }
+
+  function updateChatBadge() {
+    const tabBadge = document.getElementById('chat-unread');
+    const total = Object.values(_chatUnread).reduce((a, b) => a + b, 0);
+    if (tabBadge) {
+      const n = chatUnreadCount(_activeGroupId);
+      tabBadge.textContent = n > 99 ? '99+' : String(n);
+      tabBadge.classList.toggle('hidden', n === 0);
+    }
+    document.querySelectorAll('.social-nav-badge').forEach(b => {
+      b.textContent = total > 99 ? '99+' : String(total);
+      b.classList.toggle('hidden', total === 0);
+    });
+  }
+
+  // Abonnement permanent aux messages du groupe actif : même quand l'onglet
+  // chat est fermé, on sait qu'un nouveau message est arrivé (pastille).
+  function subscribeChatUnread(groupId) {
+    const sb = window.SupabaseClient?.getClient?.();
+    if (!sb || !groupId) return;
+    if (!window.SupabaseClient.groupChatAvailable()) return;
+    if (_chatUnreadChannel) { try { _chatUnreadChannel.unsubscribe(); } catch {} _chatUnreadChannel = null; }
+
+    const myId = window.SupabaseClient.getCurrentProfile()?.id;
+    _chatUnreadChannel = sb.channel('chat-unread')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'group_messages' }, payload => {
+        const n = payload?.new;
+        if (!n || n.group_id !== _activeGroupId) return;
+        if (n.user_id === myId) return;
+        if (_socialPane === 'chat') return; // chat visible : pas de compteur
+        _chatUnread[groupId] = (_chatUnread[groupId] || 0) + 1;
+        updateChatBadge();
+      })
+      .subscribe();
+  }
+
+  function markChatRead(groupId) {
+    if (!groupId) return;
+    if (_chatUnread[groupId]) { _chatUnread[groupId] = 0; updateChatBadge(); }
   }
 
   // ============================================================
@@ -1249,9 +1330,9 @@ const SocialModule = (() => {
       renderFeed(_activeGroupId, _feedPeriod, e.target.value);
     });
 
-    // Chat du groupe (v2.22.0)
-    document.getElementById('open-chat-btn')?.addEventListener('click', () => {
-      if (_activeGroupId) window.ChatModule?.open(_activeGroupId);
+    // Sous-onglets du groupe (v2.23.0) : chat / activité / classements
+    document.querySelectorAll('.social-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => setSocialPane(btn.dataset.pane));
     });
 
     // Carte du groupe (v2.22.0)

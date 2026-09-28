@@ -511,16 +511,37 @@
               title="Gérer le groupe" aria-label="Gérer le groupe">
               ⚙️
             </button>
-            <button id="open-chat-btn" class="p-3 rounded-[1rem]"
-              style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)"
-              title="Discuter avec le groupe" aria-label="Discuter avec le groupe">
-              💬
-            </button>
             <button id="open-group-map-btn" class="p-3 rounded-[1rem]"
               style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)"
               title="Carte des cacas du groupe" aria-label="Carte des cacas du groupe">
               🗺️
             </button>
+          </div>
+
+          <!-- Sous-onglets du groupe (v2.23.0) -->
+          <div class="social-tabs" role="tablist">
+            <button type="button" class="social-tab-btn" data-pane="chat" role="tab" aria-selected="false">
+              💬 Chat <span id="chat-unread" class="unread-badge hidden"></span>
+            </button>
+            <button type="button" class="social-tab-btn is-on" data-pane="activite" role="tab" aria-selected="true">
+              📣 Activité <span id="feed-unread" class="unread-dot hidden"></span>
+            </button>
+            <button type="button" class="social-tab-btn" data-pane="classements" role="tab" aria-selected="false">
+              🏆 Classements
+            </button>
+          </div>
+
+          <!-- Panneau 💬 Chat (v2.23.0) -->
+          <div id="social-pane-chat" class="social-pane hidden" data-pane="chat">
+            <div id="chat-messages" class="chat-messages rounded-[1.5rem] border"
+              style="border-color:var(--card-border);background:var(--card-bg);min-height:320px;max-height:52vh;overflow-y:auto"></div>
+            <div class="flex gap-2 mt-3">
+              <input id="chat-input" type="text" maxlength="500" placeholder="Écris un message…"
+                class="flex-1 p-3 rounded-[1.25rem] border focus:outline-none text-sm"
+                style="background:var(--card-bg);color:var(--text-primary);border-color:var(--card-border)" />
+              <button id="chat-send" class="px-5 py-3 rounded-[1.25rem] font-bold text-white text-sm"
+                style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">➤</button>
+            </div>
           </div>
 
           <!-- Panel de gestion du groupe (masqué par défaut) -->
@@ -543,10 +564,10 @@
           </div>
 
           <!-- Récap hebdo « Wrapped » (feature #7) -->
-          <div id="weekly-recap"></div>
+          <div id="weekly-recap" class="social-pane" data-pane="activite"></div>
 
           <!-- Podium -->
-          <div class="card p-5 rounded-[2rem] shadow">
+          <div class="card p-5 rounded-[2rem] shadow social-pane" data-pane="classements">
             <div class="flex items-center justify-between mb-4">
               <h4 class="font-bold">🏆 Podium du mois</h4>
               <button id="share-stats-feed-btn" class="text-xs font-bold px-3 py-1.5 rounded-full"
@@ -561,14 +582,14 @@
           </div>
 
           <!-- Reine de l'endurance (v2.18.0) — masquée sans la migration 15 -->
-          <div id="endurance-card" class="card p-5 rounded-[2rem] shadow hidden">
+          <div id="endurance-card" class="card p-5 rounded-[2rem] shadow social-pane hidden" data-pane="classements">
             <h4 class="font-bold mb-1">⏱️ Reine de l'endurance</h4>
             <p class="text-xs opacity-60 mb-3">La plus longue séance chronométrée du mois</p>
             <div id="endurance-list" class="space-y-1"></div>
           </div>
 
           <!-- Jeux du trône (v2.19.0) — masqué sans la migration 16 -->
-          <div id="jeux-board-card" class="card p-5 rounded-[2rem] shadow hidden">
+          <div id="jeux-board-card" class="card p-5 rounded-[2rem] shadow social-pane hidden" data-pane="classements">
             <h4 class="font-bold mb-1">🎮 Jeux du trône</h4>
             <p class="text-xs opacity-60 mb-3">Meilleurs scores de la semaine. Remise à zéro chaque lundi.</p>
             <div id="jeux-board-tabs" class="flex gap-1 mb-3 flex-wrap"></div>
@@ -576,32 +597,32 @@
           </div>
 
           <!-- Historique des podiums mensuels -->
-          <div class="card p-5 rounded-[2rem] shadow">
+          <div class="card p-5 rounded-[2rem] shadow social-pane" data-pane="classements">
             <h4 class="font-bold mb-4">🗓️ Podiums des mois passés</h4>
             <div id="monthly-history" class="space-y-3"></div>
           </div>
 
           <!-- Hall of Fame — palmarès des défis (feature #5) -->
-          <div id="hall-of-fame-card" class="card p-5 rounded-[2rem] shadow hidden">
+          <div id="hall-of-fame-card" class="card p-5 rounded-[2rem] shadow social-pane hidden" data-pane="classements">
             <h4 class="font-bold mb-4">🏅 Palmarès des défis</h4>
             <div id="hall-of-fame" class="space-y-1"></div>
           </div>
 
           <!-- Ligue entre groupes (v2.18.0) — masquée sans la migration 15 -->
-          <div id="league-card" class="card p-5 rounded-[2rem] shadow hidden">
+          <div id="league-card" class="card p-5 rounded-[2rem] shadow social-pane hidden" data-pane="classements">
             <h4 class="font-bold mb-1">🏟️ Ligue des groupes</h4>
             <p id="league-sub" class="text-xs opacity-60 mb-3"></p>
             <div id="league-list" class="space-y-1"></div>
           </div>
 
           <!-- Comparatif 7 jours -->
-          <div class="card p-5 rounded-[2rem] shadow">
+          <div class="card p-5 rounded-[2rem] shadow social-pane" data-pane="classements">
             <h4 class="font-bold mb-4">📊 Comparatif 7 jours</h4>
             <div id="compare-chart" class="space-y-3"></div>
           </div>
 
           <!-- Défi de la semaine -->
-          <div id="challenge-card" class="card p-5 rounded-[2rem] shadow">
+          <div id="challenge-card" class="card p-5 rounded-[2rem] shadow social-pane" data-pane="classements">
             <div class="flex items-center justify-between mb-3">
               <h4 class="font-bold">🎯 Défi <span id="challenge-chip"></span></h4>
               <div class="flex items-center gap-2">
@@ -616,7 +637,7 @@
           </div>
 
           <!-- Feed d'activité -->
-          <div class="card p-5 rounded-[2rem] shadow">
+          <div class="card p-5 rounded-[2rem] shadow social-pane" data-pane="activite">
             <div class="flex items-center justify-between mb-3">
               <h4 class="font-bold">📣 Activité</h4>
               <select id="feed-member-filter" class="text-xs border rounded-xl px-2 py-1 focus:outline-none"
@@ -1059,8 +1080,9 @@
       <button class="tab-btn py-3 px-4 flex items-center gap-3 text-sm font-semibold w-full text-left" data-tab="admin">
         <svg class="icon icon-5"><use href="#i-list"/></svg><span>Historique</span>
       </button>
-      <button class="tab-btn py-3 px-4 flex items-center gap-3 text-sm font-semibold w-full text-left" data-tab="social">
+      <button class="tab-btn relative py-3 px-4 flex items-center gap-3 text-sm font-semibold w-full text-left" data-tab="social">
         <svg class="icon icon-5"><use href="#i-users"/></svg><span>Social</span>
+        <span class="social-nav-badge nav-badge hidden"></span>
       </button>
       <button class="tab-btn py-3 px-4 flex items-center gap-3 text-sm font-semibold w-full text-left" data-tab="settings">
         <svg class="icon icon-5"><use href="#i-cog"/></svg><span>Réglages</span>
@@ -1082,8 +1104,9 @@
       <button class="tab-btn py-2 px-1.5 flex flex-col items-center gap-0.5" data-tab="admin">
         <svg class="icon text-lg"><use href="#i-list"/></svg><span class="text-[10px]">Historique</span>
       </button>
-      <button class="tab-btn py-2 px-1.5 flex flex-col items-center gap-0.5" data-tab="social">
+      <button class="tab-btn relative py-2 px-1.5 flex flex-col items-center gap-0.5" data-tab="social">
         <svg class="icon text-lg"><use href="#i-users"/></svg><span class="text-[10px]">Social</span>
+        <span class="social-nav-badge nav-badge hidden"></span>
       </button>
       <button class="tab-btn py-2 px-1.5 flex flex-col items-center gap-0.5" data-tab="settings">
         <svg class="icon text-lg"><use href="#i-cog"/></svg><span class="text-[10px]">Réglages</span>
@@ -1244,29 +1267,6 @@
         <div class="font-mono text-xl font-bold tracking-widest px-4 py-2 rounded-2xl bg-gray-50" id="qr-code-text"></div>
         <p class="text-xs opacity-50">Tes amies scannent le QR code ou saisissent le code pour rejoindre</p>
         <button id="close-qr-modal" class="w-full py-3 rounded-[1.25rem] font-bold text-sm" style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">Fermer</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- CHAT DE GROUPE MODAL -->
-  <div id="chat-modal" class="fixed inset-0 z-[80] hidden" style="background:rgba(0,0,0,0.85);backdrop-filter:blur(8px)"
-       role="dialog" aria-modal="true" aria-labelledby="chat-title">
-    <div class="flex flex-col h-full max-w-md mx-auto" style="background:var(--bg-via)">
-      <div class="flex items-center gap-3 px-4 py-3" style="border-bottom:1px solid var(--card-border)">
-        <button id="chat-close" class="p-2 text-xl" aria-label="Fermer le chat">‹</button>
-        <div class="text-2xl" aria-hidden="true">💬</div>
-        <div class="flex-1 min-w-0">
-          <div id="chat-title" class="font-bold truncate">Chat</div>
-          <div id="chat-subtitle" class="text-xs opacity-60"></div>
-        </div>
-      </div>
-      <div id="chat-messages" class="flex-1 overflow-y-auto px-4 py-3 space-y-3"></div>
-      <div class="flex gap-2 px-3 py-3" style="border-top:1px solid var(--card-border)">
-        <input id="chat-input" type="text" maxlength="500" placeholder="Écris un message…"
-          class="flex-1 p-3 rounded-[1.25rem] border focus:outline-none text-sm"
-          style="background:var(--card-bg);color:var(--text-primary);border-color:var(--card-border)" />
-        <button id="chat-send" class="px-4 py-3 rounded-[1.25rem] font-bold text-white text-sm"
-          style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">➤</button>
       </div>
     </div>
   </div>
