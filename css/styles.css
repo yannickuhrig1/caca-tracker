@@ -885,6 +885,7 @@
     position: absolute;
     top: 8px;
     left: 8px;
+    right: 48px;                /* laisse la place aux contrôles de zoom */
     display: flex;
     gap: 2px;
     z-index: 2;
@@ -892,9 +893,14 @@
     border-radius: 10px;
     border: 1px solid rgba(0,0,0,.12);
     background: rgba(255,255,255,.92);
+    overflow-x: auto;
+    scrollbar-width: none;      /* masque la barre de défilement */
 }
+.poopmap-style::-webkit-scrollbar { display: none; }
 .poopmap-style button {
-    padding: 4px 9px;
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 4px 8px;
     border-radius: 7px;
     border: none;
     background: transparent;

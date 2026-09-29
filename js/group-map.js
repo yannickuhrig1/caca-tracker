@@ -169,9 +169,16 @@ window.GroupMapModule = (() => {
       for (let y = y0; y <= y1; y++) {
         if (y < 0 || y >= maxTile) continue;
         const wrapped = ((x % maxTile) + maxTile) % maxTile;
+        const style = PMm.mapStyle();
         html += `<img class="poopmap-tile" alt="" aria-hidden="true" loading="lazy"
-          src="${PMm.mapStyle().tile(zoom, wrapped, y)}"
+          src="${style.tile(zoom, wrapped, y)}"
           style="left:${x * 256 - originX}px;top:${y * 256 - originY}px">`;
+        // Surcouche (noms de lieux, transparente) pour les styles qui en ont une.
+        if (style.overlay) {
+          html += `<img class="poopmap-tile" alt="" aria-hidden="true" loading="lazy"
+            src="${style.overlay(zoom, wrapped, y)}"
+            style="left:${x * 256 - originX}px;top:${y * 256 - originY}px">`;
+        }
       }
     }
 

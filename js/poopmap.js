@@ -248,7 +248,23 @@ window.PoopMapModule = (() => {
       // Esri World Light Gray Canvas : clair, proche de Plans Apple, SANS clé API.
       // (Carto exige désormais une clé et affiche un filigrane sinon.)
       // ⚠️ Esri inverse x et y dans l'URL : {z}/{y}/{x}, pas {z}/{x}/{y}.
+      // La base est unie (sans noms) ; `overlay` ajoute les noms de lieux par-dessus.
       tile: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/${z}/${y}/${x}`,
+      overlay: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/${z}/${y}/${x}`,
+      attrib: '© Esri',
+      attribUrl: 'https://www.esri.com/en-us/legal/terms/attribution',
+    },
+    rues: {
+      label: 'Rues',
+      // Esri World Street Map : rue colorée avec noms, sans clé API.
+      tile: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${y}/${x}`,
+      attrib: '© Esri',
+      attribUrl: 'https://www.esri.com/en-us/legal/terms/attribution',
+    },
+    satellite: {
+      label: 'Satellite',
+      // Esri World Imagery : vue aérienne, sans clé API.
+      tile: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`,
       attrib: '© Esri',
       attribUrl: 'https://www.esri.com/en-us/legal/terms/attribution',
     },
@@ -445,9 +461,16 @@ window.PoopMapModule = (() => {
       for (let y = y0; y <= y1; y++) {
         if (y < 0 || y >= maxTile) continue;           // au-delà des pôles
         const wrapped = ((x % maxTile) + maxTile) % maxTile;  // tour du monde
+        const style = mapStyle();
         html += `<img class="poopmap-tile" alt="" aria-hidden="true" loading="lazy"
-          src="${mapStyle().tile(zoom, wrapped, y)}"
+          src="${style.tile(zoom, wrapped, y)}"
           style="left:${x * TILE - originX}px;top:${y * TILE - originY}px">`;
+        // Surcouche (noms de lieux, transparente) pour les styles qui en ont une.
+        if (style.overlay) {
+          html += `<img class="poopmap-tile" alt="" aria-hidden="true" loading="lazy"
+            src="${style.overlay(zoom, wrapped, y)}"
+            style="left:${x * TILE - originX}px;top:${y * TILE - originY}px">`;
+        }
       }
     }
 

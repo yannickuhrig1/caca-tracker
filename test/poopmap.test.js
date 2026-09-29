@@ -194,4 +194,16 @@ test('le style iPhone est sans clé API (plus de Carto)', () => {
   assert.match(url, /arcgisonline\.com/);
   // Esri inverse x et y : l'URL porte .../{z}/{y}/{x}
   assert.ok(url.endsWith('/12/1409/2074'), `ordre z/y/x attendu, obtenu ${url}`);
+  // La base étant sans noms, le style doit fournir une surcouche de noms.
+  assert.ok(typeof s.overlay === 'function', 'le style iPhone doit avoir une surcouche de noms');
+  assert.match(s.overlay(12, 2074, 1409), /World_Light_Gray_Reference/);
+});
+
+test('tous les styles de carte sont sans clé API', () => {
+  const ids = Object.keys(PM.MAP_STYLES);
+  assert.ok(ids.length >= 3, `plusieurs styles attendus, obtenu ${ids.length}`);
+  for (const id of ids) {
+    const url = PM.MAP_STYLES[id].tile(6, 32, 21);
+    assert.ok(!url.includes('cartocdn'), `${id} utilise encore Carto (clé requise)`);
+  }
 });
