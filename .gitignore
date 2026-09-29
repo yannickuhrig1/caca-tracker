@@ -11,3 +11,8 @@ Thumbs.db
 
 # artefacts temporaires
 .tmp/
+
+# Vercel (lien local au projet — ne pas committer)
+.vercel/
+.vercel
+.env*

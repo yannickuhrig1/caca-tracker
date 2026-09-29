@@ -7,12 +7,22 @@
 
 // Source de vérité unique de la version. L'en-tête et les Réglages sont
 // remplis à partir d'ici, ce qui évite qu'ils divergent comme par le passé.
-const APP_VERSION = '2.22.1';
+const APP_VERSION = '2.23.0';
 const APP_VERSION_DATE = 'Septembre 2026';
 
 // De la plus récente à la plus ancienne. `items` reste court et écrit pour
 // Clémence, pas pour un développeur : ce que ça change pour elle, pas comment.
 const APP_CHANGELOG = [
+  {
+    version: '2.23.0',
+    date: 'Septembre 2026',
+    items: [
+      ['💬', '**Le chat a maintenant sa propre place** : un onglet « 💬 Chat » en haut du Social, avec une pastille rouge quand des copines ont écrit. Fini de le chercher.'],
+      ['📣', 'Le Social est rangé en trois onglets : **Chat**, **Activité** (le fil) et **Classements** (podium, défis, records).'],
+      ['🗺️', '**Choisis le style de ta carte** : « Classique » ou « iPhone » (plus clair), sur la carte du groupe comme sur ta PoopMap.'],
+      ['🔧', 'Le réglage « 📍 Partager ma position » était invisible : réparé. Tu peux maintenant apparaître sur la carte du groupe.'],
+    ]
+  },
   {
     version: '2.22.1',
     date: 'Septembre 2026',

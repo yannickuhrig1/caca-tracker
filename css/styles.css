@@ -881,6 +881,33 @@
     cursor: pointer;
 }
 .poopmap-controls button:hover { background: #fff; }
+.poopmap-style {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: flex;
+    gap: 2px;
+    z-index: 2;
+    padding: 2px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,0,0,.12);
+    background: rgba(255,255,255,.92);
+}
+.poopmap-style button {
+    padding: 4px 9px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: #334155;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+.poopmap-style button.is-on {
+    background: var(--accent);
+    color: #fff;
+}
 .poopmap-attrib {
     position: absolute;
     bottom: 4px;
@@ -1466,7 +1493,7 @@
   border-top: 1px solid color-mix(in srgb, var(--accent) 15%, transparent); }
 .pf-group { border-radius: 1.1rem; overflow: hidden; background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
 .pf-group + .pf-sub, .pf-group + .pf-group { margin-top: 14px; }
-.pf-group:not(:has(.pf-item:not(.hidden))) { display: none; }
+.pf-group:not(:has(.pf-item:not(.hidden))):not(:has(.pf-row)) { display: none; }
 .pf-item { display: block; width: 100%; text-align: left; padding: 13px 14px; font-size: .9rem; font-weight: 600; }
 .pf-item.hidden { display: none; }
 .pf-item:not(.hidden) ~ .pf-item:not(.hidden) { border-top: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent); }
@@ -1524,3 +1551,21 @@
 @keyframes avAiguille { 0%,100% { transform: rotate(-25deg); } 50% { transform: rotate(25deg); } }
 @keyframes avSaute { 0%,100% { transform: translateY(0) scale(1,1); } 15% { transform: translateY(0) scale(1.1,.9); } 50% { transform: translateY(-22%) scale(.95,1.05); } }
 @media (prefers-reduced-motion: reduce) { .av-anim { animation: none !important; } }
+
+/* ===================== SOUS-ONGLETS SOCIAL (v2.23.0) ===================== */
+.social-tabs { display: flex; gap: 4px; padding: 4px; border-radius: 1rem;
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent); }
+.social-tab-btn { flex: 1; position: relative; padding: 9px 4px; border-radius: .8rem;
+  font-size: .78rem; font-weight: 700; opacity: .6; transition: background .15s, opacity .15s; }
+.social-tab-btn.is-on { opacity: 1; background: var(--bg-via); color: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.social-pane.hidden { display: none; }
+.unread-badge { position: absolute; top: -5px; right: -3px; min-width: 16px; height: 16px;
+  padding: 0 4px; border-radius: 999px; background: #ef4444; color: #fff;
+  font-size: .65rem; font-weight: 800; line-height: 16px; text-align: center; }
+.unread-badge.hidden { display: none; }
+.unread-dot { position: absolute; top: 3px; right: 6px; width: 8px; height: 8px; border-radius: 99px; background: #ef4444; }
+.unread-dot.hidden { display: none; }
+.nav-badge { position: absolute; top: 0; right: 2px; min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 999px; background: #ef4444; color: #fff; font-size: .6rem; font-weight: 800;
+  line-height: 16px; text-align: center; pointer-events: none; }
+.nav-badge.hidden { display: none; }

@@ -76,13 +76,53 @@ window.GroupMapModule = (() => {
       </span>`).join('');
   }
 
+  // Message d'état vide adapté à la situation réelle (v2.22.2).
+  // « Partager ma position » (profil) et « Enregistrer la position » (Réglages)
+  // sont deux choses différentes : le premier message prêtait à confusion en
+  // demandant de partager alors que c'était déjà fait.
+  function emptyStateHTML(rowsNull, sharingEnabled) {
+    if (rowsNull) return 'La carte du groupe n\'est pas encore disponible sur ce serveur.';
+    if (!sharingEnabled) {
+      return 'Personne n\'a encore partagé sa position, toi y compris. '
+           + 'Active « 📍 Partager ma position » dans ton profil pour apparaître ici.';
+    }
+    return 'Tu partages bien ta position 👍, mais aucun caca géolocalisé sur les 30 derniers jours. '
+         + 'Active « 🗺️ Enregistrer la position » dans ⚙️ Réglages, puis touche 📍 en ajoutant un caca. '
+         + 'Tes copines doivent faire pareil de leur côté.';
+  }
+
+  /** Sélecteur de style (Classique / iPhone), via le module PoopMap. */
+  function styleSwitcherHTML() {
+    const styles = PM().MAP_STYLES || { classique: { label: 'Classique' }, iphone: { label: 'iPhone' } };
+    const current = PM().getMapStyle ? PM().getMapStyle() : 'classique';
+    return `
+      <div class="poopmap-style" role="group" aria-label="Style de carte">
+        ${Object.entries(styles).map(([id, s]) =>
+          `<button type="button" data-style="${id}" class="${current === id ? 'is-on' : ''}">${s.label}</button>`).join('')}
+      </div>`;
+  }
+
+  /** Change le style au clic : onglet actif, attribution et tuiles. */
+  function wireStyleSwitcher(canvas, groups, colors, width, height) {
+    canvas?.querySelectorAll('.poopmap-style button').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        PM().setMapStyle?.(btn.dataset.style);
+        canvas.querySelectorAll('.poopmap-style button').forEach(b =>
+          b.classList.toggle('is-on', b.dataset.style === PM().getMapStyle?.()));
+        const attrib = canvas.querySelector('.poopmap-attrib');
+        if (attrib) attrib.textContent = PM().mapStyle?.().attrib || '© OpenStreetMap';
+        drawLayer(canvas, groups, colors, width, height);
+      });
+    });
+  }
+
   function renderMap(groups, colors, el) {
     const points = allPoints(groups);
     if (!points.length) {
       el.innerHTML = `
         <div class="text-center text-sm opacity-60 py-8">
-          Personne n'a encore partagé sa position. Active « Partager ma position »
-          dans le profil pour apparaître ici.
+          ${emptyStateHTML(false, window.SupabaseClient?.geoSharingEnabled?.())}
         </div>`;
       return;
     }
@@ -94,13 +134,14 @@ window.GroupMapModule = (() => {
     el.innerHTML = `
       <div class="poopmap-canvas" style="height:${height}px">
         <div class="poopmap-layer"></div>
+        ${styleSwitcherHTML()}
         <div class="poopmap-controls">
           <button type="button" data-gmap="in"    aria-label="Zoomer">＋</button>
           <button type="button" data-gmap="out"   aria-label="Dézoomer">−</button>
           <button type="button" data-gmap="reset" aria-label="Recadrer">🎯</button>
         </div>
         <a class="poopmap-attrib" href="https://www.openstreetmap.org/copyright"
-           target="_blank" rel="noopener">© OpenStreetMap</a>
+           target="_blank" rel="noopener">${PM().mapStyle?.().attrib || '© OpenStreetMap'}</a>
       </div>`;
 
     const canvas = el.querySelector('.poopmap-canvas');
@@ -129,7 +170,7 @@ window.GroupMapModule = (() => {
         if (y < 0 || y >= maxTile) continue;
         const wrapped = ((x % maxTile) + maxTile) % maxTile;
         html += `<img class="poopmap-tile" alt="" aria-hidden="true" loading="lazy"
-          src="https://tile.openstreetmap.org/${zoom}/${wrapped}/${y}.png"
+          src="${PMm.mapStyle().tile(zoom, wrapped, y)}"
           style="left:${x * 256 - originX}px;top:${y * 256 - originY}px">`;
       }
     }
@@ -192,7 +233,7 @@ window.GroupMapModule = (() => {
     };
 
     canvas.addEventListener('pointerdown', e => {
-      if (e.target.closest('.poopmap-controls, .poopmap-attrib')) return;
+      if (e.target.closest('.poopmap-controls, .poopmap-attrib, .poopmap-style')) return;
       dragging = true; panning = false; moved = 0;
       lastX = e.clientX; lastY = e.clientY;
       window.addEventListener('pointermove', onMove);
@@ -201,6 +242,7 @@ window.GroupMapModule = (() => {
     });
 
     wirePins(canvas, groups);
+    wireStyleSwitcher(canvas, groups, colors, width, height);
   }
 
   function wirePins(canvas, groups) {
@@ -249,9 +291,7 @@ window.GroupMapModule = (() => {
     if (!rows || !summary.total) {
       if (mapEl) mapEl.innerHTML = `
         <div class="text-center text-sm opacity-60 py-8">
-          ${rows === null
-            ? 'La carte du groupe n\'est pas encore disponible sur ce serveur.'
-            : 'Personne n\'a encore partagé sa position. Active « Partager ma position » dans ton profil pour apparaître ici.'}
+          ${emptyStateHTML(rows === null, window.SupabaseClient?.geoSharingEnabled?.())}
         </div>`;
       return;
     }
@@ -274,5 +314,5 @@ window.GroupMapModule = (() => {
     });
   });
 
-  return { memberColorMap, groupGeoSummary, clusterByMember, allPoints, open, close };
+  return { memberColorMap, groupGeoSummary, clusterByMember, allPoints, emptyStateHTML, open, close };
 })();

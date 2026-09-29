@@ -1,10 +1,11 @@
 // ============================================================
 //  💬 CHAT DE GROUPE — fil temps réel par groupe (v2.22.0)
 //
-//  Ouvre un tiroir plein écran (modal) qui liste les messages du
-//  groupe, en reçoit en direct (Realtime, table `group_messages`,
-//  migration 18) et permet d'en envoyer. Sans la table en base
-//  (base neuve), le bouton d'ouverture est masqué par social.js.
+//  Depuis v2.23.0 le chat est un ONGLET du Social (plus une modale) :
+//  il se rend dans #social-pane-chat, ouvert par l'onglet « 💬 Chat ».
+//  La réception en direct reste sur `group_messages` (migration 18).
+//  Le COMPTAGE des non-lus, lui, est fait par social.js qui garde un
+//  abonnement permanent même quand l'onglet chat est fermé.
 // ============================================================
 
 window.ChatModule = (() => {
@@ -95,22 +96,15 @@ window.ChatModule = (() => {
   }
 
   async function open(groupId) {
+    if (!groupId || groupId === _groupId) return;
+    // Nettoyer l'abonnement de l'ancien groupe avant d'en ouvrir un autre.
+    try { _channel?.unsubscribe?.(); } catch {}
+    _channel = null;
     _groupId = groupId;
-    const modal = document.getElementById('chat-modal');
-    if (!modal) return;
 
     const members = await window.SupabaseClient.getGroupMembers(groupId).catch(() => []);
     _profileMap = Object.fromEntries(members.map(m => [m.id, m]));
 
-    const groupName = await window.SupabaseClient.getMyGroups()
-      .then(groups => groups.find(g => g.id === groupId)?.name || '')
-      .catch(() => '');
-
-    document.getElementById('chat-title').textContent = groupName || 'Chat du groupe';
-    document.getElementById('chat-subtitle').textContent =
-      members.length ? `${members.length} membre${members.length > 1 ? 's' : ''}` : '';
-
-    modal.classList.remove('hidden');
     const list = document.getElementById('chat-messages');
     if (list) list.innerHTML = '<div class="text-center text-sm opacity-50 py-4">Chargement…</div>';
 
@@ -120,7 +114,6 @@ window.ChatModule = (() => {
   }
 
   function close() {
-    document.getElementById('chat-modal')?.classList.add('hidden');
     _groupId = null;
     clearTimeout(_renderTimer);
     try { _channel?.unsubscribe?.(); } catch {}
@@ -143,14 +136,9 @@ window.ChatModule = (() => {
 
   // ---- Event listeners ----
   document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('chat-close')?.addEventListener('click', close);
     document.getElementById('chat-send')?.addEventListener('click', send);
     document.getElementById('chat-input')?.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
-    });
-    // Fermer au clic sur le fond sombre
-    document.getElementById('chat-modal')?.addEventListener('click', e => {
-      if (e.target === e.currentTarget) close();
     });
   });
 

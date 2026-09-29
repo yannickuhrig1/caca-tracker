@@ -38,3 +38,14 @@ test('les deux boutons de partage ont des identifiants distincts', () => {
   assert.ok(html.includes('id="share-stats-feed-btn"'),
     'le bouton « Partager mes stats » du podium a disparu');
 });
+
+test('les toggles de partage du profil ne sont pas masqués par le CSS', () => {
+  // En v2.22.0, la règle `.pf-group:not(:has(.pf-item:not(.hidden)))` masquait
+  // le groupe des toggles « Partager ma position » / « Stats détaillées »
+  // (ils utilisent .pf-row, pas .pf-item) : impossible d'activer le partage.
+  const css = fs.readFileSync(path.join(__dirname, '..', 'css', 'styles.css'), 'utf8');
+  assert.ok(html.includes('id="geo-share-toggle"') && html.includes('id="stats-share-toggle"'),
+    'les toggles de partage du profil ont disparu');
+  assert.ok(css.includes('.pf-group:not(:has(.pf-item:not(.hidden))):not(:has(.pf-row))'),
+    'la règle .pf-group doit tolérer les groupes contenant .pf-row (toggles de partage)');
+});
