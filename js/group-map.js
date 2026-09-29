@@ -140,7 +140,7 @@ window.GroupMapModule = (() => {
           <button type="button" data-gmap="out"   aria-label="Dézoomer">−</button>
           <button type="button" data-gmap="reset" aria-label="Recadrer">🎯</button>
         </div>
-        <a class="poopmap-attrib" href="https://www.openstreetmap.org/copyright"
+        <a class="poopmap-attrib" href="${PM().mapStyle?.().attribUrl || 'https://www.openstreetmap.org/copyright'}"
            target="_blank" rel="noopener">${PM().mapStyle?.().attrib || '© OpenStreetMap'}</a>
       </div>`;
 

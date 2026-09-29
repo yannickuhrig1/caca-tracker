@@ -183,5 +183,15 @@ test('mapStyle expose un libellé, une attribution et une URL de tuile', () => {
   const s = PM.mapStyle();
   assert.ok(s.label && s.attrib, 'style sans libellé ni attribution');
   assert.strictEqual(typeof s.tile, 'function');
-  assert.match(s.tile(12, 2074, 1409), /^https:\/\/.+\.png$/);
+  assert.match(s.tile(12, 2074, 1409), /^https:\/\/.+/);
+});
+
+test('le style iPhone est sans clé API (plus de Carto)', () => {
+  const s = PM.MAP_STYLES.iphone;
+  assert.ok(s && typeof s.tile === 'function');
+  const url = s.tile(12, 2074, 1409);
+  assert.ok(!url.includes('cartocdn'), 'Carto exige désormais une clé : à ne plus utiliser');
+  assert.match(url, /arcgisonline\.com/);
+  // Esri inverse x et y : l'URL porte .../{z}/{y}/{x}
+  assert.ok(url.endsWith('/12/1409/2074'), `ordre z/y/x attendu, obtenu ${url}`);
 });

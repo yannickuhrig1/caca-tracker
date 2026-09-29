@@ -14,8 +14,9 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
   de la barre basse (abonnement temps réel permanent, compteur en local).
 - **📣 Social réorganisé** : trois sous-onglets — Chat, Activité (récap hebdo +
   feed) et Classements (podium, défi, endurance, ligue, jeux, palmarès, comparatif).
-- **🗺️ Choix du style de carte** : sélecteur « Classique / iPhone » (Carto
-  Voyager, plus clair) sur la PoopMap et sur la carte du groupe. Choix mémorisé.
+- **🗺️ Choix du style de carte** : sélecteur « Classique / iPhone » sur la
+  PoopMap et sur la carte du groupe. Le style « iPhone » est un fond clair type
+  Plans Apple (Esri), sans clé API. Choix mémorisé.
 
 ### Corrigé
 - **📍 Les réglages de partage du profil étaient invisibles** : la règle CSS

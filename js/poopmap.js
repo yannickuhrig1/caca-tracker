@@ -241,11 +241,16 @@ window.PoopMapModule = (() => {
       label: 'Classique',
       tile: (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`,
       attrib: '© OpenStreetMap',
+      attribUrl: 'https://www.openstreetmap.org/copyright',
     },
     iphone: {
       label: 'iPhone',
-      tile: (z, x, y) => `https://basemaps.cartocdn.com/rastertiles/voyager/${z}/${x}/${y}.png`,
-      attrib: '© OpenStreetMap © CARTO',
+      // Esri World Light Gray Canvas : clair, proche de Plans Apple, SANS clé API.
+      // (Carto exige désormais une clé et affiche un filigrane sinon.)
+      // ⚠️ Esri inverse x et y dans l'URL : {z}/{y}/{x}, pas {z}/{x}/{y}.
+      tile: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/${z}/${y}/${x}`,
+      attrib: '© Esri',
+      attribUrl: 'https://www.esri.com/en-us/legal/terms/attribution',
     },
   };
   const MAP_STYLE_KEY = 'poopmap.style';
@@ -400,7 +405,7 @@ window.PoopMapModule = (() => {
           <button type="button" data-map="out"    aria-label="Dézoomer">−</button>
           <button type="button" data-map="reset"  aria-label="Recadrer">🎯</button>
         </div>
-        <a class="poopmap-attrib" href="https://www.openstreetmap.org/copyright"
+        <a class="poopmap-attrib" href="${mapStyle().attribUrl || 'https://www.openstreetmap.org/copyright'}"
            target="_blank" rel="noopener">${mapStyle().attrib}</a>
       </div>
       <div class="grid grid-cols-3 gap-2 mt-3 text-center">
