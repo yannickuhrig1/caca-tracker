@@ -302,6 +302,11 @@
 
     <!-- ====== STATS ====== -->
     <section id="stats-tab" class="tab-content">
+      <div class="moi-subtabs" role="tablist" aria-label="Sous-onglets Moi">
+        <button type="button" class="moi-subtab" data-moi="stats" role="tab">📊 Stats</button>
+        <button type="button" class="moi-subtab" data-moi="history" role="tab">📜 Historique</button>
+        <button type="button" class="moi-subtab" data-moi="badges" role="tab">🏅 Badges</button>
+      </div>
       <h3 class="font-bold text-2xl mb-1 text-center">📊 Clémence vs le Monde</h3>
       <p class="text-center text-xs opacity-60 mb-3">Études épidémiologiques digestives 2019-2023</p>
 
@@ -436,6 +441,11 @@
 
     <!-- ====== BADGES ====== -->
     <section id="badges-tab" class="tab-content">
+      <div class="moi-subtabs" role="tablist" aria-label="Sous-onglets Moi">
+        <button type="button" class="moi-subtab" data-moi="stats" role="tab">📊 Stats</button>
+        <button type="button" class="moi-subtab" data-moi="history" role="tab">📜 Historique</button>
+        <button type="button" class="moi-subtab" data-moi="badges" role="tab">🏅 Badges</button>
+      </div>
       <h3 class="font-bold text-2xl mb-4 text-center">🏆 Badges de Clémence</h3>
       <div id="badges-summary" class="card p-4 rounded-[1.5rem] mb-3"></div>
       <div id="badges-next" class="card p-4 rounded-[1.5rem] mb-4 hidden"></div>
@@ -661,7 +671,12 @@
     </section>
 
     <!-- ====== HISTORIQUE ====== -->
-    <section id="admin-tab" class="tab-content">
+    <section id="history-tab" class="tab-content">
+      <div class="moi-subtabs" role="tablist" aria-label="Sous-onglets Moi">
+        <button type="button" class="moi-subtab" data-moi="stats" role="tab">📊 Stats</button>
+        <button type="button" class="moi-subtab" data-moi="history" role="tab">📜 Historique</button>
+        <button type="button" class="moi-subtab" data-moi="badges" role="tab">🏅 Badges</button>
+      </div>
       <h3 class="font-bold text-xl mb-4">📜 Historique</h3>
 
       <!-- 🔎 Recherche et filtres -->
@@ -1071,14 +1086,8 @@
       <button class="tab-btn active py-3 px-4 flex items-center gap-3 text-sm font-semibold w-full text-left" data-tab="dashboard">
         <svg class="icon icon-5"><use href="#i-home"/></svg><span>Accueil</span>
       </button>
-      <button class="tab-btn py-3 px-4 flex items-center gap-3 text-sm font-semibold w-full text-left" data-tab="stats">
-        <svg class="icon icon-5"><use href="#i-chart-bar"/></svg><span>Stats</span>
-      </button>
-      <button class="tab-btn py-3 px-4 flex items-center gap-3 text-sm font-semibold w-full text-left" data-tab="badges">
-        <svg class="icon icon-5"><use href="#i-trophy"/></svg><span>Badges</span>
-      </button>
-      <button class="tab-btn py-3 px-4 flex items-center gap-3 text-sm font-semibold w-full text-left" data-tab="admin">
-        <svg class="icon icon-5"><use href="#i-list"/></svg><span>Historique</span>
+      <button class="tab-btn py-3 px-4 flex items-center gap-3 text-sm font-semibold w-full text-left" data-tab="moi">
+        <svg class="icon icon-5"><use href="#i-chart-bar"/></svg><span>Moi</span>
       </button>
       <button class="tab-btn relative py-3 px-4 flex items-center gap-3 text-sm font-semibold w-full text-left" data-tab="social">
         <svg class="icon icon-5"><use href="#i-users"/></svg><span>Social</span>
@@ -1095,14 +1104,8 @@
       <button class="tab-btn active py-2 px-1.5 flex flex-col items-center gap-0.5" data-tab="dashboard">
         <svg class="icon text-lg"><use href="#i-home"/></svg><span class="text-[10px]">Accueil</span>
       </button>
-      <button class="tab-btn py-2 px-1.5 flex flex-col items-center gap-0.5" data-tab="stats">
-        <svg class="icon text-lg"><use href="#i-chart-bar"/></svg><span class="text-[10px]">Stats</span>
-      </button>
-      <button class="tab-btn py-2 px-1.5 flex flex-col items-center gap-0.5" data-tab="badges">
-        <svg class="icon text-lg"><use href="#i-trophy"/></svg><span class="text-[10px]">Badges</span>
-      </button>
-      <button class="tab-btn py-2 px-1.5 flex flex-col items-center gap-0.5" data-tab="admin">
-        <svg class="icon text-lg"><use href="#i-list"/></svg><span class="text-[10px]">Historique</span>
+      <button class="tab-btn py-2 px-1.5 flex flex-col items-center gap-0.5" data-tab="moi">
+        <svg class="icon text-lg"><use href="#i-chart-bar"/></svg><span class="text-[10px]">Moi</span>
       </button>
       <button class="tab-btn relative py-2 px-1.5 flex flex-col items-center gap-0.5" data-tab="social">
         <svg class="icon text-lg"><use href="#i-users"/></svg><span class="text-[10px]">Social</span>
