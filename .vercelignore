@@ -1,0 +1,17 @@
+# Tout ce qui ne doit jamais être servi sur le web : on n'uploade que l'app.
+.git
+.github
+node_modules
+test
+supabase
+.claude
+.code-review-graph
+scripts
+src
+email-templates
+*.log
+AGENTS.md
+CLAUDE.md
+CHANGELOG.md
+README.md
+.vercelignore
