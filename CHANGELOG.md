@@ -5,6 +5,37 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.23.0] — 2026-09-29
+
+### Ajouté
+- **💬 Chat en onglet** : le chat de groupe n'est plus une modale cachée derrière
+  un petit bouton, mais un onglet « 💬 Chat » en tête du Social. Une pastille
+  rouge indique les messages non lus, sur l'onglet Chat et sur l'onglet Social
+  de la barre basse (abonnement temps réel permanent, compteur en local).
+- **📣 Social réorganisé** : trois sous-onglets — Chat, Activité (récap hebdo +
+  feed) et Classements (podium, défi, endurance, ligue, jeux, palmarès, comparatif).
+- **🗺️ Choix du style de carte** : sélecteur « Classique / iPhone » (Carto
+  Voyager, plus clair) sur la PoopMap et sur la carte du groupe. Choix mémorisé.
+
+### Corrigé
+- **📍 Les réglages de partage du profil étaient invisibles** : la règle CSS
+  `.pf-group:not(:has(.pf-item))` masquait le groupe « Partager ma position » /
+  « Stats détaillées » (qui utilisent `.pf-row`). Impossible d'activer le partage,
+  donc la carte du groupe restait vide. La règle tolère maintenant `.pf-row`,
+  avec un test de non-régression.
+- **Message de la carte du groupe** adapté à la situation : quand on a déjà
+  activé le partage, elle explique qu'il faut enregistrer des positions (sur les
+  30 derniers jours) au lieu de redemander de partager.
+
+### Technique
+- Cache SW caca-v45 → caca-v47.
+- `.vercelignore` : seul le contenu servi de l'app est publié (migrations, tests,
+  docs internes exclus des déploiements Vercel).
+- Tests : styles de carte (`poopmap.test.js`), toggles de partage
+  (`index-html.test.js`).
+
+---
+
 ## [2.22.1] — 2026-09-28
 
 ### Corrigé
