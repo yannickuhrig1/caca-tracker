@@ -7,12 +7,21 @@
 
 // Source de vérité unique de la version. L'en-tête et les Réglages sont
 // remplis à partir d'ici, ce qui évite qu'ils divergent comme par le passé.
-const APP_VERSION = '2.23.0';
+const APP_VERSION = '2.24.0';
 const APP_VERSION_DATE = 'Septembre 2026';
 
 // De la plus récente à la plus ancienne. `items` reste court et écrit pour
 // Clémence, pas pour un développeur : ce que ça change pour elle, pas comment.
 const APP_CHANGELOG = [
+  {
+    version: '2.24.0',
+    date: 'Septembre 2026',
+    items: [
+      ['🧭', '**La barre passe à 4 onglets** : Accueil, Moi, Social, Réglages. Tes Stats, ton Historique et tes Badges sont réunis dans « Moi ».'],
+      ['🔴', 'Un **point rouge sur « Activité »** t\'avertit quand une copine poste, réagit ou commente dans le fil.'],
+      ['🗺️', '**Trois styles de carte** : Classique, iPhone (clair) et Rues. Et tu peux **zoomer en pinçant** avec deux doigts.'],
+    ]
+  },
   {
     version: '2.23.0',
     date: 'Septembre 2026',

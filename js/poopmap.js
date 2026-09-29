@@ -284,13 +284,6 @@ window.PoopMapModule = (() => {
       attrib: '© Esri',
       attribUrl: 'https://www.esri.com/en-us/legal/terms/attribution',
     },
-    satellite: {
-      label: 'Satellite',
-      // Esri World Imagery : vue aérienne, sans clé API.
-      tile: (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`,
-      attrib: '© Esri',
-      attribUrl: 'https://www.esri.com/en-us/legal/terms/attribution',
-    },
   };
   const MAP_STYLE_KEY = 'poopmap.style';
   const getMapStyle = () => {
