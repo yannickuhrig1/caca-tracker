@@ -885,6 +885,7 @@
     position: absolute;
     top: 8px;
     left: 8px;
+    right: 48px;                /* laisse la place aux contrôles de zoom */
     display: flex;
     gap: 2px;
     z-index: 2;
@@ -892,9 +893,14 @@
     border-radius: 10px;
     border: 1px solid rgba(0,0,0,.12);
     background: rgba(255,255,255,.92);
+    overflow-x: auto;
+    scrollbar-width: none;      /* masque la barre de défilement */
 }
+.poopmap-style::-webkit-scrollbar { display: none; }
 .poopmap-style button {
-    padding: 4px 9px;
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 4px 8px;
     border-radius: 7px;
     border: none;
     background: transparent;
@@ -1569,3 +1575,10 @@
   border-radius: 999px; background: #ef4444; color: #fff; font-size: .6rem; font-weight: 800;
   line-height: 16px; text-align: center; pointer-events: none; }
 .nav-badge.hidden { display: none; }
+
+/* ===================== SOUS-ONGLETS « MOI » (v2.23.0) ===================== */
+.moi-subtabs { display: flex; gap: 4px; padding: 4px; margin-bottom: 16px; border-radius: 1rem;
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent); }
+.moi-subtab { flex: 1; padding: 9px 4px; border-radius: .8rem; font-size: .8rem; font-weight: 700;
+  opacity: .6; transition: background .15s, opacity .15s; }
+.moi-subtab.active { opacity: 1; background: var(--bg-via); color: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,.12); }

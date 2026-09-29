@@ -37,6 +37,11 @@ function setupEvents() {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
 
+  // Sous-onglets « Moi » (Stats / Historique / Badges)
+  document.querySelectorAll('.moi-subtab').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.moi));
+  });
+
   // Texture buttons
   document.querySelectorAll('.texture-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -122,7 +127,7 @@ function setupEvents() {
   });
 
   // Swipe horizontal entre onglets (mobile)
-  const _tabOrder = ['dashboard','stats','badges','admin','social'];
+  const _tabOrder = ['dashboard','moi','social','settings'];
   let _swipeStartX = 0;
   document.querySelector('main')?.addEventListener('touchstart', e => {
     _swipeStartX = e.touches[0].clientX;
@@ -132,7 +137,9 @@ function setupEvents() {
     if (Math.abs(dx) < 120) return;
     // Ne pas swiper si le drawer est ouvert
     if (!$id('drawer')?.classList.contains('hidden')) return;
-    const current = document.querySelector('.tab-content.active')?.id?.replace('-tab','');
+    const currentRaw = document.querySelector('.tab-content.active')?.id?.replace('-tab','');
+    // Les sous-onglets de « Moi » comptent tous pour l'onglet « moi ».
+    const current = ['stats','history','badges'].includes(currentRaw) ? 'moi' : currentRaw;
     const idx = _tabOrder.indexOf(current);
     if (dx < -120 && idx < _tabOrder.length - 1) switchTab(_tabOrder[idx + 1]);
     if (dx >  120 && idx > 0)                    switchTab(_tabOrder[idx - 1]);

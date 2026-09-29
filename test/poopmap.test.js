@@ -194,4 +194,50 @@ test('le style iPhone est sans clé API (plus de Carto)', () => {
   assert.match(url, /arcgisonline\.com/);
   // Esri inverse x et y : l'URL porte .../{z}/{y}/{x}
   assert.ok(url.endsWith('/12/1409/2074'), `ordre z/y/x attendu, obtenu ${url}`);
+  // La base étant sans noms, le style doit fournir une surcouche de noms.
+  assert.ok(typeof s.overlay === 'function', 'le style iPhone doit avoir une surcouche de noms');
+  assert.match(s.overlay(12, 2074, 1409), /World_Light_Gray_Reference/);
+});
+
+test('tous les styles de carte sont sans clé API', () => {
+  const ids = Object.keys(PM.MAP_STYLES);
+  assert.ok(ids.length >= 3, `plusieurs styles attendus, obtenu ${ids.length}`);
+  for (const id of ids) {
+    const url = PM.MAP_STYLES[id].tile(6, 32, 21);
+    assert.ok(!url.includes('cartocdn'), `${id} utilise encore Carto (clé requise)`);
+  }
+});
+
+// ---------- Zoom au pincement ----------
+
+test('zoomAroundView : zoomer au centre garde le centre fixe', () => {
+  const v0 = { zoom: 12, lon: 2.3522, lat: 48.8566 };
+  const w = 320, h = 260;
+  const v1 = PM.zoomAroundView(v0, w / 2, h / 2, 13, w, h);
+  assert.strictEqual(v1.zoom, 13);
+  assert.ok(proche(v1.lon, v0.lon, 1e-9), `longitude décalée : ${v1.lon}`);
+  assert.ok(proche(v1.lat, v0.lat, 1e-9), `latitude décalée : ${v1.lat}`);
+});
+
+test('zoomAroundView : le point sous les doigts reste sous les doigts', () => {
+  const v0 = { zoom: 12, lon: 2.3522, lat: 48.8566 };
+  const w = 320, h = 260;
+  const px = 80, py = 60;
+  const centerX = PM.lonToTileX(v0.lon, v0.zoom) * 256;
+  const centerY = PM.latToTileY(v0.lat, v0.zoom) * 256;
+  const worldX = centerX - w / 2 + px;
+  const worldY = centerY - h / 2 + py;
+  const v1 = PM.zoomAroundView(v0, px, py, 13, w, h);
+  const cX = PM.lonToTileX(v1.lon, v1.zoom) * 256;
+  const cY = PM.latToTileY(v1.lat, v1.zoom) * 256;
+  const px2 = worldX * 2 - (cX - w / 2);
+  const py2 = worldY * 2 - (cY - h / 2);
+  assert.ok(Math.abs(px2 - px) < 0.5, `x décalé : ${px2} vs ${px}`);
+  assert.ok(Math.abs(py2 - py) < 0.5, `y décalé : ${py2} vs ${py}`);
+});
+
+test('zoomAroundView : borne le zoom entre 2 et 18', () => {
+  const v0 = { zoom: 17, lon: 2.35, lat: 48.85 };
+  assert.strictEqual(PM.zoomAroundView(v0, 160, 130, 99, 320, 260).zoom, 18);
+  assert.strictEqual(PM.zoomAroundView(v0, 160, 130, -5, 320, 260).zoom, 2);
 });

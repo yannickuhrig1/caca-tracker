@@ -271,18 +271,31 @@ function renderStatsEditBars() {
 // ===================================================
 //  TABS
 // ===================================================
+// Les onglets regroupés sous « Moi » : quand on est sur l'un d'eux, c'est le
+// bouton « Moi » qui reste surligné (la barre de sous-onglets vit dans chaque
+// section, donc seule celle de la section active est visible).
+const MOI_SUBTABS = ['stats', 'history', 'badges'];
+
 function switchTab(name) {
+  // « moi » est un raccourci vers l'onglet par défaut du hub (les stats).
+  const target = name === 'moi' ? 'stats' : name;
+  const navName = MOI_SUBTABS.includes(target) ? 'moi' : target;
+
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  $id(name + '-tab')?.classList.add('active');
+  $id(target + '-tab')?.classList.add('active');
   // Active tous les boutons correspondants (sidebar desktop + bottom nav mobile)
-  document.querySelectorAll(`.tab-btn[data-tab="${name}"]`).forEach(b => b.classList.add('active'));
-  if (name === 'stats') { renderStats(); applyStatsOrder(); if (statsEditing) renderStatsEditBars(); }
-  if (name === 'badges') { updateBadges(); updateBadgeRarity(); }
-  if (name === 'admin') renderHistory();
-  if (name === 'dashboard') renderDashboard();
-  if (name === 'social') window.SocialModule?.renderSocialTab();
-  if (name === 'settings') { setupNotifications(); setupCustomReminder(); applyStickyHeader(); refreshPoopMapSettings(); }
+  document.querySelectorAll(`.tab-btn[data-tab="${navName}"]`).forEach(b => b.classList.add('active'));
+
+  // Sous-onglets « Moi » : surligne l'actif (les copies inactives sont dans des sections cachées)
+  document.querySelectorAll('.moi-subtab').forEach(b => b.classList.toggle('active', b.dataset.moi === target));
+
+  if (target === 'stats') { renderStats(); applyStatsOrder(); if (statsEditing) renderStatsEditBars(); }
+  if (target === 'badges') { updateBadges(); updateBadgeRarity(); }
+  if (target === 'history') renderHistory();
+  if (target === 'dashboard') renderDashboard();
+  if (target === 'social') window.SocialModule?.renderSocialTab();
+  if (target === 'settings') { setupNotifications(); setupCustomReminder(); applyStickyHeader(); refreshPoopMapSettings(); }
 }
 
 // ===================================================

@@ -51,6 +51,7 @@ const SocialModule = (() => {
   let _socialPane        = 'activite';   // chat | activite | classements
   let _chatUnread        = {};           // groupId -> messages non lus
   let _chatUnreadChannel = null;
+  let _feedUnread        = {};           // groupId -> nouvelle activité dans le fil (point rouge)
 
   // ============================================================
   //  RENDU PRINCIPAL
@@ -186,6 +187,9 @@ const SocialModule = (() => {
     } else {
       window.ChatModule?.close?.();
     }
+
+    // Consulter le fil = on a vu les nouveautés
+    if (pane === 'activite') markFeedSeen(_activeGroupId);
   }
 
   function chatUnreadCount(groupId) {
@@ -230,6 +234,29 @@ const SocialModule = (() => {
   function markChatRead(groupId) {
     if (!groupId) return;
     if (_chatUnread[groupId]) { _chatUnread[groupId] = 0; updateChatBadge(); }
+  }
+
+  // ---- Activité : point « nouveau » sur l'onglet 📣 (v2.24.0) ----
+  // Un événement temps réel qui ne vient pas de moi, alors que je ne suis pas
+  // devant le fil, allume un point rouge. Ouvrir l'onglet Activité l'éteint.
+  function noteFeedActivity(payload) {
+    const myId = window.SupabaseClient.getCurrentProfile()?.id;
+    if (!_activeGroupId || !myId) return;
+    const row = payload?.new || payload?.old;
+    if (row?.user_id && row.user_id === myId) return;   // rien de moi
+    if (_socialPane === 'activite') return;             // déjà devant le fil
+    _feedUnread[_activeGroupId] = true;
+    updateFeedBadge();
+  }
+
+  function markFeedSeen(groupId) {
+    if (!groupId) return;
+    if (_feedUnread[groupId]) { _feedUnread[groupId] = false; updateFeedBadge(); }
+  }
+
+  function updateFeedBadge() {
+    const dot = document.getElementById('feed-unread');
+    if (dot) dot.classList.toggle('hidden', !_feedUnread[_activeGroupId]);
   }
 
   // ============================================================
@@ -1202,13 +1229,14 @@ const SocialModule = (() => {
     const sb = window.SupabaseClient.getClient?.();
     if (!sb || _rtChannel) return;
     _rtChannel = sb.channel('social-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'poops' }, scheduleRealtimeRefresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions' }, scheduleRealtimeRefresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, scheduleRealtimeRefresh)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'feed_events' }, scheduleRealtimeRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'poops' }, payload => { noteFeedActivity(payload); scheduleRealtimeRefresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions' }, payload => { noteFeedActivity(payload); scheduleRealtimeRefresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, payload => { noteFeedActivity(payload); scheduleRealtimeRefresh(); })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'feed_events' }, payload => { noteFeedActivity(payload); scheduleRealtimeRefresh(); })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'nudges' }, payload => {
         const n = payload?.new;
         if (n && n.to_user === window.SupabaseClient.getCurrentProfile()?.id) {
+          noteFeedActivity(payload);
           window.UI?.toast(`${n.emoji || '💩'} Une copine te relance… à toi de jouer !`, 'party', 4500);
         }
       })

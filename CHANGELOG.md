@@ -5,6 +5,28 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.24.0] — 2026-09-29
+
+### Ajouté
+- **Barre à 4 onglets** : Accueil, Moi, Social, Réglages. Les onglets Stats,
+  Historique et Badges sont regroupés dans un hub « Moi » avec 3 sous-onglets.
+- **Point « nouveau » sur l'onglet Activité** : un point rouge s'allume quand une
+  copine poste, réagit ou commente dans le fil (événements temps réel d'autrui),
+  et s'éteint quand on ouvre l'onglet.
+- **Styles de carte** : sélecteur Classique / iPhone / Rues, tous sans clé API.
+  Le style iPhone (Esri) superpose les noms de lieux au fond clair.
+- **Zoom au pincement** : deux doigts pour zoomer/dézoomer autour du point
+  pincé, sur la PoopMap et la carte du groupe.
+
+### Technique
+- Renommage interne `admin` → `history` (l'onglet Historique portait encore le
+  vieux nom « admin »).
+- `zoomAroundView()` (pure, testée) pour le zoom centré sur un point.
+- `noteFeedActivity()` : point rouge piloté par le flux temps réel existant.
+- Cache SW caca-v48 → caca-v52.
+
+---
+
 ## [2.23.0] — 2026-09-29
 
 ### Ajouté
