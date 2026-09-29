@@ -218,34 +218,70 @@ window.GroupMapModule = (() => {
       });
     });
 
-    let dragging = false, panning = false, lastX = 0, lastY = 0, moved = 0;
-    const onMove = e => {
-      if (!dragging || !view) return;
-      const dx = e.clientX - lastX, dy = e.clientY - lastY;
-      moved += Math.abs(dx) + Math.abs(dy);
-      if (!panning && moved <= 4) return;
-      panning = true;
-      lastX = e.clientX; lastY = e.clientY;
+    // Gestes : 1 doigt = déplacement, 2 doigts = pincement (zoom autour des doigts).
+    const pointers = new Map();
+    let pinchDist = 0, pinchMX = 0, pinchMY = 0, moved = 0;
+
+    const rel = (clientX, clientY) => {
+      const r = canvas.getBoundingClientRect();
+      return { x: clientX - r.left, y: clientY - r.top };
+    };
+    const panBy = (dx, dy) => {
+      if (!view) return;
       const cx = PMm.lonToTileX(view.lon, view.zoom) * 256 - dx;
       const cy = PMm.latToTileY(view.lat, view.zoom) * 256 - dy;
       view = { ...view, lon: PMm.tileXToLon(cx / 256, view.zoom), lat: PMm.tileYToLat(cy / 256, view.zoom) };
-      drawLayer(canvas, groups, colors, width, height);
-      wirePins(canvas, groups);
     };
-    const onUp = () => {
-      dragging = false; panning = false;
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointercancel', onUp);
+    const redraw = () => { drawLayer(canvas, groups, colors, width, height); wirePins(canvas, groups); };
+
+    const onMove = e => {
+      if (!pointers.has(e.pointerId) || !view) return;
+      const prev = pointers.get(e.pointerId);
+      const dx = e.clientX - prev.x, dy = e.clientY - prev.y;
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (pointers.size === 1) {
+        moved += Math.abs(dx) + Math.abs(dy);
+        if (moved > 4) { panBy(dx, dy); redraw(); }
+      } else if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        const dist = Math.hypot(a.x - b.x, a.y - b.y);
+        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        if (pinchDist > 0 && dist > 0) {
+          const r = rel(mx, my);
+          const factor = dist / pinchDist;
+          const nv = PMm.zoomAroundView(view, r.x, r.y, view.zoom + Math.log2(factor), width, height);
+          if (nv !== view) view = nv;
+          panBy(mx - pinchMX, my - pinchMY);
+          pinchDist = dist; pinchMX = mx; pinchMY = my;
+          redraw();
+        }
+      }
+    };
+    const onUp = e => {
+      pointers.delete(e.pointerId);
+      if (pointers.size < 2) pinchDist = 0;
+      if (pointers.size === 0) {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
+      }
     };
 
     canvas.addEventListener('pointerdown', e => {
       if (e.target.closest('.poopmap-controls, .poopmap-attrib, .poopmap-style')) return;
-      dragging = true; panning = false; moved = 0;
-      lastX = e.clientX; lastY = e.clientY;
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp);
-      window.addEventListener('pointercancel', onUp);
+      if (pointers.size === 0) {
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+        window.addEventListener('pointercancel', onUp);
+        moved = 0;
+      }
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+        pinchMX = (a.x + b.x) / 2; pinchMY = (a.y + b.y) / 2;
+      }
     });
 
     wirePins(canvas, groups);

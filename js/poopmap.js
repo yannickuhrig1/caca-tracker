@@ -196,6 +196,29 @@ window.PoopMapModule = (() => {
   }
 
   /**
+   * Nouvelle vue après un zoom centré sur un point de l'écran (px, py), en
+   * pixels relatifs au coin haut-gauche de la carte. Le point du monde sous
+   * (px, py) reste sous ce pixel : c'est le comportement du pincement de doigts.
+   */
+  function zoomAroundView(view, px, py, newZoom, width, height) {
+    if (!view) return view;
+    newZoom = Math.max(2, Math.min(18, newZoom));
+    if (newZoom === view.zoom) return view;
+    const factor = Math.pow(2, newZoom - view.zoom);
+    const centerX = lonToTileX(view.lon, view.zoom) * TILE;
+    const centerY = latToTileY(view.lat, view.zoom) * TILE;
+    const worldX = centerX - width / 2 + px;   // point du monde sous (px, py)
+    const worldY = centerY - height / 2 + py;
+    const newCenterX = worldX * factor + width / 2 - px;
+    const newCenterY = worldY * factor + height / 2 - py;
+    return {
+      zoom: newZoom,
+      lon: tileXToLon(newCenterX / TILE, newZoom),
+      lat: tileYToLat(newCenterY / TILE, newZoom),
+    };
+  }
+
+  /**
    * Regroupe les entrées tombant sur la même coordonnée arrondie —
    * sinon 30 cacas à la maison = 30 pastilles empilées au même pixel.
    */
@@ -504,42 +527,76 @@ window.PoopMapModule = (() => {
       });
     });
 
-    // Déplacement à la souris comme au doigt : un seul jeu d'événements pointer.
-    // Pas de setPointerCapture ici — il retargete aussi le `click` de
-    // compatibilité vers le canvas, et les pastilles ne répondraient plus.
-    let dragging = false, panning = false, lastX = 0, lastY = 0, moved = 0;
+    // Gestes : 1 doigt = déplacement, 2 doigts = pincement (zoom autour des doigts).
+    // Un seul jeu d'événements pointer, multi-pointer (Map pointerId -> position).
+    // Pas de setPointerCapture : il retargeterait le `click` de compatibilité
+    // vers le canvas, et les pastilles ne répondraient plus.
+    const pointers = new Map();
+    let pinchDist = 0, pinchMX = 0, pinchMY = 0, moved = 0;
 
-    const onMove = e => {
-      if (!dragging || !view) return;
-      const dx = e.clientX - lastX, dy = e.clientY - lastY;
-      moved += Math.abs(dx) + Math.abs(dy);
-      // Seuil : un doigt tremble toujours un peu, et redessiner remplacerait la
-      // pastille sous le doigt — le clic serait perdu.
-      if (!panning && moved <= 4) return;
-      panning = true;
-      lastX = e.clientX; lastY = e.clientY;
+    const rel = (clientX, clientY) => {
+      const r = canvas.getBoundingClientRect();
+      return { x: clientX - r.left, y: clientY - r.top };
+    };
+    const panBy = (dx, dy) => {
+      if (!view) return;
       const scale = TILE * Math.pow(2, view.zoom);
       const cx = lonToTileX(view.lon, view.zoom) * TILE - dx;
       const cy = Math.max(0, Math.min(scale, latToTileY(view.lat, view.zoom) * TILE - dy));
       view = { ...view, lon: tileXToLon(cx / TILE, view.zoom), lat: tileYToLat(cy / TILE, view.zoom) };
-      drawLayer(canvas, clusters, width, height);
-      wirePins(canvas, clusters);
     };
-    const onUp = () => {
-      dragging = false; panning = false;
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointercancel', onUp);
+    const redraw = () => { drawLayer(canvas, clusters, width, height); wirePins(canvas, clusters); };
+
+    const onMove = e => {
+      if (!pointers.has(e.pointerId) || !view) return;
+      const prev = pointers.get(e.pointerId);
+      const dx = e.clientX - prev.x, dy = e.clientY - prev.y;
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (pointers.size === 1) {
+        // Seuil : un doigt tremble toujours un peu, sinon le clic est perdu.
+        moved += Math.abs(dx) + Math.abs(dy);
+        if (moved > 4) { panBy(dx, dy); redraw(); }
+      } else if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        const dist = Math.hypot(a.x - b.x, a.y - b.y);
+        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        if (pinchDist > 0 && dist > 0) {
+          const r = rel(mx, my);
+          const factor = dist / pinchDist;
+          const nv = zoomAroundView(view, r.x, r.y, view.zoom + Math.log2(factor), width, height);
+          if (nv !== view) view = nv;
+          panBy(mx - pinchMX, my - pinchMY);
+          pinchDist = dist; pinchMX = mx; pinchMY = my;
+          redraw();
+        }
+      }
+    };
+    const onUp = e => {
+      pointers.delete(e.pointerId);
+      if (pointers.size < 2) pinchDist = 0;
+      if (pointers.size === 0) {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
+      }
     };
 
     canvas.addEventListener('pointerdown', e => {
       if (e.target.closest('.poopmap-controls, .poopmap-attrib, .poopmap-style')) return;
-      dragging = true; panning = false; moved = 0;
-      lastX = e.clientX; lastY = e.clientY;
-      // Sur window : le doigt qui sort de la carte continue de la déplacer.
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp);
-      window.addEventListener('pointercancel', onUp);
+      if (pointers.size === 0) {
+        // Sur window : les doigts qui sortent de la carte continuent de la piloter.
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+        window.addEventListener('pointercancel', onUp);
+        moved = 0;
+      }
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+        pinchMX = (a.x + b.x) / 2; pinchMY = (a.y + b.y) / 2;
+      }
     });
 
     wirePins(canvas, clusters);
@@ -597,7 +654,7 @@ window.PoopMapModule = (() => {
     hasZone, conquestStats, flagEmoji,
     MAP_STYLES, getMapStyle, setMapStyle, mapStyle,
     lonToTileX, latToTileY, tileXToLon, tileYToLat, distanceKm,
-    fitView, clusterPoints, geoStats, forgetAllPositions,
+    fitView, zoomAroundView, clusterPoints, geoStats, forgetAllPositions,
     renderCard,
   };
 })();
