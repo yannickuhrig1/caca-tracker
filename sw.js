@@ -1,4 +1,4 @@
-const CACHE = 'caca-v52';
+const CACHE = 'caca-v53';
 const ASSETS = [
   './',
   './index.html',
@@ -38,7 +38,9 @@ const ASSETS = [
   './js/app/app-onboarding.js',
   './js/app/app-whatsnew.js',
   './js/app/app-sante.js',
+  './js/app/app-hydratation.js',
   './js/app/app-saisie.js',
+  './js/app/app-costumes.js',
   './js/app/app-accueil.js',
   './js/app/app-wrapped.js',
   './js/jeux/jeux-core.js',
@@ -56,6 +58,7 @@ const ASSETS = [
   './js/predictions.js',
   './js/charts.js',
   './js/poopmap.js',
+  './js/social-live.js',
   './js/chat.js',
   './js/group-map.js',
   './js/sounds.js',
@@ -88,25 +91,42 @@ self.addEventListener('message', e => {
   if (e.data === 'SKIP_WAITING') self.skipWaiting();
 });
 
+const DEFAULT_PUSH_ACTIONS = [
+  { action: 'quick-usual', title: '⚡ Comme d\'hab' },
+  { action: 'timer', title: '⏱️ Chrono' }
+];
+
 // ---- Push serveur (Web Push) : réactions + rappel 24h ----
 self.addEventListener('push', e => {
   let data = {};
   try { data = e.data ? e.data.json() : {}; } catch (_) {}
+  const actions = Array.isArray(data.actions) ? data.actions : DEFAULT_PUSH_ACTIONS;
   e.waitUntil(self.registration.showNotification(data.title || '💩 Caca-Tracker', {
-    body:  data.body || '',
-    icon:  './icons/icon-192.png',
-    badge: './icons/favicon-32.png',
-    data:  { url: data.url || './' }
+    body:    data.body || '',
+    icon:    './icons/icon-192.png',
+    badge:   './icons/favicon-32.png',
+    actions,
+    data:    { url: data.url || './' }
   }));
 });
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const url = e.notification.data?.url || './';
+  const url = e.action === 'quick-usual'
+    ? './?action=quick-usual'
+    : e.action === 'timer'
+      ? './?action=timer'
+      : (e.notification.data?.url || './');
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
       const existing = list.find(c => c.url.startsWith(self.location.origin));
-      return existing ? existing.focus() : clients.openWindow(url);
+      if (existing) {
+        if (e.action && typeof existing.navigate === 'function') {
+          return existing.navigate(url).then(c => (c || existing).focus()).catch(() => clients.openWindow(url));
+        }
+        return existing.focus();
+      }
+      return clients.openWindow(url);
     })
   );
 });

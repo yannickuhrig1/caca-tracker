@@ -47,11 +47,50 @@ const SocialModule = (() => {
   let _feedPeriod    = 'today';
   let _feedMemberId  = '';
 
-  // ---- Sous-onglets du groupe (v2.23.0) ----
-  let _socialPane        = 'activite';   // chat | activite | classements
+  // ---- Sous-onglets du groupe (v2.23.0 / v3.0) ----
+  let _socialPane        = 'activite';   // chat | activite | classements | spots
   let _chatUnread        = {};           // groupId -> messages non lus
   let _chatUnreadChannel = null;
   let _feedUnread        = {};           // groupId -> nouvelle activité dans le fil (point rouge)
+
+  function closeGroupsDrawer() {
+    const drawer = document.getElementById('groups-drawer');
+    if (drawer) drawer.open = false;
+  }
+
+  function updateSettingsProfileSummary(groupName) {
+    if (typeof window.refreshSettingsProfileCard === 'function') {
+      window.refreshSettingsProfileCard();
+      return;
+    }
+    if (typeof window.updateSettingsProfileCard === 'function') {
+      window.updateSettingsProfileCard();
+      return;
+    }
+    const card = document.getElementById('settings-profile-card');
+    if (!card) return;
+    const profile = window.SupabaseClient?.getCurrentProfile?.();
+    const avEl   = document.getElementById('settings-profile-avatar');
+    const nameEl = document.getElementById('settings-profile-name');
+    const subEl  = document.getElementById('settings-profile-sub');
+    if (profile) {
+      if (avEl) {
+        if (typeof window.setAvatarEl === 'function') window.setAvatarEl(avEl, profile.avatar || '💩');
+        else avEl.textContent = profile.avatar || '💩';
+      }
+      if (nameEl) nameEl.textContent = profile.username || 'Mon Profil';
+      if (subEl) subEl.textContent = groupName ? `👥 ${groupName}` : (profile.email || '☁️ Synchronisée');
+    } else {
+      if (avEl) {
+        let localAv = '👤';
+        try { localAv = localStorage.getItem('profile.avatar') || '👤'; } catch {}
+        if (typeof window.setAvatarEl === 'function') window.setAvatarEl(avEl, localAv);
+        else avEl.textContent = localAv;
+      }
+      if (nameEl) nameEl.textContent = 'Mon Profil';
+      if (subEl) subEl.textContent = 'Avatar, 16 thèmes & synchronisation cloud';
+    }
+  }
 
   // ============================================================
   //  RENDU PRINCIPAL
@@ -64,6 +103,8 @@ const SocialModule = (() => {
     if (!window.SupabaseClient?.isLoggedIn()) {
       guest.classList.remove('hidden');
       connected.classList.add('hidden');
+      window.SocialLiveModule?.disconnect?.();
+      updateSettingsProfileSummary();
       return;
     }
 
@@ -91,6 +132,9 @@ const SocialModule = (() => {
       if (!groups.length) {
         listEl.innerHTML = '<div class="text-sm opacity-60 text-center py-2">Aucun groupe — crée-en un ou rejoins tes amies !</div>';
         if (groupContent) groupContent.classList.add('hidden');
+        _activeGroupId = null;
+        window.SocialLiveModule?.disconnect?.();
+        updateSettingsProfileSummary();
         return;
       }
 
@@ -125,8 +169,13 @@ const SocialModule = (() => {
   //  CONTENU DU GROUPE SÉLECTIONNÉ
   // ============================================================
   async function renderGroupContent(groupId) {
-    if (!groupId) return;
+    if (!groupId) {
+      window.SocialLiveModule?.disconnect?.();
+      updateSettingsProfileSummary();
+      return;
+    }
     _activeGroupId = groupId;
+    window.SocialLiveModule?.connectGroup?.(_activeGroupId);
     // Reset feed state when switching group
     _feedPeriod   = 'today';
     _feedMemberId = '';
@@ -155,6 +204,7 @@ const SocialModule = (() => {
     ]);
     updateQueenCrown();
     checkWinnerCelebration(groupId);
+    updateSettingsProfileSummary(group?.name);
 
     // Appliquer l'onglet actif + ouvrir le chat / compter les non-lus (v2.23.0)
     setSocialPane(_socialPane);
@@ -163,10 +213,10 @@ const SocialModule = (() => {
   }
 
   // ============================================================
-  //  SOUS-ONGLETS DU GROUPE (v2.23.0) : chat, activité, classements
+  //  SOUS-ONGLETS DU GROUPE (v2.23.0 / v3.0) : chat, activité, classements, spots
   // ============================================================
   function setSocialPane(pane) {
-    if (!['chat', 'activite', 'classements'].includes(pane)) pane = 'activite';
+    if (!['chat', 'activite', 'classements', 'spots'].includes(pane)) pane = 'activite';
     _socialPane = pane;
 
     const scope = document.getElementById('group-content');
@@ -188,8 +238,16 @@ const SocialModule = (() => {
       window.ChatModule?.close?.();
     }
 
+    if (pane === 'spots') {
+      window.SocialLiveModule?.renderSpotsPane?.('social-pane-spots');
+    }
+
     // Consulter le fil = on a vu les nouveautés
     if (pane === 'activite') markFeedSeen(_activeGroupId);
+  }
+
+  function switchSocialPane(pane) {
+    return setSocialPane(pane);
   }
 
   function chatUnreadCount(groupId) {
@@ -1248,9 +1306,10 @@ const SocialModule = (() => {
     if (!profile) return;
     window.updateUserBadge?.(profile);
     updateQueenCrown();
+    updateSettingsProfileSummary();
 
     // 1. Pull cloud data into local state (handles new device / fresh browser)
-    await window.syncCloudData?.();
+    await window.syncCloudData?.({ forceFull: true });
 
     // 2. Push any remaining local-only data to cloud
     const saved = localStorage.getItem('cacaTracker.v2');
@@ -1278,6 +1337,8 @@ const SocialModule = (() => {
       if (!name) return;
       try {
         const group = await window.SupabaseClient.createGroup(name);
+        if (group?.id) _activeGroupId = group.id;
+        closeGroupsDrawer();
         window.UI.toast(`Groupe créé ! Code d'invitation : ${group.invite_code} 🎉`, 'success', 5000);
         await renderGroupList();
       } catch(e) { window.UI.toast('Erreur : ' + e.message, 'error'); }
@@ -1290,6 +1351,8 @@ const SocialModule = (() => {
       try {
         const group = await window.SupabaseClient.joinGroup(code);
         document.getElementById('invite-code-input').value = '';
+        if (group?.id) _activeGroupId = group.id;
+        closeGroupsDrawer();
         window.UI.toast(`Tu as rejoint « ${group.name} » ! 🎉`, 'success');
         await renderGroupList();
       } catch(e) { window.UI.toast('Erreur : ' + e.message, 'error'); }
@@ -1297,8 +1360,15 @@ const SocialModule = (() => {
 
     // Changement de groupe
     document.getElementById('group-selector')?.addEventListener('change', async e => {
-      _activeGroupId = e.target.value;
+      _activeGroupId = e.target.value || null;
       document.getElementById('group-management')?.classList.add('hidden');
+      closeGroupsDrawer();
+      if (!_activeGroupId) {
+        document.getElementById('group-content')?.classList.add('hidden');
+        window.SocialLiveModule?.disconnect?.();
+        updateSettingsProfileSummary();
+        return;
+      }
       await renderGroupContent(_activeGroupId);
     });
 
@@ -1506,8 +1576,8 @@ const SocialModule = (() => {
     const gKnob = document.getElementById('geo-share-knob');
     const sBtn = document.getElementById('stats-share-toggle');
     const sKnob = document.getElementById('stats-share-knob');
-    if (gBtn) { gBtn.style.background = geoOn ? '#4f46e5' : 'rgba(0,0,0,0.15)'; if (gKnob) gKnob.style.transform = geoOn ? 'translateX(20px)' : 'translateX(0)'; }
-    if (sBtn) { sBtn.style.background = statsOn ? '#4f46e5' : 'rgba(0,0,0,0.15)'; if (sKnob) sKnob.style.transform = statsOn ? 'translateX(20px)' : 'translateX(0)'; }
+    if (gBtn) { gBtn.style.background = geoOn ? 'var(--accent)' : 'rgba(0,0,0,0.15)'; if (gKnob) gKnob.style.transform = geoOn ? 'translateX(20px)' : 'translateX(0)'; }
+    if (sBtn) { sBtn.style.background = statsOn ? 'var(--accent)' : 'rgba(0,0,0,0.15)'; if (sKnob) sKnob.style.transform = statsOn ? 'translateX(20px)' : 'translateX(0)'; }
   }
 
   async function toggleGeoSharing() {
@@ -1574,7 +1644,7 @@ const SocialModule = (() => {
   // Le groupe affiché — la rareté des badges (onglet Badges) en a besoin.
   const currentGroupId = () => _activeGroupId;
 
-  return { renderSocialTab, openProfileModal, afterLogin, currentGroupId, refreshGameBoard: () => _gameBoard.groupId && _activeGroupId === _gameBoard.groupId && renderGameBoard(_activeGroupId) };
+  return { renderSocialTab, openProfileModal, afterLogin, currentGroupId, setSocialPane, switchSocialPane, refreshGameBoard: () => _gameBoard.groupId && _activeGroupId === _gameBoard.groupId && renderGameBoard(_activeGroupId) };
 
 })();
 

@@ -30,28 +30,41 @@
 
 ## Dérive entre le dépôt et la production
 
-Les migrations `01` à `11` datent de **février 2026**. Les tables ajoutées
-depuis (v2.10.0 et v2.11.0, juillet 2026) ont été créées **directement en base**
-et n'ont **aucune migration correspondante** dans le dépôt :
+Les migrations `01` à `11` datent de **février 2026**. Les 6 tables ajoutées
+lors des versions v2.10.0 et v2.11.0 (juillet 2026) avaient été créées
+**directement en base** sans fichier SQL correspondant ; elles sont désormais
+reconstituées de manière strictement idempotente dans
+`migrations/00_baseline_missing_tables.sql` :
 
 | Table en production | Migration au dépôt |
 |---|---|
-| `comments` | ❌ absente |
-| `nudges` | ❌ absente |
-| `feed_events` | ❌ absente |
-| `challenge_wins` | ❌ absente |
-| `push_subscriptions` | ❌ absente |
-| `push_reminder_state` | ❌ absente |
+| `comments` | ✅ `00_baseline_missing_tables.sql` (rattrapage idempotent) |
+| `nudges` | ✅ `00_baseline_missing_tables.sql` (rattrapage idempotent) |
+| `feed_events` | ✅ `00_baseline_missing_tables.sql` (rattrapage idempotent) |
+| `challenge_wins` | ✅ `00_baseline_missing_tables.sql` (rattrapage idempotent) |
+| `push_subscriptions` | ✅ `00_baseline_missing_tables.sql` (rattrapage idempotent) |
+| `push_reminder_state` | ✅ `00_baseline_missing_tables.sql` (rattrapage idempotent) |
 
 Dans l'autre sens, la migration `11_20260221_secrets.sql` crée une table
 `app_secrets` **supprimée depuis** (v2.10.0, la clé service_role ne transite
 plus par le navigateur). Elle est conservée pour l'historique mais ne doit
 **pas** être rejouée sur une base neuve.
 
-Conséquence : **rejouer `01` → `11` sur une base vierge ne reproduit pas la
-production.** Il manquerait les 6 tables ci-dessus. Pour repartir de zéro,
-il faut d'abord faire un `pg_dump --schema-only` de la base du NAS et en
-faire une migration `00_baseline.sql`.
+Pour **repartir d'une base vierge** sans aucune table manquante, exécuter dans
+l'ordre :
+
+1. `01_20260218_schema.sql` → `10_20260221_updated-at.sql` (socle initial :
+   `profiles`, `groups`, `group_members`, `poops`, `challenges`, `reactions` et
+   fonctions `is_group_member` / `shares_group_with` / `is_admin`) — **en
+   ignorant `11_20260221_secrets.sql`** ;
+2. `00_baseline_missing_tables.sql` (les 6 tables v2.10/v2.11 ci-dessus, avec
+   leurs index, RLS, policies protégées contre `duplicate_object` et
+   `NOTIFY pgrst, 'reload schema'`) ;
+3. `12_rls-durcissement.sql` → `19_20260928_group-map.sql`.
+
+Sur une base déjà en production, `00_baseline_missing_tables.sql` est sans
+effet destructif (`CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`,
+policies ignorées si déjà présentes).
 
 Enfin, `13_20260908_poopmap.sql` (`place`, `lat`, `lon`) et
 `14_20260908_poopmap-conquete.sql` (`city`, `region`, `country`,

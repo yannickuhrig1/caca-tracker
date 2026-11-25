@@ -7,12 +7,24 @@
 
 // Source de vérité unique de la version. L'en-tête et les Réglages sont
 // remplis à partir d'ici, ce qui évite qu'ils divergent comme par le passé.
-const APP_VERSION = '2.24.0';
-const APP_VERSION_DATE = 'Septembre 2026';
+const APP_VERSION = '3.0.0';
+const APP_VERSION_DATE = 'Novembre 2026';
 
 // De la plus récente à la plus ancienne. `items` reste court et écrit pour
 // Clémence, pas pour un développeur : ce que ça change pour elle, pas comment.
 const APP_CHANGELOG = [
+  {
+    version: '3.0.0',
+    date: 'Novembre 2026',
+    items: [
+      ['✨', '**Nouveau look Pop-Tactile** : accueil en tuiles Bento, navigation à 5 boutons avec un gros bouton central **💩+** (appui long pour **⚡ 1-tap**, **⏱️ Chrono** et **🎮 Jeux**).'],
+      ['⚡', '**Saisie à 2 vitesses** : onglet **Express** pour noter en 2 secondes, et onglet **Santé & +** pour la durée, les symptômes et les notes.'],
+      ['💧', '**Hydratation & jours sans passage** : compte tes verres d\'eau sur l\'accueil, note une journée sans caca, et découvre les **observations 24–48 h** dans tes Stats.'],
+      ['🧻', '**Rouleaux d\'Or & Garde-robe** : gagne des 🧻 à chaque passage, série et partie pour débloquer des costumes à ta mascotte dans **Badges**.'],
+      ['🚽', '**Social v3.0** : statut live « Sur le trône » (opt-in dans Réglages), **duels** et **sondages** dans le chat, et **Toilettes Advisor** pour noter les meilleurs WC.'],
+      ['🔊', '**Sons 100 % hors-ligne** et **actions Push 1-tap** directement depuis les notifications.'],
+    ]
+  },
   {
     version: '2.24.0',
     date: 'Septembre 2026',

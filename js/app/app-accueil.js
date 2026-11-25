@@ -97,12 +97,17 @@ function mascotSVG(mood = 'waiting', accessory = 'none') {
     happy:   '<circle cx="36" cy="72" r="5" fill="#f9a8d4" opacity=".6"/><circle cx="84" cy="72" r="5" fill="#f9a8d4" opacity=".6"/>',
   }[mood] || '';
   const acc = {
-    crown:   '<g transform="translate(0,-14)"><path d="M40 22l8 10 12-14 12 14 8-10v16H40Z" fill="#fbbf24" stroke="#b45309" stroke-width="2" stroke-linejoin="round"/><circle cx="60" cy="18" r="3" fill="#ef4444"/></g>',
-    glasses: '<rect x="33" y="52" width="24" height="15" rx="6" fill="#111"/><rect x="63" y="52" width="24" height="15" rx="6" fill="#111"/><path d="M57 58h6" stroke="#111" stroke-width="3"/><path d="M37 55l6 0" stroke="#fff" stroke-width="2" opacity=".6"/>',
+    crown:      '<g transform="translate(0,-14)"><path d="M40 22l8 10 12-14 12 14 8-10v16H40Z" fill="#fbbf24" stroke="#b45309" stroke-width="2" stroke-linejoin="round"/><circle cx="60" cy="18" r="3" fill="#ef4444"/></g>',
+    glasses:    '<rect x="33" y="52" width="24" height="15" rx="6" fill="#111"/><rect x="63" y="52" width="24" height="15" rx="6" fill="#111"/><path d="M57 58h6" stroke="#111" stroke-width="3"/><path d="M37 55l6 0" stroke="#fff" stroke-width="2" opacity=".6"/>',
+    beret:      '<g class="mascot-acc mascot-acc-beret"><path d="M56 13l-3-5" stroke="#7f1d1d" stroke-width="2.5" stroke-linecap="round"/><path d="M30 29c-2-10 12-17 28-16 16 1 28 6 26 14-2 5-14 6-27 6-14 0-25 1-27-4Z" fill="#dc2626" stroke="#7f1d1d" stroke-width="2" stroke-linejoin="round"/><path d="M36 31c12-2 32-2 44 1" stroke="#450a0a" stroke-width="3" stroke-linecap="round"/></g>',
+    headphones: '<g class="mascot-acc mascot-acc-headphones"><path d="M23 60C23 26 97 26 97 60" fill="none" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/><path d="M38 30c14-7 30-7 44 0" fill="none" stroke="#6366f1" stroke-width="3" stroke-linecap="round"/><rect x="15" y="50" width="11" height="22" rx="5.5" fill="#6366f1" stroke="#1e293b" stroke-width="2"/><rect x="94" y="50" width="11" height="22" rx="5.5" fill="#6366f1" stroke="#1e293b" stroke-width="2"/><rect x="23" y="53" width="4" height="16" rx="2" fill="#a5b4fc"/><rect x="93" y="53" width="4" height="16" rx="2" fill="#a5b4fc"/></g>',
+    flowers:    '<g class="mascot-acc mascot-acc-flowers"><path d="M34 38q26 6 52 0" fill="none" stroke="#15803d" stroke-width="3" stroke-linecap="round"/><ellipse cx="38" cy="36" rx="5" ry="2.5" transform="rotate(-25 38 36)" fill="#22c55e"/><ellipse cx="82" cy="36" rx="5" ry="2.5" transform="rotate(25 82 36)" fill="#22c55e"/><g transform="translate(46,37)"><circle cx="0" cy="-4" r="3.2" fill="#f9a8d4"/><circle cx="4" cy="0" r="3.2" fill="#f9a8d4"/><circle cx="0" cy="4" r="3.2" fill="#f9a8d4"/><circle cx="-4" cy="0" r="3.2" fill="#f9a8d4"/><circle cx="0" cy="0" r="2.5" fill="#fde047"/></g><g transform="translate(60,35)"><circle cx="0" cy="-4.5" r="3.6" fill="#f472b6"/><circle cx="4.5" cy="0" r="3.6" fill="#f472b6"/><circle cx="0" cy="4.5" r="3.6" fill="#f472b6"/><circle cx="-4.5" cy="0" r="3.6" fill="#f472b6"/><circle cx="0" cy="0" r="2.8" fill="#fef08a"/></g><g transform="translate(74,37)"><circle cx="0" cy="-4" r="3.2" fill="#c4b5fd"/><circle cx="4" cy="0" r="3.2" fill="#c4b5fd"/><circle cx="0" cy="4" r="3.2" fill="#c4b5fd"/><circle cx="-4" cy="0" r="3.2" fill="#c4b5fd"/><circle cx="0" cy="0" r="2.5" fill="#fde047"/></g></g>',
+    chef:       '<g class="mascot-acc mascot-acc-chef"><path d="M43 26c-7-2-9-11-3-15 3-6 12-8 20-8s17 2 20 8c6 4 4 13-3 15v8H43Z" fill="#ffffff" stroke="#94a3b8" stroke-width="2" stroke-linejoin="round"/><rect x="43" y="27" width="34" height="7" rx="2" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.8"/><path d="M52 16v9M60 14v11M68 16v9" stroke="#cbd5e1" stroke-width="1.8" stroke-linecap="round"/></g>',
+    wizard:     '<g class="mascot-acc mascot-acc-wizard"><path d="M60 4c4 8 10 17 16 25H44C50 20 55 11 60 4Z" fill="#4f46e5" stroke="#312e81" stroke-width="2" stroke-linejoin="round"/><path d="M44 26h32l3 5H41Z" fill="#fbbf24" stroke="#b45309" stroke-width="1.5" stroke-linejoin="round"/><ellipse cx="60" cy="32" rx="28" ry="5" fill="#4338ca" stroke="#312e81" stroke-width="2"/><circle cx="58" cy="18" r="2" fill="#fde047"/><circle cx="65" cy="23" r="1.4" fill="#fde047"/></g>',
   }[accessory] || '';
   // Lunettes de soleil : elles remplacent les yeux, sauf quand elle dort.
   const regard = accessory === 'glasses' && mood !== 'sleepy' ? acc : yeux;
-  const chapeau = accessory === 'crown' ? acc : '';
+  const chapeau = (accessory === 'crown' || accessory === 'beret' || accessory === 'headphones' || accessory === 'flowers' || accessory === 'chef' || accessory === 'wizard') ? acc : '';
   return `
     <svg viewBox="0 0 120 120" class="mascot-svg mascot-${mood}" role="img" aria-label="Mascotte ${mood}">
       <ellipse cx="60" cy="108" rx="40" ry="6" fill="rgba(0,0,0,.12)"/>
@@ -120,11 +125,23 @@ function mascotSVG(mood = 'waiting', accessory = 'none') {
 }
 
 function renderHomeCard() {
+  const rollsBadge = $id('home-rolls-badge');
+  if (rollsBadge && typeof getAvailableRolls === 'function') {
+    rollsBadge.textContent = `🧻 ${getAvailableRolls()}`;
+  }
   const hote = $id('mascot');
   if (!hote) return;
   const m = mascotMood(state.logs);
+  const activeAccessory = typeof resolveActiveAccessory === 'function'
+    ? resolveActiveAccessory(m.accessory)
+    : m.accessory;
   const niv = mascotLevel(state.logs.length);
-  hote.innerHTML = mascotSVG(m.mood, m.accessory);
+  hote.innerHTML = mascotSVG(m.mood, activeAccessory);
+  const costumeLabel = $id('mascot-costume-label');
+  if (costumeLabel) {
+    const meta = typeof costumeMeta === 'function' ? costumeMeta(activeAccessory) : null;
+    costumeLabel.textContent = meta ? `${meta.emoji} ${meta.name}` : '';
+  }
   const bulle = $id('mascot-message');
   if (bulle) bulle.textContent = m.message;
   const lvl = $id('mascot-level');
@@ -147,6 +164,8 @@ function renderHomeCard() {
   renderWrappedReminder();
 }
 
+const renderHomeToday = renderHomeCard;
+
 // ===================================================
 //  BLOCS REPLIABLES
 // ===================================================
@@ -160,13 +179,29 @@ function setupHome() {
       try { localStorage.setItem(HOME_MORE_KEY, plus.open ? '1' : '0'); } catch {}
     });
   }
-  // Toucher la mascotte la fait sauter : purement pour le plaisir.
+  // Toucher la mascotte fait défiler ses costumes débloqués et la fait sauter.
   $id('mascot')?.addEventListener('click', () => {
-    const svg = $id('mascot').querySelector('.mascot-svg');
-    if (!svg) return;
-    svg.classList.remove('mascot-jump');
-    void svg.getBoundingClientRect();   // relance l'animation
-    svg.classList.add('mascot-jump');
+    const hote = $id('mascot');
+    if (!hote) return;
+    if (typeof cycleMascotCostume === 'function') {
+      const nextAcc = cycleMascotCostume();
+      const m = mascotMood(state.logs);
+      hote.innerHTML = mascotSVG(m.mood, nextAcc);
+      const costumeLabel = $id('mascot-costume-label');
+      if (costumeLabel && typeof costumeMeta === 'function') {
+        const meta = costumeMeta(nextAcc);
+        costumeLabel.textContent = meta ? `${meta.emoji} ${meta.name}` : '';
+      }
+      if ($id('wardrobe-container') && typeof renderWardrobePanel === 'function') {
+        renderWardrobePanel();
+      }
+    }
+    const svg = hote.querySelector?.('.mascot-svg');
+    if (svg) {
+      svg.classList?.remove('mascot-jump');
+      void svg.getBoundingClientRect?.();   // relance l'animation
+      svg.classList?.add('mascot-jump');
+    }
     if (typeof haptic === 'function') haptic(10);
   });
 }

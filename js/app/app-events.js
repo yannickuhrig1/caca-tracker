@@ -8,8 +8,129 @@
 // ===================================================
 //  EVENTS
 // ===================================================
+function bindPoopDockButton(btn) {
+  if (!btn) return;
+  let holdTimer = null;
+  let longPressed = false;
+  let longPressAt = 0;
+  let startX = 0;
+  let startY = 0;
+
+  const clearHold = () => {
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+  };
+
+  const openQuickMenu = () => {
+    const menu = $id('dock-quick-menu');
+    if (!menu) return;
+    menu.classList.remove('hidden');
+    if (typeof haptic === 'function') haptic(15);
+  };
+
+  const toggleQuickMenu = () => {
+    const menu = $id('dock-quick-menu');
+    if (!menu) return;
+    menu.classList.toggle('hidden');
+    if (!menu.classList.contains('hidden') && typeof haptic === 'function') haptic(15);
+  };
+
+  const onStart = (x, y) => {
+    clearHold();
+    longPressed = false;
+    startX = x;
+    startY = y;
+    holdTimer = setTimeout(() => {
+      holdTimer = null;
+      longPressed = true;
+      longPressAt = Date.now();
+      openQuickMenu();
+    }, 450);
+  };
+
+  if (typeof window !== 'undefined' && 'PointerEvent' in window) {
+    btn.addEventListener('pointerdown', e => {
+      if (e.button === 2) return;
+      onStart(e.clientX, e.clientY);
+    });
+    btn.addEventListener('pointermove', e => {
+      if (!holdTimer) return;
+      if (Math.hypot(e.clientX - startX, e.clientY - startY) > 12) clearHold();
+    });
+    btn.addEventListener('pointerup', clearHold);
+    btn.addEventListener('pointercancel', clearHold);
+  } else {
+    btn.addEventListener('touchstart', e => {
+      const t = e.touches?.[0];
+      if (t) onStart(t.clientX, t.clientY);
+    }, { passive: true });
+    btn.addEventListener('touchmove', e => {
+      if (!holdTimer) return;
+      const t = e.touches?.[0];
+      if (t && Math.hypot(t.clientX - startX, t.clientY - startY) > 12) clearHold();
+    }, { passive: true });
+    btn.addEventListener('touchend', clearHold);
+    btn.addEventListener('touchcancel', clearHold);
+  }
+
+  btn.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    clearHold();
+    // Si l'appui long vient juste d'ouvrir le menu, ne pas le refermer sur contextmenu
+    if (Date.now() - longPressAt < 700) {
+      openQuickMenu();
+      return;
+    }
+    toggleQuickMenu();
+  });
+
+  btn.addEventListener('click', e => {
+    if (longPressed) {
+      longPressed = false;
+      e.preventDefault();
+      return;
+    }
+    $id('dock-quick-menu')?.classList.add('hidden');
+    openDrawer();
+  });
+}
+
 function setupEvents() {
   $id('poop-btn').addEventListener('click', openDrawer);
+  bindPoopDockButton($id('dock-poop-btn'));
+  bindPoopDockButton($id('sidebar-poop-btn'));
+
+  document.addEventListener('click', e => {
+    const menu = $id('dock-quick-menu');
+    if (!menu || menu.classList.contains('hidden')) return;
+    if (e.target.closest?.('#dock-quick-menu, #dock-poop-btn, #sidebar-poop-btn')) return;
+    menu.classList.add('hidden');
+  });
+
+  $id('dock-quick-timer')?.addEventListener('click', () => {
+    $id('dock-quick-menu')?.classList.add('hidden');
+    if (typeof isTimerRunning === 'function' && isTimerRunning()) {
+      $id('timer-overlay')?.classList.remove('hidden');
+    } else if (typeof startTimer === 'function') {
+      startTimer();
+    }
+  });
+
+  $id('dock-quick-jeux')?.addEventListener('click', () => {
+    $id('dock-quick-menu')?.classList.add('hidden');
+    if (typeof window.openJeux === 'function') window.openJeux();
+  });
+
+  $id('water-plus-btn')?.addEventListener('click', () => {
+    if (typeof addWaterGlass === 'function') {
+      addWaterGlass(1);
+      if (typeof haptic === 'function') haptic(10);
+    }
+  });
+
+  $id('zero-checkin-btn')?.addEventListener('click', () => {
+    if (typeof openZeroPoopModal === 'function') openZeroPoopModal();
+  });
+
   $id('cancel-drawer').addEventListener('click', closeDrawer);
   $id('save-poop').addEventListener('click', addPoop);
   $id('export-btn').addEventListener('click', exportData);
@@ -61,6 +182,7 @@ function setupEvents() {
       btn.style.outline = '3px solid var(--accent)';
       document.querySelectorAll('.color-btn').forEach(b => { if (b !== btn) b.style.outline = ''; });
       $id('color-err')?.classList.add('hidden');
+      if (typeof updateSelectedColorLabel === 'function') updateSelectedColorLabel(selectedColor);
     });
   });
 
@@ -96,6 +218,7 @@ function setupEvents() {
       if (status) status.textContent = err.message;
     } finally {
       btn.disabled = false;
+      if (typeof refreshSaisieSanteBadge === 'function') refreshSaisieSanteBadge();
     }
   });
 
@@ -129,12 +252,19 @@ function setupEvents() {
   // Swipe horizontal entre onglets (mobile)
   const _tabOrder = ['dashboard','moi','social','settings'];
   let _swipeStartX = 0;
+  let _swipeStartY = 0;
+  let _swipeIgnored = false;
+  const SWIPE_IGNORE_SELECTOR = '.poopmap-canvas, .place-chips-row, .stats-poles-bar, input, textarea, select';
   document.querySelector('main')?.addEventListener('touchstart', e => {
+    _swipeIgnored = Boolean(e.target?.closest?.(SWIPE_IGNORE_SELECTOR));
     _swipeStartX = e.touches[0].clientX;
+    _swipeStartY = e.touches[0].clientY;
   }, { passive: true });
   document.querySelector('main')?.addEventListener('touchend', e => {
+    if (_swipeIgnored) { _swipeIgnored = false; return; }
     const dx = e.changedTouches[0].clientX - _swipeStartX;
-    if (Math.abs(dx) < 120) return;
+    const dy = e.changedTouches[0].clientY - _swipeStartY;
+    if (Math.abs(dx) < 120 || Math.abs(dy) > Math.abs(dx)) return;
     // Ne pas swiper si le drawer est ouvert
     if (!$id('drawer')?.classList.contains('hidden')) return;
     const currentRaw = document.querySelector('.tab-content.active')?.id?.replace('-tab','');
@@ -144,6 +274,104 @@ function setupEvents() {
     if (dx < -120 && idx < _tabOrder.length - 1) switchTab(_tabOrder[idx + 1]);
     if (dx >  120 && idx > 0)                    switchTab(_tabOrder[idx - 1]);
   }, { passive: true });
+
+  // Swipe-down (> 90 px depuis le haut de #drawer-inner) pour fermer le drawer
+  const drawerInner = $id('drawer-inner');
+  if (drawerInner) {
+    let dStartY = 0;
+    let dStartX = 0;
+    let dTracking = false;
+    drawerInner.addEventListener('touchstart', e => {
+      if ($id('drawer')?.classList.contains('hidden')) return;
+      if (drawerInner.scrollTop > 0) { dTracking = false; return; }
+      if (e.target?.closest?.('input, textarea, select')) { dTracking = false; return; }
+      dStartY = e.touches[0].clientY;
+      dStartX = e.touches[0].clientX;
+      dTracking = true;
+    }, { passive: true });
+    drawerInner.addEventListener('touchmove', e => {
+      if (!dTracking) return;
+      if (drawerInner.scrollTop > 0) {
+        dTracking = false;
+        drawerInner.style.transform = '';
+        drawerInner.style.transition = '';
+        return;
+      }
+      const dy = e.touches[0].clientY - dStartY;
+      const dx = e.touches[0].clientX - dStartX;
+      if (dy > 8 && Math.abs(dy) > Math.abs(dx)) {
+        drawerInner.style.transition = 'none';
+        drawerInner.style.transform = `translateY(${Math.min(dy * 0.6, 160)}px)`;
+      } else if (dy < -8) {
+        dTracking = false;
+        drawerInner.style.transform = '';
+        drawerInner.style.transition = '';
+      }
+    }, { passive: true });
+    const endDrawerSwipe = e => {
+      drawerInner.style.transition = '';
+      drawerInner.style.transform = '';
+      if (!dTracking) return;
+      dTracking = false;
+      if (e.type !== 'touchend' || drawerInner.scrollTop > 0) return;
+      const dy = e.changedTouches[0].clientY - dStartY;
+      const dx = e.changedTouches[0].clientX - dStartX;
+      if (dy > 90 && Math.abs(dy) > Math.abs(dx)) closeDrawer();
+    };
+    drawerInner.addEventListener('touchend', endDrawerSwipe, { passive: true });
+    drawerInner.addEventListener('touchcancel', endDrawerSwipe, { passive: true });
+  }
+
+  // Touche Escape : ferme le drawer ou la modale ouverte la plus haute
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    // Les modales ayant leur propre écouteur Escape le gèrent elles-mêmes
+    if (['onboarding', 'whatsnew', 'jeux-modal', 'wrapped-modal'].some(id => !$id(id)?.classList.contains('hidden'))) {
+      return;
+    }
+    const zeroOverlay = $id('zero-poop-modal-overlay');
+    if (zeroOverlay) {
+      zeroOverlay.querySelector('[data-act="cancel"]')?.click();
+      return;
+    }
+    if (!$id('guide-modal')?.classList.contains('hidden')) {
+      if (typeof closeGuideModal === 'function') closeGuideModal();
+      else $id('guide-modal').classList.add('hidden');
+      return;
+    }
+    if (!$id('qr-modal')?.classList.contains('hidden')) {
+      $id('qr-modal').classList.add('hidden');
+      return;
+    }
+    if (!$id('group-map-modal')?.classList.contains('hidden')) {
+      $id('group-map-close')?.click();
+      return;
+    }
+    if (!$id('member-modal')?.classList.contains('hidden')) {
+      $id('member-modal').classList.add('hidden');
+      return;
+    }
+    if (!$id('day-detail-modal')?.classList.contains('hidden')) {
+      $id('day-detail-modal').classList.add('hidden');
+      return;
+    }
+    if (!$id('auth-modal')?.classList.contains('hidden')) {
+      closeAuthModal();
+      return;
+    }
+    if (!$id('profile-modal')?.classList.contains('hidden')) {
+      closeProfileModal();
+      return;
+    }
+    if (!$id('drawer')?.classList.contains('hidden')) {
+      closeDrawer();
+      return;
+    }
+    const quickMenu = $id('dock-quick-menu');
+    if (quickMenu && !quickMenu.classList.contains('hidden')) {
+      quickMenu.classList.add('hidden');
+    }
+  });
 
   // Blague aléatoire
   $id('random-joke-btn')?.addEventListener('click', () => window.JokesModule?.showRandomJoke());
@@ -269,6 +497,7 @@ function setupEvents() {
         document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('border-amber-400','bg-amber-50'));
         btn.classList.add('border-amber-400','bg-amber-50');
       }
+      if (typeof refreshSaisieSanteBadge === 'function') refreshSaisieSanteBadge();
     });
   });
 

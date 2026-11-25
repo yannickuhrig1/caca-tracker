@@ -5,6 +5,10 @@
 //  est significatif : ces fichiers partagent la portee globale.
 // ============================================================
 
+function currentProfileUsername() {
+  return (typeof SupabaseClient !== 'undefined' && SupabaseClient.getCurrentProfile?.()?.username) || 'Moi';
+}
+
 // ===================================================
 //  RENDER ALL
 // ===================================================
@@ -21,6 +25,7 @@ function renderAll() {
 function renderDashboard() {
   // Carte « Aujourd'hui » et mascotte (v2.18.0, app-accueil.js)
   if (typeof renderHomeCard === 'function') renderHomeCard();
+  if (typeof renderHydrationTile === 'function') renderHydrationTile();
   const today = new Date().toDateString();
   const todayCount = state.logs.filter(l => new Date(l.date).toDateString() === today).length;
   $id('today-count').textContent = todayCount;
@@ -137,7 +142,7 @@ function renderHistory() {
       : `<div class="text-center py-12 opacity-60">
           <div class="text-5xl mb-3">📭</div>
           <div class="font-bold text-lg">Aucun caca enregistré</div>
-          <div class="text-sm">Clémence, c'est le moment !</div>
+          <div class="text-sm">${esc(currentProfileUsername())}, c'est le moment !</div>
         </div>`;
     return;
   }
@@ -222,7 +227,7 @@ function renderStats() {
     fv.textContent = '🙂 Norme basse — tout va bien !';
     fv.style.cssText = 'background:rgba(234,179,8,0.12);color:#b45309';
   } else if (avgPerDay <= 2.0) {
-    fv.textContent = '🏆 Dans les normes françaises et mondiales, bravo Clémence !';
+    fv.textContent = `🏆 Dans les normes françaises et mondiales, bravo ${currentProfileUsername()} !`;
     fv.style.cssText = 'background:rgba(5,150,105,0.12);color:#059669';
   } else {
     fv.textContent = '🚨 Plus de 2/j — surveille peut-être l\'alimentation ?';
@@ -468,20 +473,50 @@ function streakDetails(logs, now = Date.now()) {
 }
 
 function updateStreakBadge() {
-  const { current, pending } = streakDetails();
+  const { current, pending, jokers } = streakDetails();
   const el = $id('streak-badge');
-  if (!el) return;
   const valeur = current || pending;
-  if (valeur >= 2) {
-    el.style.display = 'flex';
-    $id('streak-val').textContent = valeur;
-    // En attente : même flamme, mais pâlie, et le titre explique pourquoi.
-    el.classList.toggle('streak-pending', !current);
-    el.title = current
-      ? `Série de ${current} jours`
-      : `Série de ${pending} jours en attente : un caca avant minuit pour la garder`;
-  } else {
-    el.style.display = 'none';
+  if (el) {
+    if (valeur >= 2) {
+      el.style.display = 'flex';
+      $id('streak-val').textContent = valeur;
+      // En attente : même flamme, mais pâlie, et le titre explique pourquoi.
+      el.classList.toggle('streak-pending', !current);
+      el.title = current
+        ? `Série de ${current} jours`
+        : `Série de ${pending} jours en attente : un caca avant minuit pour la garder`;
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  const pill = $id('streak-joker-pill');
+  if (pill) {
+    if (valeur < 2) {
+      pill.classList.add('hidden');
+      pill.textContent = '🛡️';
+      pill.title = 'Joker de série (actif dès 2 jours de série)';
+    } else {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const recentJoker = jokers?.length ? Math.max(...jokers) : null;
+      const daysSinceJoker = recentJoker !== null
+        ? Math.round((todayStart.getTime() - recentJoker) / 86400000)
+        : Infinity;
+      pill.classList.remove('hidden');
+      if (daysSinceJoker < 7) {
+        const resteJ = Math.max(1, 7 - daysSinceJoker);
+        pill.textContent = '🛡️ 0';
+        pill.style.opacity = '0.45';
+        pill.title = `Joker utilisé (${jokers.length} dans la série) · prochain dans ${resteJ} j`;
+      } else {
+        pill.textContent = '🛡️ 1';
+        pill.style.opacity = '1';
+        pill.title = jokers?.length
+          ? `1 joker disponible (${jokers.length} utilisé${jokers.length > 1 ? 's' : ''} dans la série)`
+          : '1 joker disponible (1 jour raté pardonné tous les 7 jours)';
+      }
+    }
   }
 }
 

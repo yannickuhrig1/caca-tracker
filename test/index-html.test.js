@@ -49,3 +49,51 @@ test('les toggles de partage du profil ne sont pas masqués par le CSS', () => {
   assert.ok(css.includes('.pf-group:not(:has(.pf-item:not(.hidden))):not(:has(.pf-row))'),
     'la règle .pf-group doit tolérer les groupes contenant .pf-row (toggles de partage)');
 });
+
+test('présence des identifiants structurels v3.0 dans index.html', () => {
+  const requisV3 = [
+    'dock-poop-btn',
+    'saisie-pane-express',
+    'saisie-pane-sante',
+    'moi-header-bar',
+    'stats-poles-bar',
+    'guide-modal',
+    'wardrobe-container',
+    'social-live-throne',
+    'social-pane-spots'
+  ];
+  for (const id of requisV3) {
+    assert.ok(html.includes(`id="${id}"`), `l'élément #${id} est requis en v3.0`);
+  }
+});
+
+test('unicité de .moi-subtabs dans index.html', () => {
+  const occurrences = html.match(/class="[^"]*\bmoi-subtabs\b[^"]*"/g) || [];
+  assert.strictEqual(occurrences.length, 1,
+    `une seule barre .moi-subtabs partagée est attendue (trouvé ${occurrences.length})`);
+});
+
+test('absence de 72vh sur #history-list', () => {
+  const balise = html.match(/<[^>]*\bid="history-list"[^>]*>/);
+  assert.ok(balise, '#history-list doit être présent dans index.html');
+  assert.ok(!balise[0].includes('72vh') && !html.includes('72vh'),
+    '#history-list ne doit plus utiliser de hauteur bornée à 72vh');
+});
+
+test('absence du sélecteur fautif #drawer > div dans css/app.css', () => {
+  const appCss = fs.readFileSync(path.join(__dirname, '..', 'css', 'app.css'), 'utf8');
+  assert.ok(!/#drawer\s*>\s*div\b/.test(appCss),
+    'le sélecteur fautif #drawer > div ne doit plus figurer dans css/app.css');
+});
+
+test('cohérence sw.js : chaque script local js/... de index.html est dans ASSETS', () => {
+  const sw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
+  const blocAssets = sw.match(/const ASSETS = \[([\s\S]*?)\];/);
+  assert.ok(blocAssets, 'déclaration const ASSETS = [...] introuvable dans sw.js');
+  const assets = new Set([...blocAssets[1].matchAll(/'([^']+)'/g)].map(m => m[1]));
+  const scripts = [...html.matchAll(/<script\b[^>]*\bsrc="(js\/[^"]+)"/g)].map(m => m[1]);
+  assert.ok(scripts.length > 0, 'aucun script local js/... détecté dans index.html');
+  const manquants = scripts.filter(src => !assets.has(`./${src}`));
+  assert.deepStrictEqual(manquants, [],
+    'chaque script local js/... de index.html doit être pré-caché dans ASSETS de sw.js');
+});

@@ -33,7 +33,11 @@ window.toggleHaptics = function() {
 function refreshHapticsToggle() {
   const on = hapticsEnabled();
   const btn = $id('haptics-toggle'), knob = $id('haptics-knob');
-  if (btn)  btn.style.background = on ? '#4f46e5' : 'rgba(0,0,0,0.15)';
+  if (btn) {
+    btn.style.background = on ? 'var(--accent)' : 'rgba(0,0,0,0.15)';
+    btn.classList.toggle('is-on', on);
+    btn.setAttribute('aria-checked', String(on));
+  }
   if (knob) knob.style.transform = on ? 'translateX(20px)' : 'translateX(0)';
 }
 
@@ -108,9 +112,11 @@ function readDurationInput() {
 
 function refreshDurationHint() {
   const hint = $id('duration-hint');
-  if (!hint) return;
   const s = readDurationInput();
-  hint.textContent = s === null ? '' : s < EXPRESS_S ? '🏃 Express !' : s >= MARATHON_S ? '📖 Séance marathon' : '';
+  if (hint) {
+    hint.textContent = s === null ? '' : s < EXPRESS_S ? '🏃 Express !' : s >= MARATHON_S ? '📖 Séance marathon' : '';
+  }
+  refreshSaisieSanteBadge();
 }
 
 // ===================================================
@@ -139,6 +145,68 @@ function setHealthSelection(ids) {
   // Une saisie qui a déjà du contexte s'ouvre dépliée, sinon on garde la place.
   const details = $id('health-details');
   if (details && selectedHealth.size) details.open = true;
+  refreshSaisieSanteBadge();
+}
+
+// ===================================================
+//  SAISIE 2 VITESSES, COULEUR FR & HYDRATATION (v3.0)
+// ===================================================
+const COLOR_LABELS_FR = {
+  marron: 'Marron',
+  jaune: 'Jaune',
+  vert: 'Vert',
+  noir: 'Noir',
+  'arc-en-ciel': 'Arc-en-ciel',
+  rouge: 'Rouge',
+};
+
+function updateSelectedColorLabel(color) {
+  const el = $id('selected-color-label');
+  if (!el) return;
+  el.textContent = (color && COLOR_LABELS_FR[color]) || '';
+}
+
+function countSaisieSanteOptions() {
+  let count = 0;
+  if (selectedHealth?.size) count += selectedHealth.size;
+  if (typeof readDurationInput === 'function' && readDurationInput() !== null) count += 1;
+  if (($id('comment')?.value || '').trim().length > 0) count += 1;
+  if (typeof selectedMood !== 'undefined' && selectedMood) count += 1;
+  if ($id('mais-chk')?.checked) count += 1;
+  if (typeof pendingGeo !== 'undefined' && pendingGeo) count += 1;
+  return count;
+}
+
+function refreshSaisieSanteBadge() {
+  const badge = $id('saisie-sante-badge');
+  if (!badge) return;
+  const n = countSaisieSanteOptions();
+  badge.textContent = n > 0 ? String(n) : '';
+  badge.classList.toggle('hidden', n === 0);
+}
+
+function switchSaisieMode(mode = 'express') {
+  const target = mode === 'sante' ? 'sante' : 'express';
+  $id('saisie-pane-express')?.classList.toggle('hidden', target !== 'express');
+  $id('saisie-pane-sante')?.classList.toggle('hidden', target !== 'sante');
+  document.querySelectorAll('.saisie-mode-btn').forEach(btn => {
+    const on = btn.dataset.saisieMode === target;
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-selected', String(on));
+  });
+  return target;
+}
+
+function preselectSuggestedWaterTag() {
+  if (typeof editingId !== 'undefined' && editingId !== null) return null;
+  if (selectedHealth.has('hydratee') || selectedHealth.has('peu-eau')) return null;
+  if (typeof suggestedWaterTag !== 'function' || typeof getWaterToday !== 'function') return null;
+  const tag = suggestedWaterTag(getWaterToday());
+  if (!tag) return null;
+  const next = new Set(selectedHealth);
+  next.add(tag);
+  setHealthSelection([...next]);
+  return tag;
 }
 
 // ===================================================
@@ -146,12 +214,16 @@ function setHealthSelection(ids) {
 // ===================================================
 function refreshUsualButton() {
   const btn = $id('usual-btn');
-  if (!btn) return;
-  const usual = editingId === null ? usualEntry(state.logs) : null;
-  btn.classList.toggle('hidden', !usual);
+  const oneTapBtn = $id('usual-one-tap-btn');
+  if (!btn && !oneTapBtn) return;
+  const usual = (typeof editingId === 'undefined' || editingId === null) ? usualEntry(state.logs) : null;
+  if (btn) btn.classList.toggle('hidden', !usual);
+  if (oneTapBtn) oneTapBtn.classList.toggle('hidden', !usual);
   if (!usual) return;
   const place = usual.place ? window.PoopMapModule?.placeMeta(usual.place) : null;
-  btn.title = `${usual.texture}, ${usual.color}${place ? ', ' + place.label : ''}`;
+  const desc = `${usual.texture}, ${usual.color}${place ? ', ' + place.label : ''}`;
+  if (btn) btn.title = desc;
+  if (oneTapBtn) oneTapBtn.title = `Enregistrer directement : ${desc}`;
 }
 
 function applyUsual() {
@@ -164,13 +236,84 @@ function applyUsual() {
   $id('save-poop')?.focus();
 }
 
+function quickSaveUsual() {
+  const logs = typeof state !== 'undefined' && Array.isArray(state?.logs) ? state.logs : [];
+  const usual = typeof usualEntry === 'function' ? usualEntry(logs) : null;
+  if (!usual) {
+    window.UI?.toast?.('Enregistre au moins 3 passages pour activer « Comme d\'hab » !', 'info');
+    if ($id('drawer')?.classList.contains('hidden') && typeof openDrawer === 'function') {
+      openDrawer();
+    }
+    return null;
+  }
+
+  const now = Date.now();
+  const poop = {
+    id: now + Math.random(),
+    date: now,
+    texture: usual.texture,
+    color: usual.color,
+    comment: '',
+    isRetro: false,
+    mood: null,
+    place: usual.place || null,
+    updated_at: now,
+  };
+
+  state.logs.push(poop);
+  state.logs.sort((a, b) => b.date - a.date);
+  if (state.logs.length > 2000) state.logs = state.logs.slice(0, 2000);
+  if (typeof saveState === 'function') saveState(state);
+
+  if (!$id('drawer')?.classList.contains('hidden') && typeof closeDrawer === 'function') {
+    closeDrawer();
+  }
+  if (typeof renderAll === 'function') renderAll();
+  haptic([15, 40, 25]);
+  if (typeof announceSavedStreak === 'function') announceSavedStreak();
+
+  if (typeof soundManager !== 'undefined') {
+    soundManager.playPoopAdded(poop.texture);
+  }
+  if (typeof celebratePoopAdded === 'function') {
+    celebratePoopAdded(typeof calculateStreak === 'function' ? calculateStreak() : 0);
+  } else if (typeof showConfetti === 'function') {
+    showConfetti();
+  }
+  if (typeof achievementManager !== 'undefined') {
+    achievementManager.checkAchievements(state.logs).forEach(a => {
+      achievementManager.showAchievementPopup(a);
+      if (window.SupabaseClient?.isLoggedIn()) {
+        window.SupabaseClient.publishBadgeEvent(a).catch(() => {});
+      }
+    });
+  }
+
+  if (window.SupabaseClient?.isLoggedIn()) {
+    if (navigator.onLine) {
+      window.SupabaseClient.savePoopCloud(poop).catch(e => {
+        if (typeof $debug === 'function') $debug('cloud save err: ' + e.message);
+      });
+    } else if (typeof enqueueOffline === 'function') {
+      enqueueOffline({ type: 'add', poop });
+    }
+  }
+
+  try { localStorage.setItem('notifLastPoopTime', String(now)); } catch {}
+  const placeMeta = usual.place ? window.PoopMapModule?.placeMeta?.(usual.place) : null;
+  const label = `${usual.texture} · ${usual.color}${placeMeta ? ' · ' + placeMeta.emoji + ' ' + placeMeta.label : ''}`;
+  window.UI?.toast?.(`⚡ Passage enregistré (${label}) !`, 'success');
+  if (typeof $debug === 'function') $debug('⚡ quick-usual: ' + poop.texture + '/' + poop.color);
+  return poop;
+}
+
 // ===================================================
 //  RACCOURCIS D'APP (manifest shortcuts, Raccourcis iOS)
 // ===================================================
 /** Fonction pure : action demandée par l'URL de lancement. */
 function launchAction(search) {
   const a = new URLSearchParams(search || '').get('action');
-  return ['add', 'timer', 'wrapped', 'jeux'].includes(a) ? a : null;
+  return ['add', 'timer', 'wrapped', 'jeux', 'quick-usual'].includes(a) ? a : null;
 }
 
 function handleLaunchAction() {
@@ -185,6 +328,7 @@ function handleLaunchAction() {
   if (action === 'timer' && typeof startTimer === 'function') startTimer();
   if (action === 'wrapped' && typeof openYearWrapped === 'function') openYearWrapped();
   if (action === 'jeux' && typeof window.openJeux === 'function') window.openJeux();
+  if (action === 'quick-usual') quickSaveUsual();
 }
 
 // ===================================================
@@ -194,6 +338,10 @@ function setupSaisie() {
   buildTextureArt();
   buildHealthChips();
   refreshHapticsToggle();
+
+  document.querySelectorAll('.saisie-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchSaisieMode(btn.dataset.saisieMode));
+  });
 
   $id('health-details')?.addEventListener('click', e => {
     const chip = e.target.closest('.health-chip');
@@ -207,7 +355,14 @@ function setupSaisie() {
 
   ['duration-min', 'duration-sec'].forEach(id => $id(id)?.addEventListener('input', refreshDurationHint));
   $id('duration-clear')?.addEventListener('click', () => setDurationInput(null));
+  $id('comment')?.addEventListener('input', refreshSaisieSanteBadge);
+  $id('mais-chk')?.addEventListener('change', refreshSaisieSanteBadge);
   $id('usual-btn')?.addEventListener('click', applyUsual);
+  $id('usual-one-tap-btn')?.addEventListener('click', quickSaveUsual);
+  $id('dock-quick-usual')?.addEventListener('click', () => {
+    $id('dock-quick-menu')?.classList.add('hidden');
+    quickSaveUsual();
+  });
 
   // Liens pour les Raccourcis iOS : copiés plutôt qu'affichés en entier
   document.querySelectorAll('[data-copy-shortcut]').forEach(b => b.addEventListener('click', async () => {
