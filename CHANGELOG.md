@@ -5,6 +5,51 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [3.0.0] — 2026-11-25
+
+### Ajouté
+- **Design System Pop-Tactile 2.0 & Accueil Bento** : grille 2×2 sur l'accueil
+  (Prédiction, Hydratation & Ressenti, Objectif du jour, Pause Trône & Partage),
+  navigation mobile 5 colonnes avec dock central `#dock-poop-btn` (clic court =
+  saisie, appui long / clic droit = menu rapide ⚡ 1-tap / ⏱️ Chrono / 🎮 Jeux)
+  et layout Desktop centré (`max-width: 1040px`).
+- **Saisie à 2 vitesses & gestes natifs** : mode **Express** / **Santé & +** avec
+  badge compteur, libellé français de la couleur, bouton **⚡ 1-tap** (« Comme
+  d'hab »), fermeture `Escape` et swipe-down du tiroir.
+- **Hydratation, Check-in 0 caca & Insights 24–48 h** (`js/app/app-hydratation.js`,
+  `js/app/app-sante.js`) : compteur d'eau quotidien, modale « Jour sans passage »
+  et détection des déclencheurs sur une fenêtre de 6 h à 36 h.
+- **Rouleaux d'Or 🧻 & Garde-robe SVG** (`js/app/app-costumes.js`,
+  `js/app/app-accueil.js`) : 8 costumes déblocables avec les 🧻 gagnés ou par
+  série, défilables au clic sur la mascotte.
+- **Bruitages Web Audio API 100 % hors-ligne** (`js/sounds.js`) : synthèse des
+  6 sons sans dépendance réseau externe et panneau réglages thématisé.
+- **Social Live & Toilettes Advisor** (`js/social-live.js`, `js/chat.js`,
+  `js/social.js`) : statut live opt-in « 🚽 Sur le trône » relié au chrono,
+  cartes Duel 1v1, Sondage express et Spot dans le chat, et 4e sous-onglet
+  **Spots ⭐**.
+- **Hub Moi, Pôles Stats & Guide modal** : barre `.moi-subtabs` unifiée, filtre
+  par pôles (`Synthèse`, `Santé`, `Carte`, `Rythme`), et recherche en direct dans
+  la modale `#guide-modal`.
+- **Service Worker `caca-v53` & Push 1-tap** (`sw.js`) : boutons d'action rapides
+  (`⚡ Comme d'hab` et `⏱️ Chrono`) dans les notifications push.
+
+### Corrigé
+- Correctif du fond sombre du tiroir de saisie sur les thèmes `dark`, `galaxy` et
+  `neon` (`#drawer-inner` au lieu de `#drawer > div`).
+- Suppression du double scroll dans `#history-list` et remplacement des couleurs
+  `#4f46e5` et mentions « Clémence » codées en dur par `var(--accent)` et le
+  pseudo courant.
+- Synchro incrémentale (`mergeIncrementalLogs`, `cacaTracker.lastSyncAt`) avec
+  repli complet au premier lancement ou sur clic manuel.
+
+### Technique
+- Baseline SQL documentaire (`supabase/migrations/00_baseline_missing_tables.sql`,
+  `supabase/SCHEMA.md`).
+- Extension de la suite de tests à 406 tests unitaires et structurels.
+
+---
+
 ## [2.24.0] — 2026-09-29
 
 ### Ajouté
