@@ -131,6 +131,115 @@ function healthInsights(logs, { min = 3, ecart = 0.25 } = {}) {
   return out.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
 }
 
+const DELAY_WINDOW_MIN_MS = 6 * 3600000;
+const DELAY_WINDOW_MAX_MS = 36 * 3600000;
+const SYMPTOME_TAG_IDS = new Set(HEALTH_TAGS.filter(t => t.kind === 'symptome').map(t => t.id));
+const DELAYED_METRICS = [
+  { id: 'molles',    label: 'selles molles ou liquides', test: l => TEXTURES_MOLLES.has(l.texture) },
+  { id: 'dures',     label: 'selles dures',              test: l => l.texture === 'dur' },
+  { id: 'symptomes', label: 'symptômes digestifs',       test: l => (Array.isArray(l.health) && l.health.some(id => SYMPTOME_TAG_IDS.has(id))) || l.mood === 'douloureux' || l.mood === 'difficile' },
+];
+
+/**
+ * Fonction pure : repère les étiquettes de contexte présentes dans les 6 h à 36 h
+ * précédant des selles problématiques (molles/liquides ou dures) ou des symptômes,
+ * en combinant les entrées de selles (`logs`) et les bilans « jour sans passage » (`checkins`),
+ * avec un seuil minimal de `min` (3) occurrences.
+ */
+function delayedTriggerInsights(logs, checkins = [], { min = 3, ecart = 0.25 } = {}) {
+  const liste = Array.isArray(logs) ? logs.filter(l => Number.isFinite(Number(l?.date))) : [];
+  if (liste.length < min) return [];
+
+  const events = [];
+  liste.forEach(l => {
+    if (Array.isArray(l.health) && l.health.length) {
+      events.push({ ts: Number(l.date), tags: l.health });
+    }
+  });
+  (Array.isArray(checkins) ? checkins : []).forEach(c => {
+    if (!c || typeof c !== 'object') return;
+    const ts = Number.isFinite(Number(c.ts)) && Number(c.ts) > 0
+      ? Number(c.ts)
+      : (Number.isFinite(Number(c.date)) && Number(c.date) > 0
+        ? Number(c.date)
+        : (typeof c.dateKey === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(c.dateKey)
+          ? new Date(c.dateKey + 'T12:00:00').getTime()
+          : NaN));
+    const tags = Array.isArray(c.tags) ? c.tags : (Array.isArray(c.health) ? c.health : []);
+    if (Number.isFinite(ts) && tags.length) {
+      events.push({ ts, tags });
+    }
+  });
+
+  if (!events.length) return [];
+
+  const out = [];
+  HEALTH_TAGS.filter(t => t.kind === 'contexte').forEach(tag => {
+    const tagEvents = events.filter(ev => ev.tags.includes(tag.id));
+    if (tagEvents.length < min) return;
+
+    const matchingDelay = l => {
+      const t = Number(l.date);
+      let bestDt = null;
+      for (let i = 0; i < tagEvents.length; i++) {
+        const dt = t - tagEvents[i].ts;
+        if (dt >= DELAY_WINDOW_MIN_MS && dt <= DELAY_WINDOW_MAX_MS) {
+          if (bestDt === null || dt < bestDt) bestDt = dt;
+        }
+      }
+      return bestDt;
+    };
+
+    const avec = [];
+    const sans = [];
+    liste.forEach(l => {
+      if (matchingDelay(l) !== null) avec.push(l);
+      else sans.push(l);
+    });
+    if (avec.length < min) return;
+
+    let meilleur = null;
+    DELAYED_METRICS.forEach(m => {
+      const hitLogs = avec.filter(m.test);
+      const hits = hitLogs.length;
+      if (hits < min) return;
+
+      const pa = hits / avec.length;
+      const ps = sans.length > 0 ? sans.filter(m.test).length / sans.length : 0;
+      const diff = sans.length >= min ? (pa - ps) : pa;
+      const significant = sans.length >= min ? (diff >= ecart) : (pa >= 0.6);
+      if (!significant) return;
+
+      if (!meilleur || diff > meilleur.diff || (diff === meilleur.diff && hits > meilleur.count)) {
+        const avgDelayHours = Math.round(
+          hitLogs.reduce((acc, l) => acc + matchingDelay(l) / 3600000, 0) / hits
+        );
+        meilleur = {
+          metric: m.id,
+          metricLabel: m.label,
+          count: hits,
+          avecPct: Math.round(pa * 100),
+          sansPct: Math.round(ps * 100),
+          diff,
+          avgDelayHours,
+        };
+      }
+    });
+
+    if (meilleur) {
+      out.push({
+        tag: tag.id,
+        emoji: tag.emoji,
+        label: tag.label,
+        n: avec.length,
+        ...meilleur,
+      });
+    }
+  });
+
+  return out.sort((a, b) => b.diff - a.diff || b.count - a.count);
+}
+
 /** Fonction pure : étiquettes les plus notées depuis `since`. */
 function healthTagCounts(logs, since = 0) {
   const compte = {};
@@ -225,36 +334,64 @@ function renderDurationCard() {
     </div>`;
 }
 
-function renderInsightsCard() {
-  const el = $id('insights-container');
+function _escSante(s) {
+  if (typeof esc === 'function') return esc(s);
+  return String(s ?? '').replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+
+function renderHealthInsights() {
+  const el = typeof $id === 'function' ? $id('insights-container') : document.getElementById('insights-container');
   if (!el) return;
-  const insights = healthInsights(state.logs);
-  const top = healthTagCounts(state.logs, Date.now() - 30 * 86400000).slice(0, 6);
+  const logs = typeof state !== 'undefined' && Array.isArray(state?.logs) ? state.logs : [];
+  const checkins = typeof getZeroPoopCheckins === 'function' ? getZeroPoopCheckins() : [];
+  const insights = healthInsights(logs);
+  const delayed = delayedTriggerInsights(logs, checkins);
+  const top = healthTagCounts(logs, Date.now() - 30 * 86400000).slice(0, 6);
 
   const corps = insights.length
     ? insights.slice(0, 5).map(i => `
         <div class="rounded-[1rem] p-3 mb-2 text-sm" style="background:color-mix(in srgb,var(--accent) 8%,transparent)">
-          <div class="font-bold">${i.emoji} ${esc(i.label)}</div>
+          <div class="font-bold">${i.emoji} ${_escSante(i.label)}</div>
           <div class="text-xs opacity-80 mt-0.5">
             Les ${i.n} fois où tu l'as noté : <strong>${i.avecPct} %</strong> de ${i.metricLabel},
             contre ${i.sansPct} % le reste du temps.
           </div>
         </div>`).join('')
-    : `<div class="text-xs opacity-60 mb-2">
+    : (!delayed.length ? `<div class="text-xs opacity-60 mb-2">
         Rien de marquant pour l'instant. Coche le contexte de tes cacas (section 🩺 à la saisie) :
         dès qu'une étiquette revient 3 fois, je compare avec le reste du temps.
-      </div>`;
+      </div>` : '');
+
+  const delayedBlock = delayed.length
+    ? `
+      <div class="text-xs font-bold opacity-70 mt-3 mb-1.5">⏳ Observations différées (24–48 h)</div>
+      ${delayed.slice(0, 4).map(d => `
+        <div class="rounded-[1rem] p-3 mb-2 text-sm" style="background:color-mix(in srgb,var(--accent) 8%,transparent)">
+          <div class="font-bold">${d.emoji} ${_escSante(d.label)} <span class="text-xs font-normal opacity-60">· ~${d.avgDelayHours} h avant</span></div>
+          <div class="text-xs opacity-80 mt-0.5">
+            Noté dans les 6 à 36 h précédant <strong>${d.count}</strong> épisodes de ${d.metricLabel}
+            (${d.avecPct} % des cas${d.sansPct ? `, contre ${d.sansPct} % sinon` : ''}).
+          </div>
+        </div>`).join('')}`
+    : '';
 
   el.innerHTML = `
     <div class="card p-4 rounded-[1.5rem]">
       <div class="font-bold text-sm mb-1">🔍 Ce que j'ai remarqué</div>
       <div class="text-xs opacity-60 mb-3">Carnet de santé privé : tes copines ne le voient jamais.</div>
       ${corps}
+      ${delayedBlock}
       ${top.length ? `
         <div class="text-xs font-bold opacity-70 mt-3 mb-1">Le plus noté ces 30 jours</div>
         <div class="flex flex-wrap gap-1">
-          ${top.map(t => `<span class="text-xs px-2 py-1 rounded-full" style="background:color-mix(in srgb,var(--accent) 12%,transparent)">${t.meta.emoji} ${esc(t.meta.label)} × ${t.n}</span>`).join('')}
+          ${top.map(t => `<span class="text-xs px-2 py-1 rounded-full" style="background:color-mix(in srgb,var(--accent) 12%,transparent)">${t.meta.emoji} ${_escSante(t.meta.label)} × ${t.n}</span>`).join('')}
         </div>` : ''}
       <div class="text-[11px] opacity-50 mt-3">Ce sont des coïncidences dans tes données, pas un diagnostic. En cas de doute, parles-en à un médecin.</div>
     </div>`;
+}
+
+function renderInsightsCard() {
+  return renderHealthInsights();
 }
