@@ -57,10 +57,169 @@ function updateChart() {
 }
 
 // ===================================================
-//  CLOUD → LOCAL SYNC
+//  CLOUD → LOCAL SYNC (incrémentale + repli complet)
 // ===================================================
-async function syncCloudData() {
-  if (!window.SupabaseClient?.isLoggedIn()) return;
+const LAST_SYNC_KEY = 'cacaTracker.lastSyncAt';
+
+function readLastSyncAt() {
+  try {
+    const raw = localStorage.getItem(LAST_SYNC_KEY);
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLastSyncAt(ts = Date.now()) {
+  try {
+    localStorage.setItem(LAST_SYNC_KEY, String(ts));
+  } catch {}
+}
+
+function logUpdateTimestamp(entry) {
+  if (!entry || typeof entry !== 'object') return 0;
+  for (const v of [entry.updatedAt, entry.updated_at, entry.ts]) {
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    if (typeof v === 'string' && v.trim() !== '') {
+      const num = Number(v);
+      if (Number.isFinite(num)) return num;
+      const parsed = Date.parse(v);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
+  return 0;
+}
+
+function logSortTimestamp(entry) {
+  if (!entry || typeof entry !== 'object') return 0;
+  if (typeof entry.date === 'number' && Number.isFinite(entry.date)) return entry.date;
+  if (typeof entry.date === 'string' && entry.date.trim() !== '') {
+    const num = Number(entry.date);
+    if (Number.isFinite(num)) return num;
+    const parsed = Date.parse(entry.date);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return logUpdateTimestamp(entry);
+}
+
+/**
+ * Fusionne proprement les logs locaux et distants par `id` sans perte ni doublon,
+ * en conservant la version la plus récente selon `updatedAt` / `updated_at` / `ts`.
+ */
+function mergeIncrementalLogs(localLogs, remoteLogs) {
+  const byId = new Map();
+  const ingest = list => {
+    if (!Array.isArray(list)) return;
+    for (const item of list) {
+      if (!item || typeof item !== 'object') continue;
+      if (item.id === undefined || item.id === null || item.id === '') continue;
+      const key = String(item.id);
+      if (key === 'undefined' || key === 'null') continue;
+      if (!byId.has(key)) {
+        byId.set(key, { ...item });
+        continue;
+      }
+      const existing = byId.get(key);
+      if (logUpdateTimestamp(item) > logUpdateTimestamp(existing)) {
+        byId.set(key, { ...item });
+      }
+    }
+  };
+  ingest(localLogs);
+  ingest(remoteLogs);
+  return Array.from(byId.values()).sort((a, b) => {
+    const diff = logSortTimestamp(b) - logSortTimestamp(a);
+    if (diff !== 0) return diff;
+    return String(b.id).localeCompare(String(a.id));
+  });
+}
+window.mergeIncrementalLogs = mergeIncrementalLogs;
+
+async function fetchIncrementalPoops(sc, sinceMs) {
+  if (typeof sc.getMyPoopsSince === 'function') {
+    return await sc.getMyPoopsSince(sinceMs);
+  }
+  const sb = sc.getClient?.();
+  const uid = sc.getCurrentProfile?.()?.id;
+  if (!sb || !uid || typeof sb.from !== 'function') {
+    return await sc.getMyPoops();
+  }
+
+  const baseCols = 'id, local_id, date, texture, color, comment, is_retro, mood, updated_at';
+  const geoCols  = sc.geoColumnsAvailable?.() !== false ? ', place, lat, lon, city, region, country, country_code' : '';
+  const durCol   = sc.durationColumnAvailable?.() !== false ? ', duration_s' : '';
+  const sinceWindow = Math.max(0, sinceMs - 5000);
+
+  const { data, error } = await sb.from('poops')
+    .select(baseCols + geoCols + durCol)
+    .eq('user_id', uid)
+    .gte('updated_at', sinceWindow)
+    .order('date', { ascending: false });
+  if (error) return await sc.getMyPoops();
+
+  const rowsRaw = Array.isArray(data) ? data : [];
+  const healthAvail = sc.healthTableAvailable?.() !== false;
+
+  if (!rowsRaw.length) {
+    // Si seul le carnet de santé a bougé depuis lastSyncAt, on repasse en pull complet.
+    if (healthAvail) {
+      try {
+        const { data: hChanged, error: hErr } = await sb.from('poop_health')
+          .select('local_id')
+          .eq('user_id', uid)
+          .gte('updated_at', sinceWindow)
+          .limit(1);
+        if (!hErr && Array.isArray(hChanged) && hChanged.length) {
+          return await sc.getMyPoops();
+        }
+      } catch {}
+    }
+    return [];
+  }
+
+  let healthMap = {};
+  if (healthAvail) {
+    try {
+      const ids = rowsRaw.map(p => String(p.local_id || p.id)).filter(Boolean);
+      const { data: hRows, error: hErr } = await sb.from('poop_health')
+        .select('local_id, tags')
+        .eq('user_id', uid)
+        .in('local_id', ids);
+      if (!hErr && Array.isArray(hRows)) {
+        healthMap = Object.fromEntries(hRows.map(r => [String(r.local_id), r.tags || []]));
+      }
+    } catch {}
+  }
+
+  return rowsRaw.map(p => {
+    const log = {
+      id:         p.local_id || p.id,
+      date:       p.date,
+      texture:    p.texture || 'normal',
+      color:      p.color   || 'marron',
+      comment:    p.comment || '',
+      isRetro:    p.is_retro || false,
+      mood:       p.mood    || '',
+      place:      p.place   || null,
+      updated_at: p.updated_at || 0
+    };
+    if (typeof p.lat === 'number' && typeof p.lon === 'number') { log.lat = p.lat; log.lon = p.lon; }
+    if (p.city)         log.city        = p.city;
+    if (p.region)       log.region      = p.region;
+    if (p.country)      log.country     = p.country;
+    if (p.country_code) log.countryCode = p.country_code;
+    if (typeof p.duration_s === 'number' && p.duration_s > 0 && p.duration_s <= 14400) log.duration = Math.round(p.duration_s);
+    const tags = healthMap[String(log.id)];
+    if (tags?.length) log.health = tags;
+    return log;
+  });
+}
+
+async function syncCloudData(options = {}) {
+  const sc = window.SupabaseClient;
+  if (!sc?.isLoggedIn()) return;
   try {
     // Nettoyage des doublons invalides :
     //  - UUID (ancienne clé p.id au lieu de p.local_id)
@@ -76,60 +235,65 @@ async function syncCloudData() {
       $debug(`🧹 ${before - state.logs.length} doublon(s) invalide(s) supprimé(s)`);
     }
 
-    const cloudPoops = await window.SupabaseClient.getMyPoops();
-    if (!cloudPoops.length) return;
+    const forceFull = options === true || Boolean(options && options.forceFull);
+    const lastSyncAt = forceFull ? null : readLastSyncAt();
+    const syncStartedAt = Date.now();
 
-    // getMyPoops() retourne { id: local_id, date, texture, ... } — pas de propriété local_id séparée
-    // On utilise donc p.id qui contient déjà le timestamp local
-    const localMap = new Map(state.logs.map(l => [String(l.id), l]));
-    let changed = 0;
+    const cloudPoops = lastSyncAt
+      ? await fetchIncrementalPoops(sc, lastSyncAt)
+      : await sc.getMyPoops();
 
-    for (const p of cloudPoops) {
-      const key = String(p.id); // p.id = local_id (timestamp) tel que mappé par getMyPoops()
-      if (!localMap.has(key)) {
-        state.logs.push(applyPoopMapFields({
-          id:        p.id,
-          date:      p.date,
-          texture:   p.texture,
-          color:     p.color,
-          comment:   p.comment || '',
-          isRetro:   p.isRetro,
-          mood:      p.mood || null,
-          updated_at: p.updated_at
-        }, p));
-        applyExtraFields(state.logs[state.logs.length - 1], p);
-        changed++;
-      } else {
+    if (Array.isArray(cloudPoops) && cloudPoops.length) {
+      // getMyPoops() retourne { id: local_id, date, texture, ... } — pas de propriété local_id séparée
+      // On utilise donc p.id qui contient déjà le timestamp local
+      const localMap = new Map(state.logs.map(l => [String(l.id), l]));
+      const normalizedRemote = [];
+      let changed = 0;
+
+      for (const p of cloudPoops) {
+        const key = String(p.id);
         const local = localMap.get(key);
         const cloudUpdAt = p.updated_at || 0;
-        const localUpdAt = local.updated_at || 0;
-        if (cloudUpdAt > localUpdAt) {
-          Object.assign(local, {
-            date:      p.date,
-            texture:   p.texture,
-            color:     p.color,
-            comment:   p.comment || '',
-            isRetro:   p.isRetro,
-            mood:      p.mood || null,
+        const localUpdAt = local?.updated_at || 0;
+
+        if (!local || cloudUpdAt > localUpdAt) {
+          const entry = local ? { ...local } : {};
+          Object.assign(entry, {
+            id:         p.id,
+            date:       p.date,
+            texture:    p.texture,
+            color:      p.color,
+            comment:    p.comment || '',
+            isRetro:    p.isRetro,
+            mood:       p.mood || null,
             updated_at: p.updated_at
           });
-          applyPoopMapFields(local, p);
-          applyExtraFields(local, p);
+          applyPoopMapFields(entry, p);
+          applyExtraFields(entry, p);
+          normalizedRemote.push(entry);
           changed++;
         }
       }
+
+      if (changed > 0) {
+        state.logs = mergeIncrementalLogs(state.logs, normalizedRemote);
+        saveState(state);
+        renderAll();
+        $debug(`☁️ ${changed} entrée(s) synchronisée(s) depuis le cloud`);
+      }
     }
 
-    if (changed > 0) {
-      state.logs.sort((a, b) => b.date - a.date);
-      saveState(state);
-      renderAll();
-      $debug(`☁️ ${changed} entrée(s) synchronisée(s) depuis le cloud`);
-    }
+    writeLastSyncAt(syncStartedAt);
   } catch(e) {
     $debug('cloud sync err: ' + e.message);
   }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('sync-cloud-btn')?.addEventListener('click', () => {
+    syncCloudData({ forceFull: true });
+  });
+});
 // Champs PoopMap d'une entrée cloud. Une position effacée ailleurs doit
 // disparaître ici aussi : on supprime lat/lon plutôt que de les laisser à null,
 // car `hasGeo` teste la présence de nombres.
