@@ -48,7 +48,7 @@ function applyAutoNight() {
   const knob = $id('auto-night-knob');
   const btn  = $id('auto-night-toggle');
   if (btn) {
-    btn.style.background = enabled ? '#4f46e5' : 'rgba(0,0,0,0.15)';
+    btn.style.background = enabled ? 'var(--accent)' : 'rgba(0,0,0,0.15)';
     if (knob) knob.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)';
   }
   const h = new Date().getHours();
@@ -81,8 +81,12 @@ function applyStickyHeader() {
   }
   const btn  = $id('sticky-header-toggle');
   const knob = $id('sticky-header-knob');
-  if (btn)  btn.style.background  = isSticky ? '#4f46e5' : 'rgba(0,0,0,0.15)';
-  if (knob) knob.style.transform  = isSticky ? 'translateX(20px)' : 'translateX(0)';
+  if (btn) {
+    btn.style.background = isSticky ? 'var(--accent)' : 'rgba(0,0,0,0.15)';
+    btn.classList.toggle('is-on', isSticky);
+    btn.setAttribute('aria-checked', String(isSticky));
+  }
+  if (knob) knob.style.transform = isSticky ? 'translateX(20px)' : 'translateX(0)';
 }
 
 window.toggleStickyHeader = function() {
@@ -102,7 +106,11 @@ function refreshPoopMapSettings() {
   paires.forEach(([btnId, knobId, on]) => {
     const btn  = $id(btnId);
     const knob = $id(knobId);
-    if (btn)  btn.style.background = on ? '#4f46e5' : 'rgba(0,0,0,0.15)';
+    if (btn) {
+      btn.style.background = on ? 'var(--accent)' : 'rgba(0,0,0,0.15)';
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-checked', String(on));
+    }
     if (knob) knob.style.transform = on ? 'translateX(20px)' : 'translateX(0)';
   });
 }
@@ -200,7 +208,39 @@ const STATS_TILES = [
   { id: 'funfacts',      label: '🌟 Le saviez-vous ?' },
 ];
 const STATS_ORDER_KEY = 'stats.tileOrder';
+const STATS_POLE_KEY  = 'stats.activePole';
+const STATS_POLES     = ['all', 'synthese', 'sante', 'carte', 'rythme'];
 let statsEditing = false;
+
+function getActiveStatsPole() {
+  try {
+    const saved = localStorage.getItem(STATS_POLE_KEY);
+    return STATS_POLES.includes(saved) ? saved : 'all';
+  } catch {
+    return 'all';
+  }
+}
+
+function applyStatsPole(pole = getActiveStatsPole()) {
+  const target = STATS_POLES.includes(pole) ? pole : 'all';
+  document.querySelectorAll('#stats-poles-bar .stats-pole-chip').forEach(btn => {
+    const on = btn.dataset.poleFilter === target;
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-selected', String(on));
+  });
+  document.querySelectorAll('#stats-tiles .stats-tile[data-pole]').forEach(tile => {
+    const visible = statsEditing || target === 'all' || tile.dataset.pole === target;
+    tile.classList.toggle('hidden', !visible);
+  });
+}
+
+function switchStatsPole(pole) {
+  const target = STATS_POLES.includes(pole) ? pole : 'all';
+  try { localStorage.setItem(STATS_POLE_KEY, target); } catch {}
+  applyStatsPole(target);
+  return target;
+}
+window.switchStatsPole = switchStatsPole;
 
 /** Ordre mémorisé, complété par les tuiles ajoutées depuis (nouvelles versions). */
 function statsOrder() {
@@ -243,6 +283,7 @@ window.toggleStatsEdit = function() {
   if (btn) btn.textContent = statsEditing ? '✅ Terminé' : '🔀 Réorganiser';
   document.querySelectorAll('#stats-tiles .stats-tile').forEach(t => t.classList.toggle('tile-editing', statsEditing));
   renderStatsEditBars();
+  applyStatsPole(getActiveStatsPole());
 };
 
 // Barres ↑ ↓ injectées en tête de chaque tuile pendant l'édition seulement :
@@ -279,23 +320,37 @@ const MOI_SUBTABS = ['stats', 'history', 'badges'];
 function switchTab(name) {
   // « moi » est un raccourci vers l'onglet par défaut du hub (les stats).
   const target = name === 'moi' ? 'stats' : name;
-  const navName = MOI_SUBTABS.includes(target) ? 'moi' : target;
+  const isMoi = MOI_SUBTABS.includes(target);
+  const navName = isMoi ? 'moi' : target;
 
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav .tab-btn, #desktop-sidebar .tab-btn, .tab-btn').forEach(b => b.classList.remove('active'));
   $id(target + '-tab')?.classList.add('active');
   // Active tous les boutons correspondants (sidebar desktop + bottom nav mobile)
-  document.querySelectorAll(`.tab-btn[data-tab="${navName}"]`).forEach(b => b.classList.add('active'));
+  document.querySelectorAll(`.bottom-nav .tab-btn[data-tab="${navName}"], #desktop-sidebar .tab-btn[data-tab="${navName}"], .tab-btn[data-tab="${navName}"]`)
+    .forEach(b => b.classList.add('active'));
 
-  // Sous-onglets « Moi » : surligne l'actif (les copies inactives sont dans des sections cachées)
-  document.querySelectorAll('.moi-subtab').forEach(b => b.classList.toggle('active', b.dataset.moi === target));
+  // Barre partagée du hub « Moi » : visible uniquement sur Stats / Historique / Badges
+  $id('moi-header-bar')?.classList.toggle('hidden', !isMoi);
+  document.querySelectorAll('.moi-subtab').forEach(b => {
+    const on = b.dataset.moi === target;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', String(on));
+  });
 
-  if (target === 'stats') { renderStats(); applyStatsOrder(); if (statsEditing) renderStatsEditBars(); }
-  if (target === 'badges') { updateBadges(); updateBadgeRarity(); }
+  if (target === 'stats') { renderStats(); applyStatsOrder(); applyStatsPole(getActiveStatsPole()); if (statsEditing) renderStatsEditBars(); }
+  if (target === 'badges') { updateBadges(); updateBadgeRarity(); if (typeof renderWardrobePanel === 'function') renderWardrobePanel(); }
   if (target === 'history') renderHistory();
-  if (target === 'dashboard') renderDashboard();
+  if (target === 'dashboard') { renderDashboard(); if (typeof renderHydrationTile === 'function') renderHydrationTile(); }
   if (target === 'social') window.SocialModule?.renderSocialTab();
-  if (target === 'settings') { setupNotifications(); setupCustomReminder(); applyStickyHeader(); refreshPoopMapSettings(); }
+  if (target === 'settings') {
+    setupNotifications();
+    setupCustomReminder();
+    applyStickyHeader();
+    refreshPoopMapSettings();
+    refreshSettingsProfileCard();
+    refreshLiveThroneToggle();
+  }
 }
 
 // ===================================================
@@ -306,6 +361,16 @@ function openDrawer() {
   refreshGeoButton();
   if (typeof refreshUsualButton === 'function') refreshUsualButton();
   if (typeof refreshMaisRow === 'function') refreshMaisRow();
+  if (typeof switchSaisieMode === 'function') switchSaisieMode('express');
+  if (typeof preselectSuggestedWaterTag === 'function') preselectSuggestedWaterTag();
+  if (typeof updateSelectedColorLabel === 'function') updateSelectedColorLabel(selectedColor);
+  if (typeof refreshSaisieSanteBadge === 'function') refreshSaisieSanteBadge();
+  const drawerInner = $id('drawer-inner');
+  if (drawerInner) {
+    drawerInner.style.transform = '';
+    drawerInner.style.transition = '';
+    drawerInner.scrollTop = 0;
+  }
   $id('drawer').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 }
@@ -340,6 +405,11 @@ function selectPlace(id) {
 function closeDrawer() {
   $id('drawer').classList.add('hidden');
   document.body.style.overflow = '';
+  const drawerInner = $id('drawer-inner');
+  if (drawerInner) {
+    drawerInner.style.transform = '';
+    drawerInner.style.transition = '';
+  }
   // Reset — repasse aussi le drawer en mode création s'il servait à modifier
   editingId = null;
   $id('drawer-title').textContent    = 'Nouveau 💩';
@@ -354,8 +424,11 @@ function closeDrawer() {
   if (typeof setDurationInput === 'function') setDurationInput(null);
   if (typeof setHealthSelection === 'function') setHealthSelection([]);
   if (typeof refreshMaisRow === 'function') refreshMaisRow();
+  if (typeof updateSelectedColorLabel === 'function') updateSelectedColorLabel(null);
+  if (typeof refreshSaisieSanteBadge === 'function') refreshSaisieSanteBadge();
+  if (typeof switchSaisieMode === 'function') switchSaisieMode('express');
   const santeDetails = $id('health-details');
-  if (santeDetails) santeDetails.open = false;
+  if (santeDetails) santeDetails.open = true;
   document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('border-amber-400','bg-amber-50'));
   document.querySelectorAll('.place-btn').forEach(b => b.classList.remove('border-amber-400','bg-amber-50'));
   const geoStatus = $id('geo-status');
@@ -379,4 +452,155 @@ function refreshRetroMax() {
   const localIso = new Date(now - offset).toISOString().slice(0, 16);
   inp.max = localIso;
   if (!inp.value) inp.value = localIso;
+}
+
+// ===================================================
+//  GUIDE UTILISATEUR MODAL (#guide-modal)
+// ===================================================
+function filterGuideSections(query = '') {
+  const q = String(query || '').trim().toLowerCase();
+  const container = $id('guide-sections');
+  if (!container) return;
+  let visibleCount = 0;
+  container.querySelectorAll('.guide-section').forEach(sec => {
+    const match = !q || (sec.textContent || '').toLowerCase().includes(q);
+    sec.classList.toggle('hidden', !match);
+    if (q) sec.open = match;
+    else sec.open = false;
+    if (match) visibleCount++;
+  });
+  let emptyEl = $id('guide-empty');
+  if (q && visibleCount === 0) {
+    if (!emptyEl) {
+      emptyEl = document.createElement('div');
+      emptyEl.id = 'guide-empty';
+      emptyEl.className = 'text-xs text-center opacity-60 py-6';
+      emptyEl.textContent = 'Aucune section ne correspond à ta recherche.';
+      container.appendChild(emptyEl);
+    }
+    emptyEl.classList.remove('hidden');
+  } else if (emptyEl) {
+    emptyEl.classList.add('hidden');
+  }
+}
+
+function openGuideModal() {
+  const modal = $id('guide-modal');
+  if (!modal) return;
+  const search = $id('guide-search');
+  if (search) search.value = '';
+  filterGuideSections('');
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeGuideModal() {
+  const modal = $id('guide-modal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  if ($id('drawer')?.classList.contains('hidden')) {
+    document.body.style.overflow = '';
+  }
+}
+
+// ===================================================
+//  CARTE PROFIL RÉGLAGES & STATUT LIVE (v3.0)
+// ===================================================
+function refreshSettingsProfileCard() {
+  const card = $id('settings-profile-card');
+  if (!card) return;
+  const profile = window.SupabaseClient?.getCurrentProfile?.() || null;
+  const avEl = $id('settings-profile-avatar');
+  const nameEl = $id('settings-profile-name');
+  const subEl = $id('settings-profile-sub');
+
+  const avatarVal = profile
+    ? (profile.avatar || '💩')
+    : ((typeof LS_OK === 'undefined' || LS_OK) ? (localStorage.getItem('profile.avatar') || '👤') : '👤');
+  if (avEl) {
+    if (typeof setAvatarEl === 'function') setAvatarEl(avEl, avatarVal);
+    else avEl.textContent = avatarVal;
+  }
+  if (nameEl) {
+    nameEl.textContent = profile?.username || 'Mon Profil';
+  }
+  if (subEl) {
+    subEl.textContent = profile
+      ? (profile.email || '☁️ Compte synchronisé')
+      : 'Mode local · Avatar, 16 thèmes & synchro';
+  }
+}
+
+function refreshLiveThroneToggle() {
+  const mod = window.SocialLiveModule;
+  const on = mod?.isLiveThroneEnabled ? !!mod.isLiveThroneEnabled() : false;
+  const btn = $id('live-throne-toggle');
+  const knob = $id('live-throne-knob');
+  if (btn) {
+    btn.setAttribute('aria-checked', on ? 'true' : 'false');
+    btn.classList.toggle('is-on', on);
+    btn.style.background = on ? 'var(--accent)' : 'rgba(0,0,0,0.15)';
+  }
+  if (knob) {
+    knob.style.transform = on ? 'translateX(20px)' : 'translateX(0)';
+  }
+}
+
+function setupUiV3() {
+  // Pôles Stats
+  $id('stats-poles-bar')?.addEventListener('click', e => {
+    const chip = e.target.closest('.stats-pole-chip');
+    if (!chip) return;
+    switchStatsPole(chip.dataset.poleFilter);
+  });
+  applyStatsPole(getActiveStatsPole());
+
+  // Guide complet modal
+  $id('open-guide-btn')?.addEventListener('click', openGuideModal);
+  $id('close-guide-modal')?.addEventListener('click', closeGuideModal);
+  $id('guide-modal')?.addEventListener('click', e => {
+    const modal = $id('guide-modal');
+    if (e.target === modal || e.target === modal?.firstElementChild) closeGuideModal();
+  });
+  const guideSearch = $id('guide-search');
+  if (guideSearch) {
+    guideSearch.addEventListener('input', () => filterGuideSections(guideSearch.value));
+    guideSearch.addEventListener('search', () => filterGuideSections(guideSearch.value));
+  }
+
+  // Carte Profil dans Réglages -> ouverture directe sur Avatar / Thème / Compte
+  $id('settings-profile-card')?.addEventListener('click', e => {
+    const tabBtn = e.target.closest('[data-open-profile-tab]');
+    const targetTab = tabBtn ? tabBtn.dataset.openProfileTab : 'avatar';
+    if (!tabBtn && e.target.closest('button')) return;
+    if (typeof openProfileModal === 'function') openProfileModal();
+    if (typeof showProfileTab === 'function' && ['avatar', 'theme', 'compte'].includes(targetTab)) {
+      showProfileTab(targetTab);
+    }
+  });
+
+  // Switch Statut live Sur le trône
+  $id('live-throne-toggle')?.addEventListener('click', () => {
+    const mod = window.SocialLiveModule;
+    if (!mod) return;
+    const next = !mod.isLiveThroneEnabled();
+    mod.setLiveThroneEnabled(next);
+    refreshLiveThroneToggle();
+    window.UI?.toast?.(
+      next
+        ? 'Statut live « 🚽 Sur le trône » activé pendant ton chrono !'
+        : 'Statut live « 🚽 Sur le trône » désactivé',
+      'info'
+    );
+  });
+
+  refreshSettingsProfileCard();
+  refreshLiveThroneToggle();
+}
+
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+  document.addEventListener('DOMContentLoaded', setupUiV3);
+}
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener('supabase-init', refreshSettingsProfileCard);
 }
