@@ -11,6 +11,14 @@
 let _timerStart   = null;
 let _timerInterval = null;
 
+function isTimerRunning() {
+  return Boolean(_timerStart);
+}
+
+function getTimerStartedAt() {
+  return _timerStart;
+}
+
 function setupTimer() {
   $id('timer-btn')?.addEventListener('click', () => {
     if (_timerStart) {
@@ -24,6 +32,7 @@ function setupTimer() {
 
 function startTimer() {
   _timerStart = Date.now();
+  window.SocialLiveModule?.onTimerStart(_timerStart);
   $id('timer-overlay')?.classList.remove('hidden');
   const display = $id('timer-display');
   if (display) display.classList.remove('hidden');
@@ -45,6 +54,7 @@ function stopTimer(cancel = false) {
   clearInterval(_timerInterval);
   _timerInterval = null;
   _timerStart = null;
+  window.SocialLiveModule?.onTimerStop();
   $id('timer-overlay')?.classList.add('hidden');
   const display = $id('timer-display');
   if (display) { display.textContent = '00:00'; display.classList.add('hidden'); }
