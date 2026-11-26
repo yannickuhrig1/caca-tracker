@@ -15,11 +15,120 @@ window.ChatModule = (() => {
   let _profileMap = {};
   let _renderTimer = null;
   let _lastMessages = [];
+  let _reactionsMap = {};
+  let _openPickerMsgId = null;
+
+  const ALLOWED_REACTIONS = ['😂', '💩', '🔥', '💀', '❤️'];
 
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
     ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 
   const timeOf = ts => new Date(ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+  function encodeReaction(msgId, emoji) {
+    const id = String(msgId ?? '').replace(/[\|\[\]\r\n]+/g, '').trim();
+    const em = String(emoji ?? '').replace(/[\|\[\]\r\n]+/g, '').trim();
+    if (!id || !em) return null;
+    return `[react:${id}|${em}]`;
+  }
+
+  function decodeReaction(content) {
+    const raw = String(content ?? '').trim();
+    if (!raw || raw.length > 500) return null;
+    const m = /^\[react:([^\|\[\]\r\n]+)\|([^\|\[\]\r\n]+)\]$/.exec(raw);
+    if (!m) return null;
+    const msgId = m[1].trim(), emoji = m[2].trim();
+    return (msgId && emoji) ? { msgId, emoji } : null;
+  }
+
+  function encodePin(msgId, excerpt) {
+    const id = String(msgId ?? '').replace(/[\|\[\]\r\n]+/g, '').trim();
+    const text = String(excerpt ?? '').replace(/[\|\[\]\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+    if (!id || !text) return null;
+    return `[pin:${id}|${text}]`;
+  }
+
+  function decodePin(content) {
+    const raw = String(content ?? '').trim();
+    if (!raw || raw.length > 500) return null;
+    const m = /^\[pin:([^\|\[\]\r\n]+)\|([^\|\[\]\r\n]+)\]$/.exec(raw);
+    if (!m) return null;
+    const msgId = m[1].trim(), excerpt = m[2].trim();
+    return (msgId && excerpt) ? { msgId, excerpt } : null;
+  }
+
+  function encodeBet(question, options) {
+    const q = String(question ?? '').replace(/[\|\[\]\r\n]+/g, ' ').trim().slice(0, 140);
+    const list = Array.isArray(options) ? options : String(options ?? '').split('/');
+    const o1 = String(list[0] ?? '').replace(/[\|\[\]\/\r\n]+/g, ' ').trim().slice(0, 60);
+    const o2 = String(list[1] ?? '').replace(/[\|\[\]\/\r\n]+/g, ' ').trim().slice(0, 60);
+    if (!q || !o1 || !o2) return null;
+    return `[bet:${q}|${o1}/${o2}]`;
+  }
+
+  function decodeBet(content) {
+    const raw = String(content ?? '').trim();
+    if (!raw || raw.length > 500) return null;
+    const m = /^\[bet:([^\|\[\]\r\n]+)\|([^\|\[\]\/\r\n]+)\/([^\|\[\]\/\r\n]+)\]$/.exec(raw);
+    if (!m) return null;
+    const question = m[1].trim(), o1 = m[2].trim(), o2 = m[3].trim();
+    return (question && o1 && o2) ? { question, options: [o1, o2] } : null;
+  }
+
+  function encode1v1(target, criteria) {
+    const t = String(target ?? '').replace(/[\|\[\]\r\n]+/g, ' ').trim().slice(0, 60);
+    const c = String(criteria ?? '').replace(/[\|\[\]\r\n]+/g, ' ').trim().slice(0, 120);
+    if (!t || !c) return null;
+    return `[1v1:${t}|${c}]`;
+  }
+
+  function decode1v1(content) {
+    const raw = String(content ?? '').trim();
+    if (!raw || raw.length > 500) return null;
+    const m = /^\[1v1:([^\|\[\]\r\n]+)\|([^\|\[\]\r\n]+)\]$/.exec(raw);
+    if (!m) return null;
+    const target = m[1].trim(), criteria = m[2].trim();
+    return (target && criteria) ? { target, criteria } : null;
+  }
+
+  function aggregateReactions(messages, currentUserId) {
+    const map = {};
+    const seen = {};
+    for (const m of (messages || [])) {
+      const r = decodeReaction(m?.body);
+      if (!r) continue;
+      if (!map[r.msgId]) map[r.msgId] = {};
+      if (!seen[r.msgId]) seen[r.msgId] = {};
+      if (!seen[r.msgId][r.emoji]) seen[r.msgId][r.emoji] = new Set();
+      const actor = m.user_id ? String(m.user_id) : `__anon_${m.id ?? Math.random()}`;
+      if (seen[r.msgId][r.emoji].has(actor)) continue;
+      seen[r.msgId][r.emoji].add(actor);
+      const prev = map[r.msgId][r.emoji] || { count: 0, mine: false };
+      map[r.msgId][r.emoji] = {
+        count: prev.count + 1,
+        mine: prev.mine || (!!currentUserId && m.user_id === currentUserId),
+      };
+    }
+    return map;
+  }
+
+  function extractLatestPin(messages) {
+    let latest = null;
+    for (const m of (messages || [])) {
+      const p = decodePin(m?.body);
+      if (p) latest = { ...p, created_at: m.created_at || null };
+    }
+    return latest;
+  }
+
+  function highlightMentions(rawText, mine) {
+    const safe = esc(rawText);
+    const mentionStyle = mine
+      ? 'font-weight:800;background:rgba(255,255,255,.22);padding:0 4px;border-radius:6px'
+      : 'font-weight:800;color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);padding:0 4px;border-radius:6px';
+    return safe.replace(/(^|[\s(>])@([a-zA-Z0-9_\u00C0-\u024F-]{1,32})/g,
+      (_, prefix, name) => `${prefix}<span class="chat-mention" style="${mentionStyle}">@${name}</span>`);
+  }
 
   const DUEL_GAME_LABELS = {
     plop:    { emoji: '🚽', nom: 'Plop!' },
@@ -89,6 +198,23 @@ window.ChatModule = (() => {
     } catch { return null; }
   }
 
+  function readLocalMapVote(storageKey, itemKey) {
+    try {
+      const map = JSON.parse(localStorage.getItem(storageKey) || '{}');
+      const v = map?.[String(itemKey)];
+      return v !== undefined ? v : null;
+    } catch { return null; }
+  }
+
+  function saveLocalMapVote(storageKey, itemKey, val) {
+    try {
+      const map = JSON.parse(localStorage.getItem(storageKey) || '{}') || {};
+      map[String(itemKey)] = val;
+      localStorage.setItem(storageKey, JSON.stringify(map));
+      return val;
+    } catch { return null; }
+  }
+
   function decorate(row) {
     return {
       ...row,
@@ -101,7 +227,7 @@ window.ChatModule = (() => {
   function renderQuoteOrTextHTML(rawBody, mine) {
     const text = String(rawBody ?? '');
     if (!/^>\s*/.test(text) || text.trim() === '>') {
-      return esc(text);
+      return highlightMentions(text, mine);
     }
     const quoteBoxStyle = mine
       ? 'margin:0 0 6px;padding:5px 8px;border-left:3px solid rgba(255,255,255,.75);border-radius:6px;background:rgba(0,0,0,.15);font-size:12px;opacity:.92'
@@ -117,13 +243,13 @@ window.ChatModule = (() => {
         i++;
       }
       const rest = lines.slice(i).join('\n').trim();
-      return `<blockquote class="chat-quote" style="${quoteBoxStyle}">${esc(quoted.join('\n'))}</blockquote>${rest ? `<div>${esc(rest)}</div>` : ''}`;
+      return `<blockquote class="chat-quote" style="${quoteBoxStyle}">${esc(quoted.join('\n'))}</blockquote>${rest ? `<div>${highlightMentions(rest, mine)}</div>` : ''}`;
     }
 
     // Ligne unique issue du pré-remplissage `> @pseudo : réponse`
     const replyMatch = /^>\s*(@[^:\r\n]{1,60}\s*:)\s*(.+)$/.exec(text);
     if (replyMatch) {
-      return `<blockquote class="chat-quote" style="${quoteBoxStyle}">${esc(replyMatch[1].trim())}</blockquote><div>${esc(replyMatch[2])}</div>`;
+      return `<blockquote class="chat-quote" style="${quoteBoxStyle}">${esc(replyMatch[1].trim())}</blockquote><div>${highlightMentions(replyMatch[2], mine)}</div>`;
     }
 
     const stripped = text.replace(/^>\s*/, '');
@@ -179,6 +305,55 @@ window.ChatModule = (() => {
       };
     }
 
+    const bet = decodeBet(body);
+    if (bet) {
+      const betKey = String(m?.id ?? m?.created_at ?? body);
+      const myBet = readLocalMapVote('chat.bets.v1', betKey);
+      const optsHTML = bet.options.map((opt, idx) => {
+        const active = myBet === idx;
+        const btnStyle = active
+          ? 'background:var(--accent);color:#fff;border:1.5px solid var(--accent)'
+          : 'background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--text-primary);border:1.5px solid color-mix(in srgb,var(--accent) 28%,transparent)';
+        return `
+          <button type="button" class="chat-bet-opt ${active ? 'is-voted' : ''}"
+            data-bet-key="${esc(betKey)}" data-bet-idx="${idx}"
+            style="width:100%;text-align:left;padding:7px 10px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;${btnStyle}">
+            ${active ? '🎯 ' : '🔮 '}${esc(opt)}
+          </button>`;
+      }).join('');
+      return {
+        isCard: true,
+        html: `
+          <div class="chat-card chat-card-bet" style="display:grid;gap:6px;min-width:195px">
+            <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--accent)">🔮 Pari du jour</div>
+            <div style="font-weight:800;font-size:13px">${esc(bet.question)}</div>
+            <div style="display:grid;gap:5px;margin-top:2px">${optsHTML}</div>
+          </div>`,
+      };
+    }
+
+    const challenge = decode1v1(body);
+    if (challenge) {
+      const cKey = String(m?.id ?? m?.created_at ?? body);
+      const accepted = !!readLocalMapVote('chat.1v1.v1', cKey);
+      const btnStyle = accepted
+        ? 'background:#10b981;color:#fff'
+        : 'background:var(--accent);color:#fff';
+      return {
+        isCard: true,
+        html: `
+          <div class="chat-card chat-card-1v1" style="display:grid;gap:6px;min-width:195px">
+            <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--accent)">⚔️ Défi 1v1</div>
+            <div style="font-weight:800;font-size:13px">Cible : ${highlightMentions('@' + challenge.target.replace(/^@+/, ''), false)}</div>
+            <div style="font-size:12px;opacity:.88">${esc(challenge.criteria)}</div>
+            <button type="button" class="chat-1v1-accept-btn ${accepted ? 'is-accepted' : ''}" data-1v1-key="${esc(cKey)}"
+              style="margin-top:2px;padding:7px 12px;border-radius:999px;border:none;cursor:pointer;font-size:12px;font-weight:800;${btnStyle}">
+              ${accepted ? '✅ Défi relevé !' : '🤝 Relever le défi'}
+            </button>
+          </div>`,
+      };
+    }
+
     const spot = parseSpot(body);
     if (spot) {
       const starsStr = '⭐'.repeat(spot.stars) + '☆'.repeat(5 - spot.stars);
@@ -207,8 +382,26 @@ window.ChatModule = (() => {
     };
   }
 
-  function messageHTML(m) {
+  function messageExcerpt(m) {
+    const raw = String(m?.body ?? '').replace(/[\|\[\]\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+    return raw.slice(0, 80) || 'Message';
+  }
+
+  function renderReactionsHTML(msgId, reactionsMap, mine) {
+    const entry = reactionsMap?.[msgId];
+    if (!entry) return '';
+    const pills = Object.entries(entry).map(([emoji, info]) => {
+      const activeStyle = info.mine
+        ? 'border:1px solid var(--accent);background:color-mix(in srgb,var(--accent) 18%,transparent)'
+        : 'border:1px solid var(--card-border);background:var(--card-bg)';
+      return `<button type="button" class="chat-reaction-pill ${info.mine ? 'is-mine' : ''}" data-react-send-msg="${esc(msgId)}" data-react-emoji="${esc(emoji)}" style="padding:1px 6px;border-radius:999px;font-size:11px;font-weight:700;cursor:pointer;${activeStyle}">${esc(emoji)} ${info.count}</button>`;
+    }).join('');
+    return pills ? `<div class="chat-reactions" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;justify-content:${mine ? 'flex-end' : 'flex-start'}">${pills}</div>` : '';
+  }
+
+  function messageHTML(m, reactionsMap) {
     const mine = !!m.mine;
+    const msgId = String(m?.id ?? '');
     const rich = renderRichBody(m);
     const bubbleStyle = rich.isCard
       ? 'background:color-mix(in srgb,var(--accent) 10%,var(--card-bg));color:var(--text-primary);border:1.5px solid color-mix(in srgb,var(--accent) 30%,var(--card-border))'
@@ -217,14 +410,25 @@ window.ChatModule = (() => {
         : 'background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--text-primary)');
     const authorName = m.username || (mine ? (window.SupabaseClient?.getCurrentProfile?.()?.username || 'Moi') : '???');
     const ts = m.created_at ? timeOf(new Date(m.created_at).getTime()) : '';
+    const rMap = reactionsMap || _reactionsMap || {};
+    const reactionsHTML = msgId ? renderReactionsHTML(msgId, rMap, mine) : '';
+    const pickerHTML = (msgId && _openPickerMsgId === msgId)
+      ? `<div class="chat-react-picker" style="display:flex;gap:4px;margin-top:4px;padding:3px 6px;border-radius:999px;background:var(--card-bg);border:1px solid var(--card-border);width:fit-content">${ALLOWED_REACTIONS.map(em => `<button type="button" data-react-send-msg="${esc(msgId)}" data-react-emoji="${em}" style="border:none;background:none;font-size:14px;cursor:pointer;padding:1px 3px">${em}</button>`).join('')}</div>`
+      : '';
+    const actionBtns = msgId
+      ? `<button type="button" class="chat-react-btn" data-react-msg="${esc(msgId)}" title="Réagir" aria-label="Réagir" style="border:none;background:none;padding:0 2px;font-size:11px;opacity:.65;cursor:pointer">+😀</button><button type="button" class="chat-pin-btn" data-pin-msg="${esc(msgId)}" data-pin-excerpt="${esc(messageExcerpt(m))}" title="Épingler" aria-label="Épingler" style="border:none;background:none;padding:0 2px;font-size:11px;opacity:.55;cursor:pointer">📌</button>`
+      : '';
     return `
-      <div class="chat-row ${mine ? 'chat-row-mine' : ''}">
+      <div class="chat-row ${mine ? 'chat-row-mine' : ''}" data-msg-id="${esc(msgId)}">
         ${mine ? '' : `<span class="chat-avatar">${esc(m.avatar || '💩')}</span>`}
         <div class="chat-bubble-wrap">
           ${mine ? '' : `<div class="chat-author">${esc(m.username)}</div>`}
           <div class="chat-bubble" style="${bubbleStyle}">${rich.html}</div>
+          ${reactionsHTML}
+          ${pickerHTML}
           <div class="chat-meta ${mine ? 'text-right' : ''}" style="display:flex;align-items:center;gap:6px;justify-content:${mine ? 'flex-end' : 'flex-start'}">
             <span class="chat-time">${ts}</span>
+            ${actionBtns}
             <button type="button" class="chat-reply-btn" data-reply-user="${esc(authorName)}"
               title="Répondre" aria-label="Répondre à ${esc(authorName)}"
               style="border:none;background:none;padding:0 2px;font-size:11px;opacity:.55;cursor:pointer">↩️</button>
@@ -255,6 +459,22 @@ window.ChatModule = (() => {
     if (el) el.scrollTop = el.scrollHeight;
   }
 
+  function renderMessagesToElement(el, msgs) {
+    if (!el) return;
+    const myId = window.SupabaseClient?.getCurrentProfile?.()?.id || null;
+    _reactionsMap = aggregateReactions(msgs, myId);
+    const latestPin = extractLatestPin(msgs);
+    const visibleMsgs = (msgs || []).filter(m => !decodeReaction(m?.body) && !decodePin(m?.body));
+    const pinBannerHTML = latestPin
+      ? `<div id="chat-pinned-banner" class="chat-pinned-banner" style="position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:6px;padding:7px 12px;margin-bottom:8px;border-radius:12px;background:color-mix(in srgb,var(--accent) 14%,var(--card-bg));border:1px solid color-mix(in srgb,var(--accent) 30%,var(--card-border));font-size:12px"><span>📌</span><strong style="white-space:nowrap">Épinglé :</strong><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(latestPin.excerpt)}</span></div>`
+      : '';
+    if (!visibleMsgs.length) {
+      el.innerHTML = pinBannerHTML + '<div class="text-center text-sm opacity-50 py-6">Aucun message — lance la discussion ! 💬</div>';
+      return;
+    }
+    el.innerHTML = pinBannerHTML + visibleMsgs.map(m => messageHTML(m, _reactionsMap)).join('');
+  }
+
   function bindMessagesDelegation() {
     const el = document.getElementById('chat-messages');
     if (!el || el._chatDelegated) return;
@@ -274,11 +494,56 @@ window.ChatModule = (() => {
         const key = pollBtn.dataset.pollKey;
         const idx = Number(pollBtn.dataset.pollIdx);
         savePollVote(key, idx);
-        if (_lastMessages.length) {
-          el.innerHTML = _lastMessages.map(messageHTML).join('');
-        } else {
-          scheduleRender();
-        }
+        if (_lastMessages.length) renderMessagesToElement(el, _lastMessages);
+        else scheduleRender();
+        return;
+      }
+
+      const betBtn = e.target?.closest?.('[data-bet-key]');
+      if (betBtn) {
+        const key = betBtn.dataset.betKey;
+        const idx = Number(betBtn.dataset.betIdx);
+        saveLocalMapVote('chat.bets.v1', key, idx);
+        if (_lastMessages.length) renderMessagesToElement(el, _lastMessages);
+        else scheduleRender();
+        return;
+      }
+
+      const acceptBtn = e.target?.closest?.('[data-1v1-key]');
+      if (acceptBtn) {
+        const key = acceptBtn.dataset['1v1Key'];
+        const prev = !!readLocalMapVote('chat.1v1.v1', key);
+        saveLocalMapVote('chat.1v1.v1', key, !prev);
+        if (_lastMessages.length) renderMessagesToElement(el, _lastMessages);
+        else scheduleRender();
+        return;
+      }
+
+      const reactSendBtn = e.target?.closest?.('[data-react-send-msg]');
+      if (reactSendBtn) {
+        const msgId = reactSendBtn.dataset.reactSendMsg;
+        const emoji = reactSendBtn.dataset.reactEmoji;
+        _openPickerMsgId = null;
+        const encoded = encodeReaction(msgId, emoji);
+        if (encoded) sendBody(encoded);
+        if (_lastMessages.length) renderMessagesToElement(el, _lastMessages);
+        return;
+      }
+
+      const reactToggleBtn = e.target?.closest?.('[data-react-msg]');
+      if (reactToggleBtn) {
+        const msgId = reactToggleBtn.dataset.reactMsg;
+        _openPickerMsgId = (_openPickerMsgId === msgId) ? null : msgId;
+        if (_lastMessages.length) renderMessagesToElement(el, _lastMessages);
+        return;
+      }
+
+      const pinBtn = e.target?.closest?.('[data-pin-msg]');
+      if (pinBtn) {
+        const msgId = pinBtn.dataset.pinMsg;
+        const excerpt = pinBtn.dataset.pinExcerpt || 'Message';
+        const encoded = encodePin(msgId, excerpt);
+        if (encoded) sendBody(encoded);
         return;
       }
 
@@ -301,11 +566,7 @@ window.ChatModule = (() => {
     try {
       const msgs = await window.SupabaseClient.getGroupMessages(_groupId, 50);
       _lastMessages = msgs;
-      if (!msgs.length) {
-        el.innerHTML = '<div class="text-center text-sm opacity-50 py-6">Aucun message — lance la discussion ! 💬</div>';
-        return;
-      }
-      el.innerHTML = msgs.map(messageHTML).join('');
+      renderMessagesToElement(el, msgs);
       if (stick) scrollBottom();
     } catch (e) {
       el.innerHTML = `<div class="text-center text-sm opacity-60 py-6">${esc(e.message)}</div>`;
@@ -388,7 +649,107 @@ window.ChatModule = (() => {
     }
   }
 
+  async function handleQuickBet() {
+    if (!_groupId) return;
+    const q = window.UI?.prompt
+      ? await window.UI.prompt('Quelle est la question du pari ?', { title: '🔮 Pari du jour', placeholder: 'Ex : Qui pose avant midi ?', maxlength: 140 })
+      : null;
+    if (!q) return;
+    const o1 = await window.UI.prompt('Option 1 :', { title: '🔮 Pari du jour', value: 'Oui 👍', maxlength: 60 });
+    if (!o1) return;
+    const o2 = await window.UI.prompt('Option 2 :', { title: '🔮 Pari du jour', value: 'Non 👎', maxlength: 60 });
+    if (!o2) return;
+    const encoded = encodeBet(q, [o1, o2]);
+    if (encoded) await sendBody(encoded);
+  }
+
+  async function handleQuick1v1() {
+    if (!_groupId) return;
+    const myId = window.SupabaseClient?.getCurrentProfile?.()?.id;
+    const members = Object.values(_profileMap).filter(m => m?.username && m.id !== myId);
+    let target = null;
+    if (members.length && window.UI?.choose) {
+      target = await window.UI.choose({
+        title: '⚔️ Défi 1v1',
+        message: 'Qui veux-tu défier ?',
+        options: members.map(m => ({ value: m.username, label: `${m.avatar || '💩'} ${m.username}` })),
+      });
+    } else if (window.UI?.prompt) {
+      target = await window.UI.prompt('Pseudo de la cible :', { title: '⚔️ Défi 1v1', placeholder: 'Ex : Clémence', maxlength: 60 });
+    }
+    if (!target) return;
+    const criteria = window.UI?.prompt
+      ? await window.UI.prompt('Critère du défi :', { title: '⚔️ Défi 1v1', value: 'Premier à 2 cacas aujourd’hui', maxlength: 120 })
+      : 'Premier à 2 cacas aujourd’hui';
+    if (!criteria) return;
+    const encoded = encode1v1(target, criteria);
+    if (encoded) await sendBody(encoded);
+  }
+
+  function ensureQuickButtons() {
+    const quickBar = document.getElementById('chat-quick-bar') || document.getElementById('chat-duel-btn')?.parentElement;
+    if (!quickBar || typeof quickBar.appendChild !== 'function' || typeof document.createElement !== 'function') return;
+    const defs = [
+      { id: 'chat-bet-btn', text: '🔮 Pari' },
+      { id: 'chat-1v1-btn', text: '⚔️ 1v1' },
+    ];
+    for (const def of defs) {
+      if (document.getElementById(def.id)) continue;
+      const btn = document.createElement('button');
+      if (!btn) continue;
+      btn.type = 'button';
+      btn.id = def.id;
+      btn.className = 'chat-quick-btn';
+      btn.textContent = def.text;
+      quickBar.appendChild(btn);
+    }
+  }
+
+  function bindMentionAutocomplete(input) {
+    if (!input || input._mentionBound) return;
+    input._mentionBound = true;
+    const closeSuggest = () => {
+      const box = document.getElementById('chat-mention-suggest');
+      if (box) box.remove?.();
+    };
+    input.addEventListener?.('input', () => {
+      const val = String(input.value || '');
+      const match = /(?:^|\s)@([a-zA-Z0-9_\u00C0-\u024F-]*)$/.exec(val);
+      if (!match) { closeSuggest(); return; }
+      const q = match[1].toLowerCase();
+      const names = Object.values(_profileMap)
+        .map(m => m?.username)
+        .filter((u, i, arr) => u && arr.indexOf(u) === i && u.toLowerCase().startsWith(q))
+        .slice(0, 5);
+      if (!names.length || !input.parentElement?.parentElement?.insertBefore) { closeSuggest(); return; }
+      let box = document.getElementById('chat-mention-suggest');
+      if (!box) {
+        box = document.createElement('div');
+        if (!box) return;
+        box.id = 'chat-mention-suggest';
+        box.className = 'chat-mention-suggest';
+        box.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:6px';
+        input.parentElement.parentElement.insertBefore(box, input.parentElement);
+      }
+      box.innerHTML = names.map(u =>
+        `<button type="button" data-mention-pick="${esc(u)}" style="padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid var(--card-border);background:var(--card-bg);color:var(--text-primary);cursor:pointer">@${esc(u)}</button>`
+      ).join('');
+      if (!box._bound) {
+        box._bound = true;
+        box.addEventListener?.('click', e => {
+          const btn = e.target?.closest?.('[data-mention-pick]');
+          if (!btn) return;
+          const picked = btn.dataset.mentionPick;
+          input.value = String(input.value || '').replace(/@[a-zA-Z0-9_\u00C0-\u024F-]*$/, `@${picked} `);
+          closeSuggest();
+          input.focus?.();
+        });
+      }
+    });
+  }
+
   function bindChatControls() {
+    ensureQuickButtons();
     const sendBtn = document.getElementById('chat-send');
     if (sendBtn && !sendBtn._chatBound) {
       sendBtn._chatBound = true;
@@ -400,6 +761,7 @@ window.ChatModule = (() => {
       input.addEventListener?.('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
       });
+      bindMentionAutocomplete(input);
     }
     const duelBtn = document.getElementById('chat-duel-btn');
     if (duelBtn && !duelBtn._chatBound) {
@@ -416,6 +778,16 @@ window.ChatModule = (() => {
       spotBtn._chatBound = true;
       spotBtn.addEventListener?.('click', handleQuickSpot);
     }
+    const betBtn = document.getElementById('chat-bet-btn');
+    if (betBtn && !betBtn._chatBound) {
+      betBtn._chatBound = true;
+      betBtn.addEventListener?.('click', handleQuickBet);
+    }
+    const c1v1Btn = document.getElementById('chat-1v1-btn');
+    if (c1v1Btn && !c1v1Btn._chatBound) {
+      c1v1Btn._chatBound = true;
+      c1v1Btn.addEventListener?.('click', handleQuick1v1);
+    }
     bindMessagesDelegation();
   }
 
@@ -427,6 +799,8 @@ window.ChatModule = (() => {
     _channel = null;
     _groupId = groupId;
     _lastMessages = [];
+    _reactionsMap = {};
+    _openPickerMsgId = null;
 
     const members = await window.SupabaseClient.getGroupMembers(groupId).catch(() => []);
     _profileMap = Object.fromEntries(members.map(m => [m.id, m]));
@@ -442,6 +816,8 @@ window.ChatModule = (() => {
   function close() {
     _groupId = null;
     _lastMessages = [];
+    _reactionsMap = {};
+    _openPickerMsgId = null;
     clearTimeout(_renderTimer);
     try { _channel?.unsubscribe?.(); } catch {}
     _channel = null;
@@ -452,6 +828,7 @@ window.ChatModule = (() => {
     const body = input?.value?.trim();
     if (!body || !_groupId) return;
     input.value = '';
+    document.getElementById('chat-mention-suggest')?.remove?.();
     input.focus();
     await sendBody(body);
   }
@@ -459,5 +836,24 @@ window.ChatModule = (() => {
   // ---- Event listeners ----
   document.addEventListener('DOMContentLoaded', bindChatControls);
 
-  return { open, close, send, groupId: () => _groupId, messageHTML, replyToUser };
+  return {
+    open,
+    close,
+    send,
+    groupId: () => _groupId,
+    messageHTML,
+    replyToUser,
+    ALLOWED_REACTIONS,
+    encodeReaction,
+    decodeReaction,
+    aggregateReactions,
+    encodePin,
+    decodePin,
+    extractLatestPin,
+    encodeBet,
+    decodeBet,
+    encode1v1,
+    decode1v1,
+    highlightMentions,
+  };
 })();
