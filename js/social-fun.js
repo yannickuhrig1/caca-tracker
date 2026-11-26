@@ -190,8 +190,133 @@ function statsShareText(card, now = Date.now()) {
   return { ref, emoji: '📊', title: bits.join(' · ') };
 }
 
+// ---- Nouveautés sociales v3.1 (titres hebdo, télépathie, mission week-end) ----
+
+function _logTs(entry) {
+  if (!entry) return NaN;
+  const raw = entry.date ?? entry.created_at;
+  if (typeof raw === 'number') return raw;
+  if (typeof raw === 'string' && raw.trim()) return new Date(raw).getTime();
+  if (raw instanceof Date) return raw.getTime();
+  return NaN;
+}
+
+/**
+ * Titre dynamique hebdomadaire d'un membre à partir de ses logs des 7 derniers jours.
+ * Retourne null si moins de 2 entrées sur la période.
+ */
+function weeklyMemberTitle(logs, now = Date.now()) {
+  const since7 = now - 7 * 86400000;
+  const recent = (logs || []).filter(l => {
+    const ts = _logTs(l);
+    return Number.isFinite(ts) && ts >= since7 && ts <= now;
+  });
+  if (recent.length < 2) return null;
+
+  let morning = 0;
+  let night = 0;
+  const places = new Set();
+  const durations = [];
+
+  recent.forEach(l => {
+    const h = new Date(_logTs(l)).getHours();
+    if (h < 9) morning++;
+    if (h >= 22 || h < 4) night++;
+    const loc = String(l.place || l.city || '').trim();
+    if (loc) places.add(loc.toLowerCase());
+    const dur = Number(l.duration ?? l.duration_s);
+    if (Number.isFinite(dur) && dur > 0) durations.push(dur);
+  });
+
+  if (morning / recent.length >= 0.5) return { id: 'matinal', emoji: '☀️', label: 'Le Matinal' };
+  if (night / recent.length >= 0.4) return { id: 'hibou', emoji: '🦉', label: 'L\'Oiseau de nuit' };
+  if (places.size >= 3) return { id: 'voyageur', emoji: '🗺️', label: 'Le Voyageur' };
+
+  if (durations.length > 0) {
+    const avgDur = durations.reduce((a, b) => a + b, 0) / durations.length;
+    if (avgDur > 0 && avgDur <= 90) return { id: 'express', emoji: '⚡', label: 'L\'Express' };
+  }
+
+  if (recent.length >= 10) return { id: 'prolifique', emoji: '🔥', label: 'Machine de guerre' };
+  return { id: 'regulier', emoji: '⏱️', label: 'Le Régulier' };
+}
+
+/**
+ * Détecte les paires d'utilisateurs distincts ayant posé à <= maxGapMs d'écart.
+ * Dédoublonné par paire pour un même créneau temporel.
+ */
+function detectTelepathy(feedItems, maxGapMs = 5 * 60 * 1000) {
+  const sorted = (feedItems || [])
+    .map(item => ({ item, ts: _logTs(item) }))
+    .filter(x => x.item && x.item.user_id && Number.isFinite(x.ts))
+    .sort((a, b) => a.ts - b.ts);
+
+  const toUser = x => ({
+    user_id: x.user_id,
+    username: x.username,
+    avatar: x.avatar || '💩',
+  });
+
+  const lastSlot = new Map();
+  const matches = [];
+
+  for (let i = 0; i < sorted.length; i++) {
+    for (let j = i + 1; j < sorted.length; j++) {
+      const gapMs = sorted[j].ts - sorted[i].ts;
+      if (gapMs > maxGapMs) break;
+      if (sorted[i].item.user_id === sorted[j].item.user_id) continue;
+
+      const pairKey = [sorted[i].item.user_id, sorted[j].item.user_id].sort().join('\0');
+      const prevTs = lastSlot.get(pairKey);
+      if (prevTs !== undefined && sorted[j].ts - prevTs <= maxGapMs) continue;
+
+      lastSlot.set(pairKey, sorted[j].ts);
+      matches.push({
+        users: [toUser(sorted[i].item), toUser(sorted[j].item)],
+        gapMs,
+        date: sorted[j].ts,
+      });
+    }
+  }
+
+  return matches;
+}
+
+/**
+ * Mission coopérative du week-end (samedi 00:00 à dimanche 23:59 de la semaine de `now`).
+ */
+function weekendCoopMission(membersLogs, memberCount = 1, now = Date.now()) {
+  const d = new Date(now);
+  const day = d.getDay();
+  const isWeekend = day === 0 || day === 6;
+  const mondayOffset = day === 0 ? 6 : day - 1;
+  const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - mondayOffset);
+  const satStart = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 5, 0, 0, 0, 0).getTime();
+  const sunEnd = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6, 23, 59, 59, 999).getTime();
+
+  const flat = Array.isArray(membersLogs)
+    ? membersLogs.flatMap(item => (Array.isArray(item) ? item : [item]))
+    : [];
+
+  let count = 0;
+  flat.forEach(l => {
+    const ts = _logTs(l);
+    if (Number.isFinite(ts) && ts >= satStart && ts <= sunEnd) count++;
+  });
+
+  const target = Math.max(4, (memberCount || 1) * 4);
+  return {
+    isWeekend,
+    count,
+    target,
+    pct: Math.min(100, Math.round(count / target * 100)),
+    done: count >= target,
+  };
+}
+
 window.SocialFun = {
   STICKERS, stickerBody, stickerUnlocked, parseSticker, groupStreak,
   enduranceRanking, leagueWeekStart,
   buildMemberCard, statsShareText,
+  weeklyMemberTitle, detectTelepathy, weekendCoopMission,
 };
