@@ -1,4 +1,6 @@
-const CACHE = 'caca-v55';
+const CACHE = 'caca-v56';
+const TILES_CACHE = 'caca-tiles-v1';
+const TILES_MAX = 250;
 const ASSETS = [
   './',
   './index.html',
@@ -81,7 +83,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== TILES_CACHE).map(k => caches.delete(k))))
       .then(() => clients.claim())
   );
 });
@@ -131,9 +133,46 @@ self.addEventListener('notificationclick', e => {
   );
 });
 
+function isTileRequest(request, url) {
+  if (request.method !== 'GET') return false;
+  const h = url.hostname;
+  return (
+    h === 'tile.openstreetmap.org' || h.endsWith('.tile.openstreetmap.org') ||
+    h === 'basemaps.cartocdn.com' || h.endsWith('.basemaps.cartocdn.com')
+  );
+}
+
+async function trimTilesCache(cache) {
+  const keys = await cache.keys();
+  const excess = keys.length - TILES_MAX;
+  if (excess <= 0) return;
+  await Promise.all(keys.slice(0, excess).map(k => cache.delete(k)));
+}
+
 // ---- Fetch ----
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
+
+  // CACHE-FIRST pour les tuiles de carte (OpenStreetMap / CartoDB)
+  if (isTileRequest(e.request, url)) {
+    e.respondWith(
+      caches.open(TILES_CACHE).then(async cache => {
+        const cached = await cache.match(e.request);
+        if (cached) return cached;
+        try {
+          const res = await fetch(e.request);
+          if (res.ok || res.type === 'opaque') {
+            await cache.put(e.request, res.clone());
+            await trimTilesCache(cache);
+          }
+          return res;
+        } catch (_) {
+          return new Response('', { status: 503 });
+        }
+      })
+    );
+    return;
+  }
 
   // Ne pas intercepter les requêtes cross-origin (CDN, Supabase, etc.)
   if (url.origin !== self.location.origin) return;
