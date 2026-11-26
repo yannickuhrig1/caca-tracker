@@ -37,6 +37,8 @@ function makeEnv(extra = {}) {
     'mascotMood',
     'renderHomeCard',
     'setupHome',
+    'dailyQuests',
+    'throneStage',
   ]);
   return { ctx, g };
 }
@@ -300,4 +302,38 @@ test('renderHomeCard, setupHome et renderWardrobePanel mettent à jour le DOM et
   // Clic suivant sur #mascot : passe à 'glasses'
   listeners.mascotClick();
   assert.strictEqual(elements['mascot-costume-label'].textContent, '🕶️ Lunettes Star');
+});
+
+// ---------- Quêtes journalières & Trône ----------
+
+test('dailyQuests : retourne 3 quêtes et suit la progression eau, durée et passage', () => {
+  const { g } = makeEnv();
+  const now = new Date(2026, 4, 15, 14, 0, 0).getTime();
+  const yesterday = now - 86400000;
+
+  // Aucun log aujourd'hui (uniquement hier) et eau < 6
+  const empty = g.dailyQuests([{ id: 1, date: yesterday, duration: 120 }], 5, now);
+  assert.strictEqual(empty.length, 3);
+  assert.deepStrictEqual([...empty].map(q => q.id), ['eau', 'duree', 'passage']);
+  assert.strictEqual(empty.every(q => q.done === false), true);
+
+  // Passage aujourd'hui sans durée, mais eau >= 6
+  const partial = g.dailyQuests([{ id: 2, date: now }], 6, now);
+  assert.strictEqual(partial.find(q => q.id === 'eau').done, true);
+  assert.strictEqual(partial.find(q => q.id === 'duree').done, false);
+  assert.strictEqual(partial.find(q => q.id === 'passage').done, true);
+
+  // Passage aujourd'hui avec durée valide + eau >= 6
+  const full = g.dailyQuests([{ id: 3, date: now, duration: 90 }], 8, now);
+  assert.strictEqual(full.every(q => q.done === true), true);
+});
+
+test('throneStage : retourne le stade évolutif du trône selon le niveau', () => {
+  const { g } = makeEnv();
+  assert.deepStrictEqual({ ...g.throneStage() }, { emoji: '🪵', label: 'Trône en bois' });
+  assert.deepStrictEqual({ ...g.throneStage(2) }, { emoji: '🪵', label: 'Trône en bois' });
+  assert.deepStrictEqual({ ...g.throneStage(3) }, { emoji: '🚽', label: 'Porcelaine royale' });
+  assert.deepStrictEqual({ ...g.throneStage(5) }, { emoji: '👑', label: 'Trône doré' });
+  assert.deepStrictEqual({ ...g.throneStage(7) }, { emoji: '🚀', label: 'Trône spatial' });
+  assert.deepStrictEqual({ ...g.throneStage(12) }, { emoji: '🚀', label: 'Trône spatial' });
 });

@@ -107,18 +107,19 @@
       <!-- Ligne 1 / desktop gauche : logo + titre -->
       <div class="hdr-row1 flex items-center gap-2.5 mb-1.5">
         <!-- Logo PNG détouré — fond transparent = couleur du thème visible en dessous -->
-        <img src="icons/icon-192.png" alt="Logo" width="50" height="50"
+        <img src="icons/icon-192.png" alt="Logo" width="50" height="50" class="hdr-logo"
              style="width:50px;height:50px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.35))" />
         <div class="min-w-0 overflow-hidden">
           <h1 class="font-extrabold leading-tight"
               style="font-size:1.05rem;text-shadow:0 2px 12px rgba(0,0,0,0.3);letter-spacing:0.03em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-            <span id="app-title">Mes cacas</span> 💖
+            <span id="app-title">Mes cacas</span> <span class="hdr-explicit-emoji">💖</span>
           </h1>
           <span id="app-version-short" class="text-[8px] tracking-[0.18em] uppercase font-medium opacity-55">Caca‑Tracker · v2.12.0</span>
         </div>
       </div>
       <!-- Ligne 2 / desktop droite : boutons -->
       <div class="hdr-row2 flex items-center justify-center gap-2">
+        <button id="header-discreet-btn" type="button" onclick="toggleDiscreetMode()" class="bg-white/20 px-2.5 py-1 rounded-full text-sm font-bold hover:bg-white/30 transition" title="Mode Discrétion (Bureau)" aria-label="Mode Discrétion (Bureau)" aria-pressed="false">🕶️</button>
         <button id="timer-btn" class="bg-white/20 px-2.5 py-1 rounded-full text-sm font-bold hover:bg-white/30 transition" title="Chrono de séance">
           ⏱️ <span id="timer-display" class="hidden font-mono text-xs">00:00</span>
         </button>
@@ -975,7 +976,7 @@
             <span id="haptics-knob" class="ct-switch-knob"></span>
           </button>
         </div>
-        <div class="flex items-center justify-between text-sm">
+        <div class="flex items-center justify-between text-sm mb-3">
           <div>
             <div class="font-medium">Header toujours visible</div>
             <div class="text-xs opacity-60">Désactivé = le titre défile avec la page</div>
@@ -983,6 +984,16 @@
           <button id="sticky-header-toggle" onclick="toggleStickyHeader()"
             class="ct-switch is-on" aria-label="Sticky header">
             <span id="sticky-header-knob" class="ct-switch-knob"></span>
+          </button>
+        </div>
+        <div class="flex items-center justify-between text-sm">
+          <div>
+            <div class="font-medium">🕶️ Mode Discrétion (Bureau)</div>
+            <div class="text-xs opacity-60">Remplace le titre par « Suivi Transit » et atténue le header</div>
+          </div>
+          <button id="discreet-toggle" type="button" onclick="toggleDiscreetMode()"
+            class="ct-switch" role="switch" aria-checked="false" aria-label="Mode Discrétion (Bureau)">
+            <span id="discreet-knob" class="ct-switch-knob"></span>
           </button>
         </div>
       </div>

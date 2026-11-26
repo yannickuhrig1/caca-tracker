@@ -12,9 +12,9 @@ const { loadInto, readGlobals, daysAgo } = require('./helpers/load');
 const ctx = loadInto('js/app/app-sante.js', { $id: () => null, state: { logs: [] }, esc: String });
 const {
   validDuration, formatDuration, durationStats, healthInsights,
-  healthTagCounts, bloodAlert, usualEntry, HEALTH_TAGS,
+  healthTagCounts, bloodAlert, usualEntry, waterBristolCorrelation, HEALTH_TAGS,
 } = readGlobals(ctx, ['validDuration', 'formatDuration', 'durationStats', 'healthInsights',
-  'healthTagCounts', 'bloodAlert', 'usualEntry', 'HEALTH_TAGS']);
+  'healthTagCounts', 'bloodAlert', 'usualEntry', 'waterBristolCorrelation', 'HEALTH_TAGS']);
 
 const log = (o = {}) => ({ id: Math.random(), date: daysAgo(1), texture: 'normal', color: 'marron', ...o });
 
@@ -168,4 +168,56 @@ test('usualEntry ne regarde que les entrées récentes', () => {
   const anciennes = Array.from({ length: 40 }, (_, i) => log({ texture: 'dur', date: daysAgo(100 + i) }));
   const recentes = Array.from({ length: 30 }, (_, i) => log({ texture: 'mou', date: daysAgo(i) }));
   assert.strictEqual(usualEntry([...anciennes, ...recentes]).texture, 'mou');
+});
+
+// ---------- Corrélation Eau / Bristol ----------
+
+test('waterBristolCorrelation : détecte un écart >= 0.15 et retourne null sous le seuil min', () => {
+  const dayKey = ts => {
+    const d = new Date(ts);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  // Cas < min entrées dans un groupe : retourne null
+  const d1 = daysAgo(1);
+  const d2 = daysAgo(2);
+  const fewLogs = [
+    log({ date: d1, texture: 'dur' }),
+    log({ date: d1, texture: 'dur' }),
+    log({ date: d2, texture: 'normal' }),
+    log({ date: d2, texture: 'normal' }),
+    log({ date: d2, texture: 'normal' }),
+  ];
+  assert.strictEqual(waterBristolCorrelation(fewLogs, { [dayKey(d1)]: 2, [dayKey(d2)]: 6 }, 3), null);
+  assert.strictEqual(waterBristolCorrelation([], {}), null);
+
+  // Cas positif : < 4 verres (75 % dur) vs >= 4 verres (25 % dur), écart 0.50 >= 0.15
+  const dLow1 = daysAgo(3);
+  const dLow2 = daysAgo(4);
+  const dHigh1 = daysAgo(5);
+  const dHigh2 = daysAgo(6);
+  const waterByDay = {
+    [dayKey(dLow1)]: 1,
+    [dayKey(dLow2)]: 3,
+    [dayKey(dHigh1)]: 4,
+    [dayKey(dHigh2)]: 7,
+  };
+  const logs = [
+    log({ date: dLow1, texture: 'dur' }),
+    log({ date: dLow1, texture: 'dur' }),
+    log({ date: dLow2, texture: 'dur' }),
+    log({ date: dLow2, texture: 'normal' }),
+    log({ date: dHigh1, texture: 'dur' }),
+    log({ date: dHigh1, texture: 'normal' }),
+    log({ date: dHigh2, texture: 'normal' }),
+    log({ date: dHigh2, texture: 'normal' }),
+  ];
+
+  const corr = waterBristolCorrelation(logs, waterByDay, 3);
+  assert.ok(corr);
+  assert.strictEqual(corr.lowHardPct, 75);
+  assert.strictEqual(corr.highHardPct, 25);
+  assert.strictEqual(corr.ratio, 3);
+  assert.match(corr.text, /75 %/);
+  assert.match(corr.text, /25 %/);
 });

@@ -141,6 +141,72 @@ window.GroupMapModule = (() => {
     return result;
   }
 
+  /** Clé de spot normalisée : lat/lon arrondis à 3 décimales, sinon place ou city. */
+  function spotKey(r) {
+    if (!r) return '';
+    if (r.lat !== null && r.lat !== undefined && r.lat !== '' &&
+        r.lon !== null && r.lon !== undefined && r.lon !== '') {
+      const lat = Number(r.lat);
+      const lon = Number(r.lon);
+      if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        return `${lat.toFixed(3)}/${lon.toFixed(3)}`;
+      }
+    }
+    const place = typeof r.place === 'string' ? r.place.trim() : '';
+    if (place) return place;
+    const city = typeof r.city === 'string' ? r.city.trim() : '';
+    return city;
+  }
+
+  /**
+   * Local Legend (façon Strava) : sur les `days` derniers jours, identifie pour
+   * chaque spot le membre ayant le plus de passages (si `count >= 2`).
+   */
+  function localLegends(rows, days = 30, now = Date.now()) {
+    const out = {};
+    if (!Array.isArray(rows) || rows.length === 0) return out;
+    const windowDays = Number.isFinite(Number(days)) && Number(days) > 0 ? Number(days) : 30;
+    const cutoff = now - windowDays * 86400 * 1000;
+    const bySpot = new Map();
+
+    for (const r of rows) {
+      if (!r || !r.user_id) continue;
+      const ts = typeof r.date === 'number' ? r.date : new Date(r.date).getTime();
+      if (!Number.isFinite(ts) || ts < cutoff) continue;
+      const key = spotKey(r);
+      if (!key) continue;
+
+      let users = bySpot.get(key);
+      if (!users) {
+        users = new Map();
+        bySpot.set(key, users);
+      }
+      const uid = String(r.user_id);
+      const existing = users.get(uid);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        users.set(uid, {
+          userId: uid,
+          username: r.username || '???',
+          avatar: r.avatar || '💩',
+          count: 1,
+        });
+      }
+    }
+
+    for (const [key, users] of bySpot.entries()) {
+      let best = null;
+      for (const u of users.values()) {
+        if (!best || u.count > best.count) best = u;
+      }
+      if (best && best.count >= 2) {
+        out[key] = best;
+      }
+    }
+    return out;
+  }
+
   // ---- rendu ----
 
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
@@ -150,6 +216,8 @@ window.GroupMapModule = (() => {
   let _testMode = false;
   let _currentGroupId = null;
   let _daysFilter = DEFAULT_HISTORY_DAYS;
+  let _currentLegends = {};
+  let _currentSpotLabels = {};
   const _hiddenUsers = new Set();
 
   const isTestMode = () => _testMode;
@@ -570,6 +638,19 @@ window.GroupMapModule = (() => {
 
   function showCluster(group, cluster) {
     if (!group || !cluster) return;
+    const key = spotKey({
+      lat: cluster.lat,
+      lon: cluster.lon,
+      place: cluster.logs?.[0]?.place,
+      city: cluster.logs?.[0]?.city,
+    });
+    const legend = key ? _currentLegends[key] : null;
+    const legendHtml = legend
+      ? `<div class="mb-2 px-3 py-1.5 rounded-full text-xs font-bold inline-flex items-center gap-1.5"
+          style="background:color-mix(in srgb,#f59e0b 18%,transparent);color:#d97706;border:1px solid color-mix(in srgb,#f59e0b 35%,transparent)">
+          👑 Local Legend : ${esc(legend.avatar)} ${esc(legend.username)} (${legend.count}×)
+        </div>`
+      : '';
     const lignes = cluster.logs.slice().sort((a, b) => b.date - a.date).slice(0, 6).map(l => {
       const dt = new Date(l.date).toLocaleString('fr-FR',
         { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -580,7 +661,7 @@ window.GroupMapModule = (() => {
       </div>`;
     }).join('');
     const titre = `${esc(group.avatar)} ${esc(group.username)} — ${cluster.count} caca${cluster.count > 1 ? 's' : ''} ici`;
-    const bodyHTML = `<div class="space-y-1 text-left">${lignes}</div>
+    const bodyHTML = `${legendHtml}<div class="space-y-1 text-left">${lignes}</div>
       <div class="mt-3 pt-2 border-t text-center" style="border-color:var(--card-border)">
         <button type="button" id="group-map-rate-spot" class="px-3 py-1.5 rounded-full text-xs font-bold"
           style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">
@@ -618,15 +699,35 @@ window.GroupMapModule = (() => {
     return el;
   }
 
-  function renderTerritories(territories, colors, spots) {
+  function renderTerritories(territories, colors, spots, legends) {
     const el = ensureTerritoriesEl();
     if (!el) return;
     const top = Array.isArray(territories) ? territories.slice(0, 5) : [];
     const spotCount = Array.isArray(spots) ? spots.length : 0;
-    if (top.length === 0 && spotCount === 0) {
+    const legendEntries = legends && typeof legends === 'object'
+      ? Object.entries(legends).sort((a, b) => b[1].count - a[1].count).slice(0, 5)
+      : [];
+    if (top.length === 0 && spotCount === 0 && legendEntries.length === 0) {
       el.innerHTML = '';
       return;
     }
+
+    const legendsHtml = legendEntries.length > 0 ? `
+      <div class="rounded-2xl p-3 space-y-2" style="background:var(--card-bg);border:1px solid var(--card-border)">
+        <div class="text-xs font-bold uppercase tracking-wider opacity-70">👑 Local Legends (30 j)</div>
+        <div class="flex flex-wrap gap-1.5">
+          ${legendEntries.map(([key, leg]) => {
+            const color = colors[leg.userId] || '#f59e0b';
+            const label = _currentSpotLabels[key] || key;
+            return `<div class="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full"
+              style="border:1px solid var(--card-border);background:color-mix(in srgb,${color} 12%,var(--card-bg))">
+              <span>${esc(leg.avatar)}</span>
+              <span class="font-bold">${esc(leg.username)}</span>
+              <span class="opacity-70">${esc(label)} · ${leg.count}×</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>` : '';
 
     const citiesHtml = top.length > 0 ? `
       <div class="rounded-2xl p-3 space-y-2" style="background:var(--card-bg);border:1px solid var(--card-border)">
@@ -652,7 +753,7 @@ window.GroupMapModule = (() => {
         <span>Toilettes Advisor : <strong>${spotCount}</strong> spot${spotCount > 1 ? 's' : ''} noté${spotCount > 1 ? 's' : ''}</span>
       </div>` : '';
 
-    el.innerHTML = `${citiesHtml}${spotsHtml}`;
+    el.innerHTML = `${legendsHtml}${citiesHtml}${spotsHtml}`;
   }
 
   async function open(groupId) {
@@ -697,13 +798,21 @@ window.GroupMapModule = (() => {
     const refreshFiltered = () => {
       const visibleRows = filterRowsByMembers(effectiveRows, _hiddenUsers);
       const visibleGroups = clusterByMember(visibleRows);
+      _currentLegends = localLegends(visibleRows, 30);
+      _currentSpotLabels = {};
+      for (const r of visibleRows) {
+        const k = spotKey(r);
+        if (k && !_currentSpotLabels[k]) {
+          _currentSpotLabels[k] = (r.city && String(r.city).trim()) || (r.place && String(r.place).trim()) || k;
+        }
+      }
       renderLegend(allGroups, colors, uid => {
         if (_hiddenUsers.has(uid)) _hiddenUsers.delete(uid);
         else _hiddenUsers.add(uid);
         refreshFiltered();
       });
       renderMap(visibleGroups, colors, mapEl, { allHidden: allGroups.length > 0 && visibleGroups.length === 0 });
-      renderTerritories(territoryWinners(visibleRows), colors, spots);
+      renderTerritories(territoryWinners(visibleRows), colors, spots, _currentLegends);
     };
 
     refreshFiltered();
@@ -723,7 +832,7 @@ window.GroupMapModule = (() => {
 
   return {
     memberColorMap, groupGeoSummary, clusterByMember, filterRowsByMembers, allPoints, emptyStateHTML,
-    territoryWinners,
+    territoryWinners, localLegends,
     TEST_USER_ID, DEFAULT_HISTORY_DAYS, getTestRows, mergeTestRows, isTestMode, setTestMode,
     open, close,
   };

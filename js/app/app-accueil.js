@@ -146,14 +146,40 @@ function renderHomeCard() {
   if (bulle) bulle.textContent = m.message;
   const lvl = $id('mascot-level');
   if (lvl) {
+    const throne = typeof throneStage === 'function' ? throneStage(niv.level) : null;
+    const throneBadge = throne
+      ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold" style="background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)">${throne.emoji} ${esc(throne.label)}</span>`
+      : '';
+    const waterToday = typeof getWaterToday === 'function' ? getWaterToday() : 0;
+    const quests = typeof dailyQuests === 'function' ? dailyQuests(state.logs, waterToday) : [];
+    const questsDone = quests.filter(q => q.done).length;
+    const questsHTML = quests.length
+      ? `
+      <div class="mt-2.5 pt-2.5 border-t" style="border-color:var(--card-border)">
+        <div class="flex items-center justify-between text-[11px] font-bold mb-1.5">
+          <span>🎯 Quêtes du jour</span>
+          <span class="opacity-70">${questsDone}/${quests.length}</span>
+        </div>
+        <div class="grid grid-cols-3 gap-1.5">
+          ${quests.map(q => `
+            <div class="px-2 py-1 rounded-xl text-[10px] font-semibold flex items-center gap-1 truncate"
+                 style="${q.done
+                   ? 'background:color-mix(in srgb,#10b981 16%,transparent);color:#059669'
+                   : 'background:rgba(128,128,128,0.10);opacity:0.8'}">
+              <span>${q.done ? '✅' : q.emoji}</span>
+              <span class="truncate">${esc(q.label)}</span>
+            </div>`).join('')}
+        </div>
+      </div>`
+      : '';
     lvl.innerHTML = `
-      <div class="flex items-center justify-between text-[11px] font-bold opacity-70">
-        <span>Niv. ${niv.level} · ${esc(niv.name)}</span>
+      <div class="flex items-center justify-between gap-2 text-[11px] font-bold opacity-70">
+        <span class="flex items-center gap-1.5 flex-wrap">Niv. ${niv.level} · ${esc(niv.name)} ${throneBadge}</span>
         <span>${niv.next ? `encore ${niv.remaining} pour « ${esc(niv.next)} »` : 'niveau max !'}</span>
       </div>
       <div class="w-full rounded-full overflow-hidden mt-1" style="height:6px;background:rgba(0,0,0,0.08)">
         <div style="width:${Math.round(niv.progress * 100)}%;height:100%;border-radius:99px;background:var(--accent);transition:width .6s"></div>
-      </div>`;
+      </div>${questsHTML}`;
   }
   const { current, pending } = streakDetails();
   const serieEl = $id('home-streak');

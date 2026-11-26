@@ -212,13 +212,8 @@ function checkHealthTrends() {
 // ===================================================
 //  EXPORT PDF MÉDICAL 🏥  (feature 8)
 // ===================================================
-function exportMedicalPDF() {
-  const el = $id('print-report');
-  if (!el) return;
-
-  const now = new Date();
-  const logs = state.logs;
-  if (!logs.length) { window.UI.toast('Aucune donnée à exporter.', 'error'); return; }
+function buildMedicalReportHTML(logs, now = new Date()) {
+  if (!Array.isArray(logs) || !logs.length) return '';
 
   const total = logs.length;
   const sorted = [...logs].sort((a, b) => a.date - b.date);
@@ -234,13 +229,37 @@ function exportMedicalPDF() {
   for (let i = 1; i < sorted.length; i++) intervals.push((sorted[i].date - sorted[i-1].date) / 3600000);
   const avgTransit = intervals.length ? Math.round(intervals.reduce((a,b) => a+b, 0) / intervals.length) : null;
 
+  const bristolByTexture = {};
+  BRISTOL_TYPES.forEach(t => {
+    (t.textures || (t.texture ? [t.texture] : [])).forEach(tex => {
+      bristolByTexture[tex] = t.num;
+    });
+  });
+  const bristolScores = logs.map(l => bristolByTexture[l.texture]).filter(n => typeof n === 'number');
+  const avgBristol = bristolScores.length
+    ? (bristolScores.reduce((a, b) => a + b, 0) / bristolScores.length).toFixed(1).replace('.', ',')
+    : null;
+
   const textureNames = { normal:'Normal (Bristol 3-4)', dur:'Dur (Bristol 1-2)', mou:'Mou (Bristol 5)', spray:'Floconneux (Bristol 6)', liquide:'Liquide (Bristol 7)', explosif:'Explosif (Bristol 7)' };
 
   // Durée et carnet de santé (v2.18.0) : sections seulement s'il y a des données
   const duree = typeof durationStats === 'function' ? durationStats(logs) : null;
   const trois = now.getTime() - 90 * 86400000;
   const sante = typeof healthTagCounts === 'function' ? healthTagCounts(logs, trois) : [];
-  const nb90  = logs.filter(l => l.date >= trois).length;
+  const logs90 = logs.filter(l => l.date >= trois);
+  const nb90  = logs90.length;
+
+  const dayKey = ts => {
+    const d = new Date(ts);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const hasPainOrBlood = l => l.mood === 'douloureux' || (
+    Array.isArray(l.health) && (l.health.includes('sang') || l.health.includes('crampes') || l.health.includes('brulure'))
+  );
+  const activeDays90 = new Set(logs90.map(l => dayKey(l.date)));
+  const painBloodDays90 = new Set(logs90.filter(hasPainOrBlood).map(l => dayKey(l.date)));
+  const painBloodPct = activeDays90.size ? Math.round((painBloodDays90.size / activeDays90.size) * 100) : 0;
+
   const sectionDuree = duree ? `
     <div class="print-section">
       <h2 style="font-size:14pt;margin-bottom:8px">Durée des passages</h2>
@@ -255,7 +274,7 @@ function exportMedicalPDF() {
       ${sante.map(t => `<p style="margin-bottom:4px"><strong>${t.meta.label}</strong> (${t.meta.kind === 'symptome' ? 'symptôme' : 'contexte'}) : ${t.n} fois</p>`).join('')}
     </div>` : '';
 
-  el.innerHTML = `
+  return `
     <div class="print-section">
       <h1 style="font-size:20pt;margin-bottom:4px">📋 Rapport intestinal médical</h1>
       <p style="opacity:.6;font-size:10pt">Généré le ${now.toLocaleDateString('fr')} — Caca-Tracker 3000 Deluxe</p>
@@ -263,7 +282,9 @@ function exportMedicalPDF() {
       <p><strong>Période :</strong> ${firstDate} → ${lastDate}</p>
       <p><strong>Total d'entrées :</strong> ${total} selles</p>
       <p><strong>Fréquence moyenne :</strong> ${avgPerDay}/jour</p>
+      ${avgBristol !== null ? `<p><strong>Bristol moyen :</strong> ${avgBristol} / 7</p>` : ''}
       ${avgTransit !== null ? `<p><strong>Transit intestinal moyen :</strong> ${avgTransit}h</p>` : ''}
+      ${activeDays90.size > 0 ? `<p><strong>Jours avec douleur ou sang (90 j) :</strong> ${painBloodDays90.size} / ${activeDays90.size} jours actifs (${painBloodPct} %)</p>` : ''}
       <p><strong>Tonnage estimé :</strong> ${(total * 0.15).toFixed(1)} kg</p>
     </div>
     <div class="print-section">
@@ -283,7 +304,17 @@ function exportMedicalPDF() {
       <h2 style="font-size:14pt;margin-bottom:8px">Note pour le médecin</h2>
       <p style="font-size:10pt;opacity:.7">Ces données ont été collectées via l'application Caca-Tracker 3000 Deluxe (enregistrement manuel). La classification des selles suit l'Échelle de Bristol (1-7). Les données sont à titre indicatif et doivent être interprétées par un professionnel de santé.</p>
     </div>`;
+}
 
+function exportMedicalPDF() {
+  const el = $id('print-report');
+  if (!el) return;
+
+  const now = new Date();
+  const logs = state.logs;
+  if (!logs.length) { window.UI.toast('Aucune donnée à exporter.', 'error'); return; }
+
+  el.innerHTML = buildMedicalReportHTML(logs, now);
   window.print();
 }
 

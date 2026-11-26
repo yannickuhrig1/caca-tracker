@@ -618,7 +618,66 @@ function setupEvents() {
 
   // Notifications settings
   setupNotifications();
+
+  // Mode Discrétion / Bureau
+  applyDiscreetMode();
+  if (typeof window.updateUserBadge === 'function' && !window.updateUserBadge._discreetWrapped) {
+    const origUpdateUserBadge = window.updateUserBadge;
+    const wrapped = function(...args) {
+      const res = origUpdateUserBadge.apply(this, args);
+      applyDiscreetMode();
+      return res;
+    };
+    wrapped._discreetWrapped = true;
+    window.updateUserBadge = wrapped;
+  }
 }
+
+const DISCREET_STORAGE_KEY = 'app.discreet';
+
+function applyDiscreetMode() {
+  const isDiscreet = typeof localStorage !== 'undefined' && localStorage.getItem(DISCREET_STORAGE_KEY) === 'true';
+  if (isDiscreet) {
+    document.documentElement.dataset.discreet = 'true';
+  } else {
+    delete document.documentElement.dataset.discreet;
+  }
+
+  const titleEl = $id('app-title');
+  if (titleEl) {
+    if (isDiscreet) {
+      if (titleEl.textContent !== 'Suivi Transit') {
+        titleEl.dataset.prevTitle = titleEl.textContent;
+        titleEl.textContent = 'Suivi Transit';
+      }
+    } else if (titleEl.textContent === 'Suivi Transit') {
+      titleEl.textContent = titleEl.dataset.prevTitle || 'Caca-Tracker';
+    }
+  }
+
+  const btn = $id('discreet-toggle');
+  const knob = $id('discreet-knob');
+  if (btn) {
+    btn.style.background = isDiscreet ? 'var(--accent)' : 'rgba(0,0,0,0.15)';
+    btn.classList.toggle('is-on', isDiscreet);
+    btn.setAttribute('aria-checked', String(isDiscreet));
+  }
+  if (knob) knob.style.transform = isDiscreet ? 'translateX(20px)' : 'translateX(0)';
+
+  const hdrBtn = $id('header-discreet-btn');
+  if (hdrBtn) {
+    hdrBtn.setAttribute('aria-pressed', String(isDiscreet));
+    hdrBtn.title = isDiscreet ? 'Désactiver le Mode Discrétion' : 'Mode Discrétion (Bureau)';
+  }
+}
+
+window.toggleDiscreetMode = function() {
+  const isDiscreet = typeof localStorage !== 'undefined' && localStorage.getItem(DISCREET_STORAGE_KEY) === 'true';
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(DISCREET_STORAGE_KEY, String(!isDiscreet));
+  }
+  applyDiscreetMode();
+};
 
 // ===================================================
 //  HISTORIQUE : recherche, filtres, pagination

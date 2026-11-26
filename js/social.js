@@ -112,6 +112,7 @@ const SocialModule = (() => {
     connected.classList.remove('hidden');
 
     ensureDrawerGeoToggle();
+    ensureGroupWrappedButton();
     applySharingToggles();
     initRealtime();
     await renderGroupList();
@@ -1628,6 +1629,7 @@ const SocialModule = (() => {
 
     // Réglages de partage (profil + tiroir groupe)
     ensureDrawerGeoToggle();
+    ensureGroupWrappedButton();
     applySharingToggles();
     document.getElementById('geo-share-toggle')?.addEventListener('click', toggleGeoSharing);
     document.getElementById('stats-share-toggle')?.addEventListener('click', toggleStatsSharing);
@@ -1749,6 +1751,120 @@ const SocialModule = (() => {
   }
 
   // Réglages de partage (profil + tiroir #groups-drawer) : position + stats détaillées
+  function ensureGroupWrappedButton() {
+    if (document.getElementById('group-wrapped-btn')) return;
+    const mapBtn = document.getElementById('open-group-map-btn');
+    const parent = mapBtn?.parentElement;
+    if (!parent) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'group-wrapped-btn';
+    btn.className = 'w-full py-2 px-4 rounded-full text-xs font-bold flex items-center justify-center gap-2 transition active:scale-[0.98]';
+    btn.style.cssText = 'background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)';
+    btn.textContent = '🎬 Bilan du mois';
+    btn.title = 'Group Wrapped du mois courant';
+    btn.setAttribute('aria-label', 'Bilan du mois du groupe');
+    mapBtn.insertAdjacentElement('afterend', btn);
+    btn.addEventListener('click', openGroupWrappedModal);
+  }
+
+  async function openGroupWrappedModal() {
+    const groupId = _activeGroupId;
+    if (!groupId) {
+      window.UI?.toast?.('Rejoins ou sélectionne un groupe d’abord', 'info');
+      return;
+    }
+    const btn = document.getElementById('group-wrapped-btn');
+    if (btn) btn.disabled = true;
+    try {
+      const now = new Date();
+      const curMonth = now.getMonth();
+      const curYear = now.getFullYear();
+      const monthLabel = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+
+      const [stats, geoRows] = await Promise.all([
+        window.SupabaseClient.getGroupStats(groupId),
+        window.SupabaseClient?.getGroupGeoPoops?.(groupId, 31).catch(() => null) ?? Promise.resolve(null),
+      ]);
+
+      const members = Object.values(stats || {});
+      const total = members.reduce((sum, m) => sum + (Number(m.month) || 0), 0);
+
+      if (!members.length || total === 0) {
+        window.UI?.info?.({
+          title: '🎬 Group Wrapped',
+          bodyHTML: `<div class="text-sm opacity-75 text-center py-3">Aucun passage enregistré en ${esc(monthLabel)} pour le groupe.</div>`,
+        });
+        return;
+      }
+
+      const champ = members.slice().sort((a, b) => (b.month || 0) - (a.month || 0))[0];
+      const bestStreak = members.slice().sort((a, b) => (b.streak || 0) - (a.streak || 0))[0];
+
+      let topCity = null;
+      if (Array.isArray(geoRows) && geoRows.length > 0) {
+        const cityCounts = new Map();
+        for (const r of geoRows) {
+          if (!r || typeof r.city !== 'string') continue;
+          const city = r.city.trim();
+          if (!city) continue;
+          const d = new Date(r.date);
+          if (d.getMonth() !== curMonth || d.getFullYear() !== curYear) continue;
+          cityCounts.set(city, (cityCounts.get(city) || 0) + 1);
+        }
+        for (const [city, count] of cityCounts.entries()) {
+          if (!topCity || count > topCity.count) topCity = { city, count };
+        }
+      }
+
+      const kg = (total * 0.15).toFixed(1);
+      const streakCard = bestStreak && (bestStreak.streak || 0) > 0
+        ? `<div class="rounded-2xl p-3" style="background:color-mix(in srgb,var(--accent) 10%,var(--card-bg));border:1px solid var(--card-border)">
+            <div class="text-[11px] uppercase tracking-wider opacity-70">🔥 Meilleur streak</div>
+            <div class="text-sm font-bold mt-1 flex items-center gap-1.5">
+              ${avatarHTML(bestStreak.avatar, '🔥')}
+              <span>${esc(bestStreak.username)}</span>
+              <span class="opacity-75">(${bestStreak.streak} j)</span>
+            </div>
+          </div>`
+        : '';
+
+      const cityCard = topCity
+        ? `<div class="rounded-2xl p-3" style="background:color-mix(in srgb,var(--accent) 10%,var(--card-bg));border:1px solid var(--card-border)">
+            <div class="text-[11px] uppercase tracking-wider opacity-70">🏙️ Ville la plus active</div>
+            <div class="text-sm font-bold mt-1">${esc(topCity.city)} <span class="opacity-75">(${topCity.count}×)</span></div>
+          </div>`
+        : '';
+
+      const bodyHTML = `
+        <div class="space-y-2.5 text-left">
+          <div class="text-xs font-bold uppercase tracking-wider opacity-65 text-center capitalize">${esc(monthLabel)}</div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="rounded-2xl p-3" style="background:color-mix(in srgb,var(--accent) 10%,var(--card-bg));border:1px solid var(--card-border)">
+              <div class="text-[11px] uppercase tracking-wider opacity-70">💩 Total du groupe</div>
+              <div class="text-lg font-extrabold mt-0.5">${total} <span class="text-xs font-normal opacity-75">(${kg} kg)</span></div>
+            </div>
+            <div class="rounded-2xl p-3" style="background:color-mix(in srgb,#f59e0b 14%,var(--card-bg));border:1px solid var(--card-border)">
+              <div class="text-[11px] uppercase tracking-wider opacity-70">👑 Championne</div>
+              <div class="text-sm font-bold mt-1 flex items-center gap-1 truncate">
+                ${avatarHTML(champ.avatar, '👑')}
+                <span class="truncate">${esc(champ.username)}</span>
+                <span class="opacity-75">(${champ.month})</span>
+              </div>
+            </div>
+          </div>
+          ${streakCard}
+          ${cityCard}
+        </div>`;
+
+      window.UI?.info?.({ title: '🎬 Group Wrapped', bodyHTML });
+    } catch (e) {
+      window.UI?.toast?.(e.message || 'Impossible de charger le bilan du mois', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
   function ensureDrawerGeoToggle() {
     if (document.getElementById('drawer-geo-share-toggle')) return;
     const drawer = document.getElementById('groups-drawer');

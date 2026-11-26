@@ -5,6 +5,8 @@
 // ============================================================
 
 const WARDROBE_STORAGE_KEY = 'mascot.wardrobe.v1';
+const SHIELD_KEY = 'mascot.shields.v1';
+const SHIELD_COST = 3;
 
 const MASCOT_COSTUMES = [
   { id: 'none',       name: 'Naturel',            emoji: '💩', cost: 0 },
@@ -142,13 +144,35 @@ function isCostumeUnlocked(id, bestStreak = 0) {
   return false;
 }
 
-/** Somme des rouleaux dépensés pour les costumes achetés. */
+/** Nombre de Boucliers anti-oubli en stock. */
+function getShieldCount() {
+  try {
+    const raw = localStorage.getItem(SHIELD_KEY);
+    if (!raw) return 0;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === 'number' && Number.isFinite(parsed) && parsed > 0) {
+      return Math.floor(parsed);
+    }
+    if (parsed && typeof parsed === 'object' && Number.isFinite(Number(parsed.count))) {
+      return Math.max(0, Math.floor(Number(parsed.count)));
+    }
+  } catch {
+    try {
+      const n = parseInt(localStorage.getItem(SHIELD_KEY) || '0', 10);
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    } catch {}
+  }
+  return 0;
+}
+
+/** Somme des rouleaux dépensés pour les costumes et boucliers achetés. */
 function getSpentRolls() {
   const w = loadWardrobe();
-  return w.unlocked.reduce((sum, id) => {
+  const costumesSpent = w.unlocked.reduce((sum, id) => {
     const c = costumeMeta(id);
     return sum + (c && c.cost > 0 ? c.cost : 0);
   }, 0);
+  return costumesSpent + (getShieldCount() * SHIELD_COST);
 }
 
 /** Solde de Rouleaux d'Or 🧻 disponibles (jamais négatif). */
@@ -184,6 +208,70 @@ function buyCostume(id, logs, bestStreak, gamesPlayed) {
   w.unlocked.push(id);
   saveWardrobe(w);
   return { ok: true, remaining: Math.max(0, available - c.cost), reason: null };
+}
+
+/** Achète un Bouclier anti-oubli (3 🧻) et l'ajoute au stock. */
+function buyStreakShield(logs, bestStreak, gamesPlayed) {
+  const useAppState = logs === undefined;
+  const l = useAppState ? _currentLogs() : logs;
+  const bs = useAppState && bestStreak === undefined ? _currentBestStreak(l) : (bestStreak ?? 0);
+  const gp = useAppState && gamesPlayed === undefined ? _currentGamesPlayed() : (gamesPlayed ?? 0);
+  const available = getAvailableRolls(l, bs, gp);
+
+  if (available < SHIELD_COST) {
+    return { ok: false, remaining: available, count: getShieldCount(), reason: 'not_enough_rolls' };
+  }
+
+  const nextCount = getShieldCount() + 1;
+  try {
+    localStorage.setItem(SHIELD_KEY, String(nextCount));
+  } catch {}
+  return {
+    ok: true,
+    remaining: Math.max(0, available - SHIELD_COST),
+    count: nextCount,
+    reason: null,
+  };
+}
+
+/** Stade évolutif du trône de la mascotte selon son niveau. */
+function throneStage(level = 1) {
+  const lvl = Math.max(1, Math.floor(Number(level) || 1));
+  if (lvl >= 7) return { emoji: '🚀', label: 'Trône spatial' };
+  if (lvl >= 5) return { emoji: '👑', label: 'Trône doré' };
+  if (lvl >= 3) return { emoji: '🚽', label: 'Porcelaine royale' };
+  return { emoji: '🪵', label: 'Trône en bois' };
+}
+
+/** Fonction pure : 3 quêtes journalières avec leur état de complétion. */
+function dailyQuests(logs = [], waterToday = 0, now = Date.now()) {
+  const debut = new Date(now);
+  debut.setHours(0, 0, 0, 0);
+  const fin = new Date(now);
+  fin.setHours(23, 59, 59, 999);
+  const startMs = debut.getTime();
+  const endMs = fin.getTime();
+
+  const todayLogs = (Array.isArray(logs) ? logs : []).filter(l => {
+    if (!l || l.date === undefined || l.date === null) return false;
+    const t = Number(l.date);
+    return Number.isFinite(t) && t >= startMs && t <= endMs;
+  });
+
+  const hasDuration = todayLogs.some(l => (
+    typeof validDuration === 'function'
+      ? validDuration(l.duration) !== null
+      : (l.duration !== null && l.duration !== undefined && l.duration !== ''
+        && Number.isFinite(Number(l.duration)) && Math.round(Number(l.duration)) > 0)
+  ));
+
+  const water = Math.max(0, Number(waterToday) || 0);
+
+  return [
+    { id: 'eau',     emoji: '💧', label: 'Boire au moins 6 verres d\'eau',    done: water >= 6,          reward: 1 },
+    { id: 'duree',   emoji: '⏱️', label: 'Noter un passage avec durée',      done: hasDuration,         reward: 1 },
+    { id: 'passage', emoji: '💩', label: 'Enregistrer au moins 1 passage',   done: todayLogs.length >= 1, reward: 1 },
+  ];
 }
 
 /** Équipe `'auto'` ou un identifiant de costume débloqué. */
@@ -322,6 +410,10 @@ function renderWardrobePanel(containerId = 'wardrobe-container') {
   const autoBtnStyle = w.equipped === 'auto'
     ? 'background:var(--accent);color:#fff'
     : 'background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent)';
+  const shields = getShieldCount();
+  const shieldBtnStyle = available >= SHIELD_COST
+    ? 'background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff'
+    : 'background:rgba(128,128,128,0.15);color:var(--text-secondary);opacity:0.75';
 
   container.innerHTML = `
     <div class="card rounded-[2rem] p-4 shadow mb-4">
@@ -348,6 +440,16 @@ function renderWardrobePanel(containerId = 'wardrobe-container') {
           </button>
         </div>
       </div>
+      <div class="flex items-center justify-between gap-2 p-3 rounded-[1.25rem] mb-3"
+           style="border:1.5px solid var(--card-border);background:var(--card-bg)">
+        <div class="min-w-0">
+          <div class="font-bold text-xs">🛡️ Bouclier anti-oubli <span class="opacity-70">(Stock : ${shields})</span></div>
+          <div class="text-[11px] opacity-60">Protège ta série en cas d'oubli</div>
+        </div>
+        <button type="button" data-shield-buy="1"
+          class="px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition"
+          style="${shieldBtnStyle}">🛡️ Bouclier anti-oubli (3 🧻)</button>
+      </div>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         ${cardsHTML}
       </div>
@@ -356,6 +458,19 @@ function renderWardrobePanel(containerId = 'wardrobe-container') {
   if (typeof container.addEventListener === 'function' && !container._wardrobeBound) {
     container._wardrobeBound = true;
     container.addEventListener('click', e => {
+      const shieldBtn = e.target?.closest?.('[data-shield-buy]');
+      if (shieldBtn) {
+        const res = buyStreakShield();
+        if (res.ok) {
+          if (typeof haptic === 'function') haptic(20);
+          window.UI?.toast?.(`🛡️ Bouclier anti-oubli acheté ! (Stock : ${res.count})`, 'party');
+          renderWardrobePanel(containerId);
+          if (typeof renderHomeCard === 'function') renderHomeCard();
+        } else {
+          window.UI?.toast?.(`Il te manque ${SHIELD_COST - res.remaining} 🧻 pour un bouclier !`, 'info');
+        }
+        return;
+      }
       const equipBtn = e.target?.closest?.('[data-costume-equip]');
       if (equipBtn) {
         const targetId = equipBtn.getAttribute('data-costume-equip');
