@@ -147,10 +147,11 @@ window.editLog = function(idOrIndex) {
   if (log.mood) document.querySelector(`.mood-btn[data-mood="${log.mood}"]`)?.click();
 
   if (log.place) selectPlace(log.place);
-  // Une position deja enregistree est conservee telle quelle, sauf nouveau clic sur 📍
-  pendingGeo = window.PoopMapModule?.hasGeo(log) ? { lat: log.lat, lon: log.lon } : null;
-  const geoStatus = $id('geo-status');
-  if (geoStatus) geoStatus.textContent = pendingGeo ? `📍 ${pendingGeo.lat.toFixed(4)}, ${pendingGeo.lon.toFixed(4)}` : '';
+  // Une position déjà enregistrée est conservée telle quelle, sauf nouveau clic sur 📍
+  const hasValidGeo = typeof log.lat === 'number' && typeof log.lon === 'number'
+    && !isNaN(log.lat) && !isNaN(log.lon);
+  pendingGeo = hasValidGeo ? { lat: log.lat, lon: log.lon } : null;
+  if (typeof refreshGeoButton === 'function') refreshGeoButton();
 
   $id('comment').value = log.comment || '';
   setDurationInput(log.duration);

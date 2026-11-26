@@ -390,8 +390,13 @@ function refreshGeoButton() {
   const btn = $id('geo-btn');
   if (!btn) return;
   btn.classList.remove('hidden');
+  const hasGeo = !!(pendingGeo && typeof pendingGeo.lat === 'number' && typeof pendingGeo.lon === 'number'
+    && !isNaN(pendingGeo.lat) && !isNaN(pendingGeo.lon));
+  btn.textContent = hasGeo ? '📍 Position enregistrée ✅' : '📍 Ajouter ma position';
   const status = $id('geo-status');
-  if (status && !pendingGeo) status.textContent = '';
+  if (status) {
+    status.textContent = hasGeo ? `${pendingGeo.lat.toFixed(4)}, ${pendingGeo.lon.toFixed(4)}` : '';
+  }
 }
 
 function selectPlace(id) {
@@ -431,8 +436,7 @@ function closeDrawer() {
   if (santeDetails) santeDetails.open = true;
   document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('border-amber-400','bg-amber-50'));
   document.querySelectorAll('.place-btn').forEach(b => b.classList.remove('border-amber-400','bg-amber-50'));
-  const geoStatus = $id('geo-status');
-  if (geoStatus) geoStatus.textContent = '';
+  refreshGeoButton();
   $id('retro-chk').checked = false;
   $id('retro-date-wrap').classList.add('hidden');
   $id('retro-toggle-row').classList.remove('hidden');
