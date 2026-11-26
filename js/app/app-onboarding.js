@@ -8,19 +8,19 @@ const ONBOARDING_KEY = 'cacaTracker.onboardingSeen';
 
 const ONBOARDING_SLIDES = [
   {
-    emoji: '💩',
-    titre: 'Bienvenue !',
-    texte: 'Ici tu notes tes cacas. L\'app en tire des statistiques, des badges et des comparaisons — le tout gardé sur ton téléphone.'
+    emoji: '🎨',
+    titre: 'Bienvenue & Thème',
+    texte: 'Note tes passages en un geste pour suivre tes stats et tes badges. Choisis ton ambiance parmi 19 thèmes dans Profil (ou active le Mode Discrétion au bureau).'
   },
   {
-    emoji: '👇',
-    titre: 'Un gros bouton, c\'est tout',
-    texte: 'Appuie sur le bouton 💩 de l\'accueil, choisis une texture et une couleur, valide. Tu peux aussi saisir un caca oublié en activant « caca en retard ».'
+    emoji: '📍',
+    titre: 'Position GPS optionnelle',
+    texte: 'Active la géolocalisation dans Réglages si tu veux cartographier tes conquêtes et voir la carte. Désactivée par défaut : tes positions restent privées.'
   },
   {
     emoji: '👯',
-    titre: 'Avec tes copines',
-    texte: 'Crée un compte pour retrouver tes données sur tous tes appareils, puis rejoins un groupe avec un code ou un QR : podium, défis de la semaine et chambrage inclus.'
+    titre: 'Groupe & Partage entre potes',
+    texte: 'Crée un compte et rejoins un groupe avec un code ou un QR : podium mensuel, défis de la semaine, chat et carte commune entre amies.'
   }
 ];
 

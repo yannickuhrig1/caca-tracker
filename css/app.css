@@ -530,3 +530,19 @@ nav {
     grid-column: 1 / -1;
   }
 }
+
+/* ===================== MODE DISCRÉTION (BUREAU) ===================== */
+html[data-discreet="true"] header.app-header .hdr-logo,
+html[data-discreet="true"] header.app-header .hdr-explicit-emoji,
+html[data-discreet="true"] header.app-header #app-version-short {
+  display: none !important;
+}
+html[data-discreet="true"] header.app-header #streak-badge,
+html[data-discreet="true"] header.app-header #admin-hero {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+html[data-discreet="true"] #header-discreet-btn {
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+}
