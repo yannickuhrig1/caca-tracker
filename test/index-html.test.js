@@ -97,3 +97,22 @@ test('cohérence sw.js : chaque script local js/... de index.html est dans ASSET
   assert.deepStrictEqual(manquants, [],
     'chaque script local js/... de index.html doit être pré-caché dans ASSETS de sw.js');
 });
+
+test('absence de #poop-btn dans index.html', () => {
+  assert.ok(!/\bid="poop-btn"/.test(html),
+    '#poop-btn ne doit plus exister dans index.html (doublon avec #sidebar-poop-btn / #dock-poop-btn)');
+});
+
+test('#geo-btn est présent dans #saisie-pane-express sans classe hidden', () => {
+  const debut = html.indexOf('id="saisie-pane-express"');
+  const fin = html.indexOf('id="saisie-pane-sante"');
+  assert.ok(debut !== -1 && fin !== -1 && debut < fin,
+    '#saisie-pane-express doit précéder #saisie-pane-sante');
+  const paneExpress = html.slice(debut, fin);
+  const baliseGeo = paneExpress.match(/<button\b[^>]*\bid="geo-btn"[^>]*>/);
+  assert.ok(baliseGeo, '#geo-btn doit être présent dans #saisie-pane-express');
+  const classMatch = baliseGeo[0].match(/\bclass="([^"]*)"/);
+  const classes = classMatch ? classMatch[1].split(/\s+/) : [];
+  assert.ok(!classes.includes('hidden'),
+    '#geo-btn ne doit pas avoir la classe hidden par défaut');
+});
