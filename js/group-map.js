@@ -21,6 +21,7 @@ window.GroupMapModule = (() => {
                          '#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#e11d48','#0ea5e9'];
 
   const TEST_USER_ID = 'test-user-poopmap';
+  const DEFAULT_HISTORY_DAYS = 3650;
 
   // ---- fonctions pures (testées) ----
 
@@ -172,7 +173,7 @@ window.GroupMapModule = (() => {
       return 'Personne n\'a encore partagé sa position, toi y compris. '
            + 'Active « 📍 Partager ma position » dans ton profil pour apparaître ici.';
     }
-    return 'Tu partages bien ta position 👍, mais aucun caca géolocalisé sur les 30 derniers jours. '
+    return 'Tu partages bien ta position 👍, mais aucun caca géolocalisé pour le moment. '
          + 'Active « 🗺️ Enregistrer la position » dans ⚙️ Réglages, puis touche 📍 en ajoutant un caca. '
          + 'Tes copines doivent faire pareil de leur côté.';
   }
@@ -199,6 +200,7 @@ window.GroupMapModule = (() => {
         const attrib = canvas.querySelector('.poopmap-attrib');
         if (attrib) attrib.textContent = PM().mapStyle?.().attrib || '© OpenStreetMap';
         drawLayer(canvas, groups, colors, width, height);
+        wirePins(canvas, groups);
       });
     });
   }
@@ -235,6 +237,37 @@ window.GroupMapModule = (() => {
     wire(canvas, groups, colors, width, height);
   }
 
+  function ensurePinsLayer(layer) {
+    let pinsLayer = layer.querySelector('.poopmap-pins');
+    if (!pinsLayer) {
+      pinsLayer = document.createElement('div');
+      pinsLayer.className = 'poopmap-pins';
+      pinsLayer.style.cssText = 'position:absolute;inset:0';
+      layer.appendChild(pinsLayer);
+    }
+    return pinsLayer;
+  }
+
+  function upsertTile(layer, existingTiles, pinsLayer, key, src, left, top) {
+    let img = existingTiles.get(key);
+    if (img) {
+      existingTiles.delete(key);
+      img.style.left = `${left}px`;
+      img.style.top = `${top}px`;
+      return;
+    }
+    img = document.createElement('img');
+    img.className = 'poopmap-tile';
+    img.alt = '';
+    img.setAttribute('aria-hidden', 'true');
+    img.loading = 'lazy';
+    img.dataset.tileKey = key;
+    img.src = src;
+    img.style.left = `${left}px`;
+    img.style.top = `${top}px`;
+    layer.insertBefore(img, pinsLayer);
+  }
+
   function drawLayer(canvas, groups, colors, width, height) {
     const layer = canvas?.querySelector('.poopmap-layer');
     if (!layer || !view) return;
@@ -250,31 +283,39 @@ window.GroupMapModule = (() => {
     const x0 = Math.floor(originX / 256), x1 = Math.floor((originX + width) / 256);
     const y0 = Math.floor(originY / 256), y1 = Math.floor((originY + height) / 256);
 
-    let html = '';
+    const pinsLayer = ensurePinsLayer(layer);
+    const existingTiles = new Map();
+    layer.querySelectorAll('img.poopmap-tile[data-tile-key]').forEach(img => {
+      existingTiles.set(img.dataset.tileKey, img);
+    });
+
+    const style = PMm.mapStyle();
+    const styleId = PMm.getMapStyle ? PMm.getMapStyle() : 'default';
+
     for (let x = x0; x <= x1; x++) {
       for (let y = y0; y <= y1; y++) {
         if (y < 0 || y >= maxTile) continue;
         const wrapped = ((x % maxTile) + maxTile) % maxTile;
-        const style = PMm.mapStyle();
-        html += `<img class="poopmap-tile" alt="" aria-hidden="true" loading="lazy"
-          src="${style.tile(zoom, wrapped, y)}"
-          style="left:${x * 256 - originX}px;top:${y * 256 - originY}px">`;
+        const left = x * 256 - originX;
+        const top = y * 256 - originY;
+        upsertTile(layer, existingTiles, pinsLayer, `${styleId}:base:${zoom}/${x}/${y}`, style.tile(zoom, wrapped, y), left, top);
         // Surcouche (noms de lieux, transparente) pour les styles qui en ont une.
         if (style.overlay) {
-          html += `<img class="poopmap-tile" alt="" aria-hidden="true" loading="lazy"
-            src="${style.overlay(zoom, wrapped, y)}"
-            style="left:${x * 256 - originX}px;top:${y * 256 - originY}px">`;
+          upsertTile(layer, existingTiles, pinsLayer, `${styleId}:overlay:${zoom}/${x}/${y}`, style.overlay(zoom, wrapped, y), left, top);
         }
       }
     }
 
+    existingTiles.forEach(img => img.remove());
+
+    let pinsHtml = '';
     groups.forEach((g, gi) => {
       g.clusters.forEach((c, ci) => {
         const px = PMm.lonToTileX(c.lon, zoom) * 256 - originX;
         const py = PMm.latToTileY(c.lat, zoom) * 256 - originY;
         if (px < -40 || py < -40 || px > width + 40 || py > height + 40) return;
         const emoji = PMm.placeEmoji(c.logs.map(l => l.place).filter(Boolean)[0]);
-        html += `<button type="button" class="poopmap-pin" data-group="${gi}" data-cluster="${ci}"
+        pinsHtml += `<button type="button" class="poopmap-pin" data-group="${gi}" data-cluster="${ci}"
           style="left:${px}px;top:${py}px;background:${colors[g.userId]}"
           aria-label="${c.count} caca${c.count > 1 ? 's' : ''} de ${esc(g.username)} ici">
           <span aria-hidden="true">${emoji}</span>
@@ -283,12 +324,13 @@ window.GroupMapModule = (() => {
       });
     });
 
-    layer.innerHTML = html;
+    pinsLayer.innerHTML = pinsHtml;
   }
 
   function wire(canvas, groups, colors, width, height) {
     if (!canvas) return;
     const PMm = PM();
+    const layer = canvas.querySelector('.poopmap-layer');
 
     canvas.querySelectorAll('[data-gmap]').forEach(btn => {
       btn.addEventListener('click', e => {
@@ -301,9 +343,10 @@ window.GroupMapModule = (() => {
       });
     });
 
-    // Gestes : 1 doigt = déplacement, 2 doigts = pincement (zoom autour des doigts).
+    // Gestes : 1 doigt = déplacement (GPU translate3d + rAF), 2 doigts = pincement cadencé par rAF.
     const pointers = new Map();
     let pinchDist = 0, pinchMX = 0, pinchMY = 0, moved = 0;
+    let totalDx = 0, totalDy = 0, dragRaf = 0, pinchRaf = 0;
 
     const rel = (clientX, clientY) => {
       const r = canvas.getBoundingClientRect();
@@ -316,6 +359,16 @@ window.GroupMapModule = (() => {
       view = { ...view, lon: PMm.tileXToLon(cx / 256, view.zoom), lat: PMm.tileYToLat(cy / 256, view.zoom) };
     };
     const redraw = () => { drawLayer(canvas, groups, colors, width, height); wirePins(canvas, groups); };
+    const flushDrag = () => {
+      if (dragRaf) { cancelAnimationFrame(dragRaf); dragRaf = 0; }
+      if (layer) layer.style.transform = '';
+      if (totalDx !== 0 || totalDy !== 0) {
+        panBy(totalDx, totalDy);
+        totalDx = 0;
+        totalDy = 0;
+        redraw();
+      }
+    };
 
     const onMove = e => {
       if (!pointers.has(e.pointerId) || !view) return;
@@ -325,29 +378,48 @@ window.GroupMapModule = (() => {
 
       if (pointers.size === 1) {
         moved += Math.abs(dx) + Math.abs(dy);
-        if (moved > 4) { panBy(dx, dy); redraw(); }
+        if (moved > 4) {
+          totalDx += dx;
+          totalDy += dy;
+          if (!dragRaf) {
+            dragRaf = requestAnimationFrame(() => {
+              dragRaf = 0;
+              if (layer) layer.style.transform = `translate3d(${totalDx}px, ${totalDy}px, 0)`;
+            });
+          }
+        }
       } else if (pointers.size === 2) {
-        const [a, b] = [...pointers.values()];
-        const dist = Math.hypot(a.x - b.x, a.y - b.y);
-        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-        if (pinchDist > 0 && dist > 0) {
-          const r = rel(mx, my);
-          const factor = dist / pinchDist;
-          const nv = PMm.zoomAroundView(view, r.x, r.y, view.zoom + Math.log2(factor), width, height);
-          if (nv !== view) view = nv;
-          panBy(mx - pinchMX, my - pinchMY);
-          pinchDist = dist; pinchMX = mx; pinchMY = my;
-          redraw();
+        if (!pinchRaf) {
+          pinchRaf = requestAnimationFrame(() => {
+            pinchRaf = 0;
+            if (pointers.size !== 2 || !view) return;
+            const [a, b] = [...pointers.values()];
+            const dist = Math.hypot(a.x - b.x, a.y - b.y);
+            const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+            if (pinchDist > 0 && dist > 0) {
+              const r = rel(mx, my);
+              const factor = dist / pinchDist;
+              const nv = PMm.zoomAroundView(view, r.x, r.y, view.zoom + Math.log2(factor), width, height);
+              if (nv !== view) view = nv;
+              panBy(mx - pinchMX, my - pinchMY);
+              pinchDist = dist; pinchMX = mx; pinchMY = my;
+              redraw();
+            }
+          });
         }
       }
     };
     const onUp = e => {
       pointers.delete(e.pointerId);
-      if (pointers.size < 2) pinchDist = 0;
+      if (pointers.size < 2) {
+        if (pinchRaf) { cancelAnimationFrame(pinchRaf); pinchRaf = 0; }
+        pinchDist = 0;
+      }
       if (pointers.size === 0) {
         window.removeEventListener('pointermove', onMove);
         window.removeEventListener('pointerup', onUp);
         window.removeEventListener('pointercancel', onUp);
+        flushDrag();
       }
     };
 
@@ -358,9 +430,12 @@ window.GroupMapModule = (() => {
         window.addEventListener('pointerup', onUp);
         window.addEventListener('pointercancel', onUp);
         moved = 0;
+        totalDx = 0;
+        totalDy = 0;
       }
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pointers.size === 2) {
+        flushDrag();
         const [a, b] = [...pointers.values()];
         pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
         pinchMX = (a.x + b.x) / 2; pinchMY = (a.y + b.y) / 2;
@@ -413,7 +488,7 @@ window.GroupMapModule = (() => {
 
     modal.classList.remove('hidden');
 
-    const rows = await window.SupabaseClient.getGroupGeoPoops(groupId, 30).catch(() => null);
+    const rows = await window.SupabaseClient.getGroupGeoPoops(groupId, DEFAULT_HISTORY_DAYS).catch(() => null);
     const effectiveRows = _testMode ? mergeTestRows(rows) : rows;
     const summary = groupGeoSummary(effectiveRows);
     document.getElementById('group-map-members').textContent =
@@ -447,7 +522,7 @@ window.GroupMapModule = (() => {
 
   return {
     memberColorMap, groupGeoSummary, clusterByMember, allPoints, emptyStateHTML,
-    TEST_USER_ID, getTestRows, mergeTestRows, isTestMode, setTestMode,
+    TEST_USER_ID, DEFAULT_HISTORY_DAYS, getTestRows, mergeTestRows, isTestMode, setTestMode,
     open, close,
   };
 })();
