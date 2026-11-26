@@ -167,6 +167,93 @@ const SocialModule = (() => {
     }
   }
 
+  // Cache court pour mutualiser getGroupFeed(groupId, 200) entre podium, comparatif, mission et feed
+  let _feedReq = null;
+  function fetchGroupFeedOnce(groupId) {
+    if (_feedReq && _feedReq.groupId === groupId && (Date.now() - _feedReq.ts) < 2000) {
+      return _feedReq.promise;
+    }
+    const promise = window.SupabaseClient.getGroupFeed(groupId, 200);
+    _feedReq = { groupId, ts: Date.now(), promise };
+    return promise;
+  }
+
+  function groupPoopsByUser(feed) {
+    const byUser = {};
+    (feed || []).forEach(item => {
+      if (!item || (item.kind && item.kind !== 'poop') || !item.user_id) return;
+      if (!byUser[item.user_id]) byUser[item.user_id] = [];
+      byUser[item.user_id].push(item);
+    });
+    return byUser;
+  }
+
+  function memberTitleBadgeHTML(logs) {
+    if (!Array.isArray(logs) || !logs.length) return '';
+    const title = window.SocialFun?.weeklyMemberTitle?.(logs);
+    if (!title) return '';
+    return `<span class="text-[10px] font-medium px-1.5 py-0.5 rounded-full opacity-85" style="background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent)" title="Titre de la semaine">${esc(title.emoji)} ${esc(title.label)}</span>`;
+  }
+
+  function ensureWeekendMissionCard() {
+    let card = document.getElementById('weekend-mission-card');
+    if (card) return card;
+    const groupContent = document.getElementById('group-content');
+    if (!groupContent) return null;
+    card = document.createElement('div');
+    card.id = 'weekend-mission-card';
+    card.className = 'card p-5 rounded-[2rem] shadow social-pane hidden';
+    card.dataset.pane = 'activite';
+    const recap = document.getElementById('weekly-recap');
+    if (recap && recap.parentNode === groupContent) {
+      recap.insertAdjacentElement('afterend', card);
+    } else {
+      groupContent.prepend(card);
+    }
+    return card;
+  }
+
+  async function renderWeekendMission(groupId) {
+    const card = ensureWeekendMissionCard();
+    if (!card) return;
+    try {
+      const [stats, feed] = await Promise.all([
+        window.SupabaseClient.getGroupStats(groupId),
+        fetchGroupFeedOnce(groupId).catch(() => [])
+      ]);
+      const memberCount = Object.keys(stats || {}).length || 1;
+      const allLogs = (feed || []).filter(item => !item.kind || item.kind === 'poop');
+      const mission = window.SocialFun?.weekendCoopMission?.(allLogs, memberCount);
+      if (!mission) {
+        card.classList.add('hidden');
+        return;
+      }
+      card.classList.remove('hidden');
+      const remaining = Math.max(0, mission.target - mission.count);
+      const subText = mission.done
+        ? 'Bravo la team, objectif collectif atteint !'
+        : mission.isWeekend
+          ? `Encore ${remaining} caca${remaining > 1 ? 's' : ''} ensemble avant dimanche minuit !`
+          : `Aperçu sam–dim : objectif ${mission.target} cacas en groupe.`;
+      card.innerHTML = `
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <h4 class="font-bold flex items-center gap-2">🤝 Mission du week-end</h4>
+          ${mission.done
+            ? '<span class="text-xs font-bold px-2.5 py-0.5 rounded-full" style="background:color-mix(in srgb,#10b981 18%,transparent);color:#10b981">✅ Accomplie</span>'
+            : `<span class="text-xs font-bold opacity-75">${mission.count} / ${mission.target}</span>`}
+        </div>
+        <div class="flex items-center justify-between text-xs opacity-70 mb-2">
+          <span>${esc(subText)}</span>
+          <span class="font-bold">${mission.pct}%</span>
+        </div>
+        <div style="height:10px;background:rgba(0,0,0,0.08);border-radius:99px;overflow:hidden">
+          <div style="width:${mission.pct}%;height:100%;border-radius:99px;background:${mission.done ? '#10b981' : 'var(--accent)'};transition:width .5s ease"></div>
+        </div>`;
+    } catch (_) {
+      card.classList.add('hidden');
+    }
+  }
+
   // ============================================================
   //  CONTENU DU GROUPE SÉLECTIONNÉ
   // ============================================================
@@ -193,6 +280,7 @@ const SocialModule = (() => {
 
     await Promise.all([
       renderWeeklyRecap(groupId),
+      renderWeekendMission(groupId),
       renderPodium(groupId),
       renderCompareChart(groupId),
       renderFeed(groupId),
@@ -372,8 +460,12 @@ const SocialModule = (() => {
     listEl.innerHTML = '';
 
     try {
-      const stats = await window.SupabaseClient.getGroupStats(groupId);
-      const trophies = await window.SupabaseClient.getGroupTrophies(groupId).catch(() => ({}));
+      const [stats, trophies, feed] = await Promise.all([
+        window.SupabaseClient.getGroupStats(groupId),
+        window.SupabaseClient.getGroupTrophies(groupId).catch(() => ({})),
+        fetchGroupFeedOnce(groupId).catch(() => [])
+      ]);
+      const logsByUser = groupPoopsByUser(feed);
       const myId = window.SupabaseClient.getCurrentProfile()?.id;
       const sorted = Object.values(stats).sort((a, b) => b.month - a.month);
       if (!sorted.length) {
@@ -381,7 +473,7 @@ const SocialModule = (() => {
         return;
       }
 
-      renderGroupStreak(Object.values(stats), myId);
+      renderGroupStreak(Object.values(stats), myId, groupId);
 
       const medals = ['🥇','🥈','🥉'];
       const heights = ['90px','70px','55px'];
@@ -401,7 +493,7 @@ const SocialModule = (() => {
           </div>`;
       }).join('');
 
-      // Liste complète (avec trophées #5 + nudge #2)
+      // Liste complète (avec trophées #5 + nudge #2 + titre hebdo)
       listEl.innerHTML = sorted.map((m, i) => {
         const tro = trophies[m.id] || 0;
         const canNudge = m.id !== myId && (m.today || 0) === 0;
@@ -410,7 +502,7 @@ const SocialModule = (() => {
           <span class="text-lg w-8 text-center">${medals[i] || String(i+1)}</span>
           <span class="text-xl">${avatarHTML(m.avatar)}</span>
           <div class="flex-1 min-w-0">
-            <div class="font-bold flex items-center gap-1">${esc(m.username)}${tro > 0 ? ` <span class="trophy-count">🏆${tro}</span>` : ''}</div>
+            <div class="font-bold flex items-center gap-1 flex-wrap">${esc(m.username)}${tro > 0 ? ` <span class="trophy-count">🏆${tro}</span>` : ''}${memberTitleBadgeHTML(logsByUser[m.id])}</div>
             <div class="text-xs opacity-60">${m.streak > 0 ? '🔥' + m.streak + 'j ' : ''}${(m.month * 0.15).toFixed(1)}kg ce mois</div>
           </div>
           ${canNudge ? `<button class="nudge-btn" data-nudge="${m.id}" data-username="${esc(m.username)}">👉 Relancer</button>` : ''}
@@ -433,27 +525,77 @@ const SocialModule = (() => {
   // ============================================================
   //  SÉRIE PARTAGÉE DU GROUPE 🔥 (v2.18.0)
   // ============================================================
-  function renderGroupStreak(membres, myId) {
+  function streakNudgeKey(groupId, userId) {
+    const todayKey = new Date().toISOString().slice(0, 10);
+    return `caca_streak_nudge_${todayKey}_${groupId || 'g'}_${userId}`;
+  }
+
+  function wasNudgedToday(groupId, userId) {
+    try {
+      return localStorage.getItem(streakNudgeKey(groupId, userId)) === '1';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function markNudgedToday(groupId, userId) {
+    try {
+      localStorage.setItem(streakNudgeKey(groupId, userId), '1');
+    } catch (_) {}
+  }
+
+  function renderGroupStreak(membres, myId, groupId) {
     const el = document.getElementById('group-streak');
     if (!el) return;
+    const gid = groupId || _activeGroupId;
     const g = window.SocialFun?.groupStreak(membres);
     if (!g) { el.classList.add('hidden'); return; }
     el.classList.remove('hidden');
     const manquantes = g.missingToday;
     const moiManque = manquantes.some(m => m.id === myId);
-    const qui = manquantes.map(m => `${m.avatar || '💩'} ${esc(m.username)}`).join(', ');
+    const missingHTML = manquantes.map(m => {
+      const isMe = m.id === myId;
+      if (isMe) {
+        return `<span class="inline-flex items-center gap-1">${m.avatar || '💩'} ${esc(m.username)} (toi)</span>`;
+      }
+      const already = wasNudgedToday(gid, m.id);
+      return `<span class="inline-flex items-center gap-1">${m.avatar || '💩'} ${esc(m.username)} <button type="button" class="nudge-btn text-[11px] px-2 py-0.5 rounded-full" data-nudge-user="${esc(m.id)}" data-username="${esc(m.username)}"${already ? ' disabled' : ''}>${already ? '✓ Relancé' : '📣 Relancer'}</button></span>`;
+    }).join(' ');
     el.innerHTML = `
       <div class="flex items-center gap-3">
         <div class="group-streak-flame${g.days ? '' : ' off'}" aria-hidden="true">🔥</div>
         <div class="flex-1 min-w-0">
           <div class="font-bold text-sm">Série du groupe : ${g.days} jour${g.days > 1 ? 's' : ''}</div>
-          <div class="text-xs opacity-70">
+          <div class="text-xs opacity-80 flex flex-wrap items-center gap-1.5 mt-1">
             ${manquantes.length
-              ? `${g.includesToday ? '' : 'Pour la prolonger aujourd\'hui, il manque : '}${qui}${moiManque ? ' (toi aussi !)' : ''}`
-              : `Tout le monde a posté aujourd'hui, bravo la team 💪`}
+              ? `<span>${g.includesToday ? 'Manquent aujourd\'hui :' : 'Pour la prolonger aujourd\'hui, il manque :'}</span> ${missingHTML}`
+              : `Tout le monde a posté aujourd'hui, bravo la team 💪${moiManque ? '' : ''}`}
           </div>
         </div>
       </div>`;
+
+    el.querySelectorAll('[data-nudge-user]').forEach(btn => {
+      btn.addEventListener('click', async e => {
+        e.stopPropagation();
+        const userId = btn.dataset.nudgeUser;
+        const username = btn.dataset.username || 'membre';
+        if (!userId || !gid || wasNudgedToday(gid, userId)) return;
+        btn.disabled = true;
+        try {
+          if (typeof window.SupabaseClient?.sendNudge === 'function') {
+            await window.SupabaseClient.sendNudge(userId, gid, '💩');
+          } else if (typeof window.SupabaseClient?.sendGroupMessage === 'function') {
+            await window.SupabaseClient.sendGroupMessage(gid, `📣 Petit rappel pour @${username} : il est temps de poser aujourd'hui ! 💩`);
+          }
+          markNudgedToday(gid, userId);
+          btn.textContent = '✓ Relancé';
+          window.UI?.toast?.(`Relance envoyée à ${username} 📣`, 'success');
+        } catch (err) {
+          btn.disabled = false;
+          window.UI?.toast?.(err?.message || 'Erreur lors de la relance', 'error');
+        }
+      });
+    });
   }
 
   // ============================================================
@@ -600,7 +742,11 @@ const SocialModule = (() => {
     el.innerHTML = skeletonBars(3);
 
     try {
-      const stats = await window.SupabaseClient.getGroupStats(groupId);
+      const [stats, feed] = await Promise.all([
+        window.SupabaseClient.getGroupStats(groupId),
+        fetchGroupFeedOnce(groupId).catch(() => [])
+      ]);
+      const logsByUser = groupPoopsByUser(feed);
       const sorted = Object.values(stats).sort((a, b) => b.week7 - a.week7);
       const max = sorted[0]?.week7 || 1;
 
@@ -609,9 +755,9 @@ const SocialModule = (() => {
         const isMe = m.username === window.SupabaseClient.getCurrentProfile()?.username;
         return `
           <div>
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-sm font-bold">${avatarHTML(m.avatar)} ${esc(m.username)} ${isMe ? '← toi' : ''}</span>
-              <span class="text-sm font-bold" style="color:var(--accent)">${m.week7}/j${m.week7 !== 1 ? '' : ''}</span>
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <span class="text-sm font-bold flex items-center gap-1.5 flex-wrap">${avatarHTML(m.avatar)} <span>${esc(m.username)}</span>${memberTitleBadgeHTML(logsByUser[m.id])} ${isMe ? '<span class="text-xs opacity-70">← toi</span>' : ''}</span>
+              <span class="text-sm font-bold shrink-0" style="color:var(--accent)">${m.week7}/j${m.week7 !== 1 ? '' : ''}</span>
             </div>
             <div style="height:10px;background:rgba(0,0,0,0.08);border-radius:99px;overflow:hidden">
               <div style="width:${pct}%;height:100%;border-radius:99px;background:${isMe ? 'var(--accent)' : '#94a3b8'};transition:width .6s ease"></div>
@@ -704,7 +850,7 @@ const SocialModule = (() => {
     el.innerHTML = skeletonFeed(4);
 
     try {
-      const feed = await window.SupabaseClient.getGroupFeed(groupId, 200);
+      const feed = await fetchGroupFeedOnce(groupId);
 
       // Date cutoff for period filter
       const now    = Date.now();
@@ -716,6 +862,36 @@ const SocialModule = (() => {
         year:  new Date(new Date().getFullYear(), 0, 1).getTime()
       };
       const cutoff = cutoffs[_feedPeriod] ?? cutoffs.today;
+
+      // Bannière Télépathie intestinale (< 5 min d'écart sur les dernières 24h)
+      let bannerEl = document.getElementById('telepathy-banner');
+      if (!bannerEl && el.parentNode) {
+        bannerEl = document.createElement('div');
+        bannerEl.id = 'telepathy-banner';
+        bannerEl.className = 'hidden mb-3 p-3 rounded-2xl text-xs';
+        el.parentNode.insertBefore(bannerEl, el);
+      }
+      if (bannerEl) {
+        const last24hPoops = feed.filter(item =>
+          (!item.kind || item.kind === 'poop') && Number(item.date) >= now - 24 * 3600 * 1000
+        );
+        const pairs = window.SocialFun?.detectTelepathy?.(last24hPoops) || [];
+        if (pairs.length > 0) {
+          const latest = pairs[pairs.length - 1];
+          const [u1, u2] = latest.users;
+          const mins = Math.max(1, Math.round(latest.gapMs / 60000));
+          const gapText = latest.gapMs < 60000 ? 'moins d\'1 min' : `${mins} min`;
+          bannerEl.className = 'mb-3 p-3 rounded-2xl text-xs';
+          bannerEl.style.background = 'color-mix(in srgb,var(--accent) 12%,transparent)';
+          bannerEl.style.border = '1px solid color-mix(in srgb,var(--accent) 28%,transparent)';
+          bannerEl.innerHTML = `
+            <div class="font-bold flex items-center gap-1.5 mb-0.5" style="color:var(--accent)">👯‍♂️ Télépathie intestinale !</div>
+            <div>${avatarHTML(u1.avatar)} <strong>${esc(u1.username)}</strong> et ${avatarHTML(u2.avatar)} <strong>${esc(u2.username)}</strong> ont posé à ${gapText} d'écart${pairs.length > 1 ? ` <span class="opacity-70">(+${pairs.length - 1} autre${pairs.length > 2 ? 's' : ''})</span>` : ''}.</div>`;
+        } else {
+          bannerEl.className = 'hidden mb-3 p-3 rounded-2xl text-xs';
+          bannerEl.innerHTML = '';
+        }
+      }
 
       let filtered = feed.filter(item => item.date >= cutoff);
       if (_feedMemberId) filtered = filtered.filter(item => item.user_id === _feedMemberId);
