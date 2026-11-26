@@ -90,6 +90,57 @@ window.GroupMapModule = (() => {
     return (clusters || []).flatMap(g => g.clusters);
   }
 
+  /**
+   * Guerre de territoire par ville : regroupe les lignes ayant un `city` non vide,
+   * compte par `(city, user_id)`, et retourne un tableau trié par total décroissant.
+   */
+  function territoryWinners(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) return [];
+    const byCity = new Map();
+    for (const r of rows) {
+      if (!r || !r.user_id) continue;
+      const city = typeof r.city === 'string' ? r.city.trim() : '';
+      if (!city) continue;
+      let entry = byCity.get(city);
+      if (!entry) {
+        entry = { city, totalCount: 0, users: new Map() };
+        byCity.set(city, entry);
+      }
+      entry.totalCount += 1;
+      const uid = String(r.user_id);
+      const u = entry.users.get(uid);
+      if (u) {
+        u.count += 1;
+      } else {
+        entry.users.set(uid, {
+          userId: uid,
+          name: r.username || '???',
+          avatar: r.avatar || '💩',
+          count: 1,
+        });
+      }
+    }
+    const result = [];
+    for (const entry of byCity.values()) {
+      let winner = null;
+      for (const u of entry.users.values()) {
+        if (!winner || u.count > winner.count) winner = u;
+      }
+      if (winner) {
+        result.push({
+          city: entry.city,
+          winnerId: winner.userId,
+          winnerName: winner.name,
+          winnerAvatar: winner.avatar,
+          winnerCount: winner.count,
+          totalCount: entry.totalCount,
+        });
+      }
+    }
+    result.sort((a, b) => b.totalCount - a.totalCount || b.winnerCount - a.winnerCount);
+    return result;
+  }
+
   // ---- rendu ----
 
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
@@ -98,6 +149,7 @@ window.GroupMapModule = (() => {
   let view = null;
   let _testMode = false;
   let _currentGroupId = null;
+  let _daysFilter = DEFAULT_HISTORY_DAYS;
   const _hiddenUsers = new Set();
 
   const isTestMode = () => _testMode;
@@ -116,6 +168,12 @@ window.GroupMapModule = (() => {
     return bar;
   }
 
+  const DAYS_OPTIONS = [
+    { days: 7, label: '7 j' },
+    { days: 30, label: '30 j' },
+    { days: DEFAULT_HISTORY_DAYS, label: 'Tout' },
+  ];
+
   function renderToolbar() {
     const bar = ensureToolbar();
     if (!bar) return;
@@ -127,17 +185,31 @@ window.GroupMapModule = (() => {
       ? 'background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent);border:1px solid var(--accent)'
       : 'background:var(--card-bg);color:var(--text-primary);border:1px solid var(--card-border);opacity:0.8';
 
+    const daysBtns = DAYS_OPTIONS.map(opt => {
+      const active = _daysFilter === opt.days;
+      const st = active
+        ? 'background:var(--accent);color:#fff;border:1px solid var(--accent)'
+        : 'background:var(--card-bg);color:var(--text-primary);border:1px solid var(--card-border);opacity:0.8';
+      return `<button type="button" data-days="${opt.days}" aria-pressed="${active}"
+        class="px-2.5 py-1 rounded-full text-xs font-bold transition-colors" style="${st}">${opt.label}</button>`;
+    }).join('');
+
     bar.innerHTML = `
-      <button type="button" id="group-map-share-btn"
-        class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
-        style="${shareStyle}" aria-pressed="${geoOn}">
-        ${geoOn ? '📍 Position partagée ✓' : '📍 Partager ma position avec le groupe'}
-      </button>
-      <button type="button" id="group-map-test-btn"
-        class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
-        style="${testStyle}" aria-pressed="${_testMode}">
-        ${_testMode ? '🧪 Membre fictif actif ✓' : '🧪 Tester avec un membre fictif'}
-      </button>`;
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button type="button" id="group-map-share-btn"
+          class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
+          style="${shareStyle}" aria-pressed="${geoOn}">
+          ${geoOn ? '📍 Position partagée ✓' : '📍 Partager ma position avec le groupe'}
+        </button>
+        <button type="button" id="group-map-test-btn"
+          class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
+          style="${testStyle}" aria-pressed="${_testMode}">
+          ${_testMode ? '🧪 Membre fictif actif ✓' : '🧪 Tester avec un membre fictif'}
+        </button>
+      </div>
+      <div class="flex items-center gap-1" role="group" aria-label="Période">
+        ${daysBtns}
+      </div>`;
 
     const shareBtn = bar.querySelector('#group-map-share-btn');
     shareBtn?.addEventListener('click', async () => {
@@ -162,6 +234,16 @@ window.GroupMapModule = (() => {
       _testMode = !_testMode;
       if (_currentGroupId) open(_currentGroupId);
       else renderToolbar();
+    });
+
+    bar.querySelectorAll('[data-days]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const nextDays = Number(btn.dataset.days);
+        if (![7, 30, DEFAULT_HISTORY_DAYS].includes(nextDays) || nextDays === _daysFilter) return;
+        _daysFilter = nextDays;
+        if (_currentGroupId) open(_currentGroupId);
+        else renderToolbar();
+      });
     });
   }
 
@@ -523,6 +605,56 @@ window.GroupMapModule = (() => {
 
   // ---- ouverture / fermeture ----
 
+  function ensureTerritoriesEl() {
+    let el = document.getElementById('group-map-territories');
+    if (el) return el;
+    const mapEl = document.getElementById('group-map-map');
+    const parent = mapEl?.parentElement;
+    if (!parent) return null;
+    el = document.createElement('div');
+    el.id = 'group-map-territories';
+    el.className = 'space-y-2';
+    mapEl.insertAdjacentElement('afterend', el);
+    return el;
+  }
+
+  function renderTerritories(territories, colors, spots) {
+    const el = ensureTerritoriesEl();
+    if (!el) return;
+    const top = Array.isArray(territories) ? territories.slice(0, 5) : [];
+    const spotCount = Array.isArray(spots) ? spots.length : 0;
+    if (top.length === 0 && spotCount === 0) {
+      el.innerHTML = '';
+      return;
+    }
+
+    const citiesHtml = top.length > 0 ? `
+      <div class="rounded-2xl p-3 space-y-2" style="background:var(--card-bg);border:1px solid var(--card-border)">
+        <div class="text-xs font-bold uppercase tracking-wider opacity-70">🏴 Territoires conquis</div>
+        <div class="flex flex-wrap gap-1.5">
+          ${top.map(t => {
+            const color = colors[t.winnerId] || 'var(--accent)';
+            return `<div class="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full"
+              style="border:1px solid var(--card-border);background:color-mix(in srgb,${color} 12%,var(--card-bg))">
+              <span style="width:8px;height:8px;border-radius:99px;background:${color};flex-shrink:0"></span>
+              <span>${esc(t.winnerAvatar)}</span>
+              <span class="font-bold">${esc(t.city)}</span>
+              <span class="opacity-70">${esc(t.winnerName)} (${t.winnerCount}/${t.totalCount})</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>` : '';
+
+    const spotsHtml = spotCount > 0 ? `
+      <div class="rounded-2xl px-3 py-2 text-xs flex items-center gap-2"
+        style="background:var(--card-bg);border:1px solid var(--card-border)">
+        <span aria-hidden="true">🧻</span>
+        <span>Toilettes Advisor : <strong>${spotCount}</strong> spot${spotCount > 1 ? 's' : ''} noté${spotCount > 1 ? 's' : ''}</span>
+      </div>` : '';
+
+    el.innerHTML = `${citiesHtml}${spotsHtml}`;
+  }
+
   async function open(groupId) {
     const modal = document.getElementById('group-map-modal');
     if (!modal) return;
@@ -532,13 +664,19 @@ window.GroupMapModule = (() => {
     document.getElementById('group-map-members').textContent = '';
     const legendEl = document.getElementById('group-map-legend');
     if (legendEl) legendEl.innerHTML = '';
+    const terrEl = document.getElementById('group-map-territories');
+    if (terrEl) terrEl.innerHTML = '';
     renderToolbar();
     const mapEl = document.getElementById('group-map-map');
     if (mapEl) mapEl.innerHTML = '<div class="text-center text-sm opacity-50 py-6">Chargement de la carte…</div>';
 
     modal.classList.remove('hidden');
 
-    const rows = await window.SupabaseClient.getGroupGeoPoops(groupId, DEFAULT_HISTORY_DAYS).catch(() => null);
+    const [rows, rawSpots] = await Promise.all([
+      window.SupabaseClient.getGroupGeoPoops(groupId, _daysFilter).catch(() => null),
+      Promise.resolve(window.SocialLive?.loadSpots?.() ?? window.SocialLiveModule?.getLocalSpots?.() ?? []).catch(() => []),
+    ]);
+    const spots = Array.isArray(rawSpots) ? rawSpots : [];
     const effectiveRows = _testMode ? mergeTestRows(rows) : rows;
     const summary = groupGeoSummary(effectiveRows);
     document.getElementById('group-map-members').textContent =
@@ -549,6 +687,7 @@ window.GroupMapModule = (() => {
         <div class="text-center text-sm opacity-60 py-8">
           ${emptyStateHTML(rows === null && !_testMode, window.SupabaseClient?.geoSharingEnabled?.())}
         </div>`;
+      if (spots.length > 0) renderTerritories([], {}, spots);
       return;
     }
 
@@ -564,6 +703,7 @@ window.GroupMapModule = (() => {
         refreshFiltered();
       });
       renderMap(visibleGroups, colors, mapEl, { allHidden: allGroups.length > 0 && visibleGroups.length === 0 });
+      renderTerritories(territoryWinners(visibleRows), colors, spots);
     };
 
     refreshFiltered();
@@ -583,6 +723,7 @@ window.GroupMapModule = (() => {
 
   return {
     memberColorMap, groupGeoSummary, clusterByMember, filterRowsByMembers, allPoints, emptyStateHTML,
+    territoryWinners,
     TEST_USER_ID, DEFAULT_HISTORY_DAYS, getTestRows, mergeTestRows, isTestMode, setTestMode,
     open, close,
   };
