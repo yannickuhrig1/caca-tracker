@@ -116,3 +116,12 @@ test('#geo-btn est présent dans #saisie-pane-express sans classe hidden', () =>
   assert.ok(!classes.includes('hidden'),
     '#geo-btn ne doit pas avoir la classe hidden par défaut');
 });
+
+test('présence des boutons carte #home-map-btn et #open-group-map-btn', () => {
+  assert.ok(/\bid="home-map-btn"/.test(html),
+    '#home-map-btn doit être présent dans index.html');
+  const matchGroupMapBtn = html.match(/<button\b[^>]*\bid="open-group-map-btn"[^>]*>([\s\S]*?)<\/button>/);
+  assert.ok(matchGroupMapBtn, '#open-group-map-btn doit être présent dans index.html');
+  assert.match(matchGroupMapBtn[1], /Carte du groupe/,
+    '#open-group-map-btn doit contenir le texte "Carte du groupe"');
+});

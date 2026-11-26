@@ -74,6 +74,17 @@ window.GroupMapModule = (() => {
     }));
   }
 
+  /** Filtre les lignes en excluant les user_id présents dans hiddenUserIds (Set ou Array). */
+  function filterRowsByMembers(rows, hiddenUserIds) {
+    if (!Array.isArray(rows)) return [];
+    if (!hiddenUserIds) return rows.slice();
+    const hidden = typeof hiddenUserIds.has === 'function'
+      ? hiddenUserIds
+      : new Set(Array.isArray(hiddenUserIds) ? hiddenUserIds : []);
+    if (hidden.size === 0) return rows.slice();
+    return rows.filter(r => r && !hidden.has(r.user_id));
+  }
+
   /** Tous les points, pour recadrer la vue sur l'ensemble du groupe. */
   function allPoints(clusters) {
     return (clusters || []).flatMap(g => g.clusters);
@@ -87,6 +98,7 @@ window.GroupMapModule = (() => {
   let view = null;
   let _testMode = false;
   let _currentGroupId = null;
+  const _hiddenUsers = new Set();
 
   const isTestMode = () => _testMode;
   const setTestMode = enabled => { _testMode = !!enabled; return _testMode; };
@@ -153,14 +165,29 @@ window.GroupMapModule = (() => {
     });
   }
 
-  function renderLegend(groups, colors) {
+  function renderLegend(groups, colors, onToggle) {
     const el = document.getElementById('group-map-legend');
     if (!el) return;
-    el.innerHTML = groups.map(g => `
-      <span class="flex items-center gap-1.5 text-xs">
-        <span style="width:10px;height:10px;border-radius:99px;background:${colors[g.userId]}"></span>
-        ${esc(g.avatar)} ${esc(g.username)} · ${g.clusters.reduce((n, c) => n + c.count, 0)}
-      </span>`).join('');
+    el.innerHTML = groups.map(g => {
+      const hidden = _hiddenUsers.has(g.userId);
+      const count = g.clusters.reduce((n, c) => n + c.count, 0);
+      const style = hidden
+        ? 'border:1px solid var(--card-border);background:var(--card-bg);opacity:0.45;text-decoration:line-through;'
+        : 'border:1px solid var(--card-border);background:var(--card-bg);';
+      return `
+        <button type="button" data-filter-user="${esc(g.userId)}" aria-pressed="${!hidden}"
+          class="flex items-center gap-1.5 text-xs px-2 py-1 rounded-full transition-opacity cursor-pointer"
+          style="${style}">
+          <span style="width:10px;height:10px;border-radius:99px;background:${colors[g.userId]}"></span>
+          <span>${esc(g.avatar)} ${esc(g.username)} · ${count}</span>
+        </button>`;
+    }).join('');
+
+    if (typeof onToggle === 'function') {
+      el.querySelectorAll('[data-filter-user]').forEach(btn => {
+        btn.addEventListener('click', () => onToggle(btn.dataset.filterUser));
+      });
+    }
   }
 
   // Message d'état vide adapté à la situation réelle (v2.22.2).
@@ -205,12 +232,15 @@ window.GroupMapModule = (() => {
     });
   }
 
-  function renderMap(groups, colors, el) {
+  function renderMap(groups, colors, el, opts = {}) {
     const points = allPoints(groups);
     if (!points.length) {
+      const msg = opts.allHidden
+        ? 'Tous les membres sont masqués. Clique sur un membre dans la légende pour l\'afficher.'
+        : emptyStateHTML(false, window.SupabaseClient?.geoSharingEnabled?.());
       el.innerHTML = `
         <div class="text-center text-sm opacity-60 py-8">
-          ${emptyStateHTML(false, window.SupabaseClient?.geoSharingEnabled?.())}
+          ${msg}
         </div>`;
       return;
     }
@@ -468,8 +498,27 @@ window.GroupMapModule = (() => {
       </div>`;
     }).join('');
     const titre = `${esc(group.avatar)} ${esc(group.username)} — ${cluster.count} caca${cluster.count > 1 ? 's' : ''} ici`;
-    if (window.UI?.info) window.UI.info({ title: titre, bodyHTML: `<div class="space-y-1 text-left">${lignes}</div>` });
-    else window.UI?.toast?.(titre);
+    const bodyHTML = `<div class="space-y-1 text-left">${lignes}</div>
+      <div class="mt-3 pt-2 border-t text-center" style="border-color:var(--card-border)">
+        <button type="button" id="group-map-rate-spot" class="px-3 py-1.5 rounded-full text-xs font-bold"
+          style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">
+          ⭐ Noter ce spot
+        </button>
+      </div>`;
+    if (window.UI?.info) {
+      const overlay = window.UI.info({ title: titre, bodyHTML });
+      const rateBtn = overlay?.querySelector?.('#group-map-rate-spot') || document.getElementById('group-map-rate-spot');
+      rateBtn?.addEventListener('click', () => {
+        overlay?.querySelector?.('[data-act="ok"]')?.click?.();
+        if (window.SocialLive?.openSpotModal) {
+          window.SocialLive.openSpotModal();
+        } else if (window.SocialLiveModule?.openAddSpotModal) {
+          window.SocialLiveModule.openAddSpotModal();
+        }
+      });
+    } else {
+      window.UI?.toast?.(titre);
+    }
   }
 
   // ---- ouverture / fermeture ----
@@ -477,6 +526,7 @@ window.GroupMapModule = (() => {
   async function open(groupId) {
     const modal = document.getElementById('group-map-modal');
     if (!modal) return;
+    if (_currentGroupId !== groupId) _hiddenUsers.clear();
     _currentGroupId = groupId;
 
     document.getElementById('group-map-members').textContent = '';
@@ -503,9 +553,20 @@ window.GroupMapModule = (() => {
     }
 
     const colors = memberColorMap(effectiveRows);
-    const groups = clusterByMember(effectiveRows);
-    renderLegend(groups, colors);
-    renderMap(groups, colors, mapEl);
+    const allGroups = clusterByMember(effectiveRows);
+
+    const refreshFiltered = () => {
+      const visibleRows = filterRowsByMembers(effectiveRows, _hiddenUsers);
+      const visibleGroups = clusterByMember(visibleRows);
+      renderLegend(allGroups, colors, uid => {
+        if (_hiddenUsers.has(uid)) _hiddenUsers.delete(uid);
+        else _hiddenUsers.add(uid);
+        refreshFiltered();
+      });
+      renderMap(visibleGroups, colors, mapEl, { allHidden: allGroups.length > 0 && visibleGroups.length === 0 });
+    };
+
+    refreshFiltered();
   }
 
   function close() {
@@ -521,7 +582,7 @@ window.GroupMapModule = (() => {
   });
 
   return {
-    memberColorMap, groupGeoSummary, clusterByMember, allPoints, emptyStateHTML,
+    memberColorMap, groupGeoSummary, clusterByMember, filterRowsByMembers, allPoints, emptyStateHTML,
     TEST_USER_ID, DEFAULT_HISTORY_DAYS, getTestRows, mergeTestRows, isTestMode, setTestMode,
     open, close,
   };

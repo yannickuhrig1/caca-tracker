@@ -162,6 +162,26 @@ function setupEvents() {
     btn.addEventListener('click', () => switchTab(btn.dataset.moi));
   });
 
+  // Accès rapide Carte depuis l'Accueil (groupe actif si présent, sinon carte personnelle)
+  $id('home-map-btn')?.addEventListener('click', () => {
+    const gid = window.SocialModule?.currentGroupId?.();
+    if (gid && window.GroupMapModule?.open) {
+      window.GroupMapModule.open(gid);
+      return;
+    }
+    if (typeof switchTab === 'function') {
+      switchTab('moi');
+    } else {
+      document.querySelector('.tab-btn[data-tab="moi"]')?.click();
+    }
+    if (typeof switchStatsPole === 'function') {
+      switchStatsPole('carte');
+    }
+    requestAnimationFrame(() => {
+      $id('poopmap-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
   // Texture buttons
   document.querySelectorAll('.texture-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -566,22 +586,26 @@ function setupEvents() {
 
   // ── Theme picker (profile modal) ─────────────────────────
   const ALL_THEMES = [
-    { id:'default',   label:'Chaud 🟠',       grad:'linear-gradient(135deg,#d97706,#ea580c)' },
-    { id:'dark',      label:'Dark 🌙',         grad:'linear-gradient(135deg,#1e1b4b,#312e81)' },
-    { id:'medical',   label:'Médical 🩺',      grad:'linear-gradient(135deg,#059669,#0284c7)' },
-    { id:'kawaii',    label:'Kawaii 🌸',        grad:'linear-gradient(135deg,#e91e8c,#9c27b0)' },
-    { id:'foret',     label:'Forêt 🌿',         grad:'linear-gradient(135deg,#2e7d32,#558b2f)' },
-    { id:'ocean',     label:'Océan 🌊',         grad:'linear-gradient(135deg,#0277bd,#00838f)' },
-    { id:'sunset',    label:'Sunset 🌅',        grad:'linear-gradient(135deg,#ff6b6b,#c77dff)' },
-    { id:'galaxy',    label:'Galaxy 🌌',        grad:'linear-gradient(135deg,#6a0572,#3a0ca3)' },
-    { id:'sakura',    label:'Sakura 🌸',        grad:'linear-gradient(135deg,#e91e8c,#ff6b9d)' },
-    { id:'mint',      label:'Mint 🌿',          grad:'linear-gradient(135deg,#00b894,#00cec9)' },
-    { id:'lavande',   label:'Lavande 💜',       grad:'linear-gradient(135deg,#7c3aed,#9d4edd)' },
-    { id:'rose-gold', label:'Rose Gold 🌹',     grad:'linear-gradient(135deg,#c97b6a,#e0a87c)' },
-    { id:'tropicale', label:'Tropicale 🌴',     grad:'linear-gradient(135deg,#00b8a9,#0097a7)' },
-    { id:'nordique',  label:'Nordique ❄️',      grad:'linear-gradient(135deg,#2c5f8a,#3a7bd5)' },
-    { id:'automne',   label:'Automne 🍂',       grad:'linear-gradient(135deg,#b45309,#c2410c)' },
-    { id:'neon',      label:'Neon ⚡',           grad:'linear-gradient(135deg,#00ff88,#00e5cc)' },
+    { id:'auto',         label:'Auto Jour/Nuit 🌓', grad:'linear-gradient(135deg,#f59e0b 0%,#f59e0b 50%,#1e1b4b 50%,#312e81 100%)' },
+    { id:'default',      label:'Chaud 🟠',          grad:'linear-gradient(135deg,#d97706,#ea580c)' },
+    { id:'dark',         label:'Dark 🌙',            grad:'linear-gradient(135deg,#1e1b4b,#312e81)' },
+    { id:'medical',      label:'Médical 🩺',         grad:'linear-gradient(135deg,#059669,#0284c7)' },
+    { id:'kawaii',       label:'Kawaii 🌸',           grad:'linear-gradient(135deg,#e91e8c,#9c27b0)' },
+    { id:'foret',        label:'Forêt 🌿',            grad:'linear-gradient(135deg,#2e7d32,#558b2f)' },
+    { id:'ocean',        label:'Océan 🌊',            grad:'linear-gradient(135deg,#0277bd,#00838f)' },
+    { id:'sunset',       label:'Sunset 🌅',           grad:'linear-gradient(135deg,#ff6b6b,#c77dff)' },
+    { id:'galaxy',       label:'Galaxy 🌌',           grad:'linear-gradient(135deg,#6a0572,#3a0ca3)' },
+    { id:'sakura',       label:'Sakura 🌸',           grad:'linear-gradient(135deg,#e91e8c,#ff6b9d)' },
+    { id:'mint',         label:'Mint 🌿',             grad:'linear-gradient(135deg,#00b894,#00cec9)' },
+    { id:'lavande',      label:'Lavande 💜',          grad:'linear-gradient(135deg,#7c3aed,#9d4edd)' },
+    { id:'rose-gold',    label:'Rose Gold 🌹',        grad:'linear-gradient(135deg,#c97b6a,#e0a87c)' },
+    { id:'tropicale',    label:'Tropicale 🌴',        grad:'linear-gradient(135deg,#00b8a9,#0097a7)' },
+    { id:'nordique',     label:'Nordique ❄️',         grad:'linear-gradient(135deg,#2c5f8a,#3a7bd5)' },
+    { id:'automne',      label:'Automne 🍂',          grad:'linear-gradient(135deg,#b45309,#c2410c)' },
+    { id:'neon',         label:'Neon ⚡',              grad:'linear-gradient(135deg,#00ff88,#00e5cc)' },
+    { id:'royaume-dore', label:'Royaume Doré 👑',     grad:'linear-gradient(135deg,#b45309,#f59e0b)' },
+    { id:'synthwave',    label:'Synthwave 🌆',        grad:'linear-gradient(135deg,#f43f5e,#7c3aed)' },
+    { id:'matcha',       label:'Matcha 🍵',           grad:'linear-gradient(135deg,#4d7c0f,#84cc16)' },
   ];
   const themeGrid = $id('profile-theme-grid');
   if (themeGrid) {
