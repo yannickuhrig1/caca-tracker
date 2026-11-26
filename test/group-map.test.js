@@ -130,3 +130,25 @@ test('clusterByMember : sépare les clusters d’un utilisateur réel et du memb
   assert.strictEqual(testeur.clusters.length, 4);
   assert.strictEqual(testeur.clusters.reduce((sum, c) => sum + c.count, 0), 5);
 });
+
+test('emptyStateHTML(false, true) : ne mentionne plus les 30 derniers jours et indique aucun caca géolocalisé', () => {
+  const msg = G.emptyStateHTML(false, true);
+  assert.doesNotMatch(msg, /30 derniers jours/i);
+  assert.match(msg, /aucun caca géolocalisé/i);
+});
+
+test('allPoints : conserve tous les spots distincts d’un même utilisateur (ex. maison + Thionville)', () => {
+  const rows = [
+    row('u1', 'Claire', 48.8566, 2.3522, 'maison'),
+    row('u1', 'Claire', 49.3583, 6.1681, 'Thionville'),
+  ];
+  const groups = G.clusterByMember(rows);
+  assert.strictEqual(groups.length, 1);
+  assert.strictEqual(groups[0].clusters.length, 2);
+
+  const pts = G.allPoints(groups);
+  assert.strictEqual(pts.length, 2);
+  assert.ok(pts.some(p => Math.abs(p.lat - 48.8566) < 0.01 && Math.abs(p.lon - 2.3522) < 0.01));
+  assert.ok(pts.some(p => Math.abs(p.lat - 49.3583) < 0.01 && Math.abs(p.lon - 6.1681) < 0.01));
+  assert.strictEqual(G.allPoints(null).length, 0);
+});
