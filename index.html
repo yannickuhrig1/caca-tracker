@@ -244,10 +244,6 @@
           <div class="bento-tile-head">
             <span class="bento-tile-title">🎮 Pause Trône</span>
           </div>
-          <button type="button" id="poop-btn" aria-label="Enregistrer un caca" class="w-full py-2 px-3 rounded-xl text-xs font-extrabold text-white flex items-center justify-center gap-1.5 shadow-sm transition active:scale-95"
-            style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">
-            💩 Nouveau passage
-          </button>
           <div class="grid grid-cols-2 gap-1.5">
             <button id="jeux-open-btn" type="button" class="py-1.5 px-2 rounded-xl text-[11px] font-bold truncate"
               style="background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 28%,transparent)">
@@ -1615,6 +1611,15 @@
               <div class="place-chips-row" id="place-grid"></div>
             </div>
 
+            <!-- Position GPS (optionnelle) -->
+            <div>
+              <button type="button" id="geo-btn"
+                class="w-full py-2.5 rounded-[1rem] border-2 border-gray-200 text-sm font-bold">
+                📍 Ajouter ma position
+              </button>
+              <div id="geo-status" class="text-xs opacity-65 mt-1 text-center"></div>
+            </div>
+
           </div>
 
           <!-- ====== PANE SANTÉ & DÉTAILS ====== -->
@@ -1675,15 +1680,6 @@
               <div class="text-sm font-bold mb-2">Note (optionnel)</div>
               <textarea id="comment" class="w-full p-3 border border-gray-200 rounded-[1.25rem] resize-none focus:outline-none focus:ring-2"
                 style="background:var(--surface-muted);color:var(--text-primary)" rows="2" placeholder="Ex: Record perso !"></textarea>
-            </div>
-
-            <!-- Position GPS (optionnelle) -->
-            <div>
-              <button type="button" id="geo-btn"
-                class="hidden w-full py-2.5 rounded-[1rem] border-2 border-gray-200 text-sm font-bold">
-                📍 Ajouter ma position
-              </button>
-              <div id="geo-status" class="text-xs opacity-65 mt-1 text-center"></div>
             </div>
 
           </div>

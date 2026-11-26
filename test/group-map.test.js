@@ -75,3 +75,58 @@ test('clusterByMember : regroupe les points par membre, sans les mélanger', () 
   assert.strictEqual(lea.clusters[0].count, 2);
   assert.strictEqual(zoe.clusters[0].count, 1);
 });
+
+test('getTestRows : retourne les entrées géolocalisées du membre test', () => {
+  const now = 1700000000000;
+  const testRows = G.getTestRows(now);
+  assert.ok(Array.isArray(testRows) && testRows.length >= 2);
+  for (const r of testRows) {
+    assert.strictEqual(r.user_id, G.TEST_USER_ID);
+    assert.strictEqual(r.username, 'Testeur');
+    assert.strictEqual(r.avatar, '🦊');
+    assert.strictEqual(typeof r.lat, 'number');
+    assert.strictEqual(typeof r.lon, 'number');
+    assert.ok(r.date <= now);
+  }
+  const spots = new Set(testRows.map(r => `${r.lat}/${r.lon}`));
+  assert.ok(spots.size >= 2, 'le membre test doit avoir plusieurs positions distinctes');
+});
+
+test('mergeTestRows : fusionne les cacas réels et fictifs sans muter l’entrée', () => {
+  const realRows = [row('u1', 'Claire', 48.85, 2.35, 'maison')];
+  const merged = G.mergeTestRows(realRows, 1700000000000);
+  assert.strictEqual(realRows.length, 1);
+  assert.strictEqual(merged.length, 1 + G.getTestRows(1700000000000).length);
+  assert.strictEqual(merged[0].user_id, 'u1');
+  assert.strictEqual(G.mergeTestRows(null, 1700000000000).length, G.getTestRows(1700000000000).length);
+});
+
+test('memberColorMap : couleur distincte entre utilisateur réel et TEST_USER_ID', () => {
+  const merged = G.mergeTestRows([
+    row('u1', 'Claire', 48.85, 2.35, 'maison'),
+    row('u2', 'Léa', 45.76, 4.83, 'boulot'),
+  ]);
+  const colors = G.memberColorMap(merged);
+  assert.strictEqual(Object.keys(colors).length, 3);
+  assert.ok(colors.u1 && colors.u2 && colors[G.TEST_USER_ID]);
+  assert.notStrictEqual(colors.u1, colors[G.TEST_USER_ID]);
+  assert.notStrictEqual(colors.u2, colors[G.TEST_USER_ID]);
+  assert.notStrictEqual(colors.u1, colors.u2);
+});
+
+test('clusterByMember : sépare les clusters d’un utilisateur réel et du membre test', () => {
+  const merged = G.mergeTestRows([
+    row('u1', 'Claire', 48.8566, 2.3522, 'maison'), // mêmes coordonnées que test-1/test-2
+  ]);
+  const groups = G.clusterByMember(merged);
+  assert.strictEqual(groups.length, 2);
+  const claire = groups.find(g => g.userId === 'u1');
+  const testeur = groups.find(g => g.userId === G.TEST_USER_ID);
+  assert.ok(claire && testeur);
+  assert.strictEqual(claire.clusters.length, 1);
+  assert.strictEqual(claire.clusters[0].count, 1);
+  assert.strictEqual(testeur.username, 'Testeur');
+  assert.strictEqual(testeur.avatar, '🦊');
+  assert.strictEqual(testeur.clusters.length, 4);
+  assert.strictEqual(testeur.clusters.reduce((sum, c) => sum + c.count, 0), 5);
+});
