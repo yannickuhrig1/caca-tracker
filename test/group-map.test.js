@@ -152,3 +152,25 @@ test('allPoints : conserve tous les spots distincts d’un même utilisateur (ex
   assert.ok(pts.some(p => Math.abs(p.lat - 49.3583) < 0.01 && Math.abs(p.lon - 6.1681) < 0.01));
   assert.strictEqual(G.allPoints(null).length, 0);
 });
+
+test('filterRowsByMembers : filtre avec Array ou Set sans muter l’entrée', () => {
+  const rows = [
+    row('a', 'Léa', 48.8, 2.3, 'maison'),
+    row('b', 'Zoé', 48.9, 2.4, 'boulot'),
+    row('c', 'Mia', 48.7, 2.5, 'resto'),
+  ];
+  const snapshot = rows.slice();
+
+  const withArray = G.filterRowsByMembers(rows, ['b']);
+  assert.strictEqual(withArray.length, 2);
+  assert.deepStrictEqual(withArray.map(r => r.user_id), ['a', 'c']);
+
+  const withSet = G.filterRowsByMembers(rows, new Set(['a', 'c']));
+  assert.strictEqual(withSet.length, 1);
+  assert.strictEqual(withSet[0].user_id, 'b');
+
+  assert.strictEqual(G.filterRowsByMembers(rows, null).length, 3);
+  assert.strictEqual(G.filterRowsByMembers(rows, new Set()).length, 3);
+  assert.strictEqual(G.filterRowsByMembers(null, ['a']).length, 0);
+  assert.deepStrictEqual(rows, snapshot);
+});

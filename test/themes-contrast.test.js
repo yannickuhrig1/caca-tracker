@@ -1,4 +1,4 @@
-// Contraste des 16 thèmes (v2.18.0).
+// Contraste des 19 thèmes.
 //
 // Galaxy et Neon ont déjà eu du texte illisible (v2.6.0) : le souci ne se voit
 // qu'en ouvrant le thème concerné. Ce test lit les variables de css/app.css et
@@ -49,8 +49,11 @@ const surFond = (avant, fond) => [0, 1, 2].map(i => avant[i] * avant[3] + fond[i
 const T = themes();
 const base = T.default;
 
-test('les 16 thèmes sont trouvés', () => {
-  assert.strictEqual(Object.keys(T).length, 16, Object.keys(T).join(', '));
+test('les 19 thèmes sont trouvés', () => {
+  assert.strictEqual(Object.keys(T).length, 19, Object.keys(T).join(', '));
+  for (const nom of ['royaume-dore', 'synthwave', 'matcha']) {
+    assert.ok(T[nom], `thème ${nom} manquant`);
+  }
 });
 
 for (const [nom, vars] of Object.entries(T)) {
