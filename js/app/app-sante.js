@@ -18,7 +18,7 @@ const HEALTH_TAGS = [
   { id: 'glaires',       emoji: '🫧', label: 'Glaires',        kind: 'symptome' },
   { id: 'sang',          emoji: '🩸', label: 'Sang',           kind: 'symptome' },
   // Contexte
-  { id: 'regles',        emoji: '🌸', label: 'Règles',         kind: 'contexte' },
+  { id: 'regles',        emoji: '🩸', label: 'Règles',         kind: 'contexte' },
   { id: 'stress',        emoji: '😰', label: 'Stress',         kind: 'contexte' },
   { id: 'fatigue',       emoji: '😴', label: 'Mal dormi',      kind: 'contexte' },
   { id: 'sport',         emoji: '🏃‍♀️', label: 'Sport',          kind: 'contexte' },
@@ -30,6 +30,8 @@ const HEALTH_TAGS = [
   { id: 'laitages',      emoji: '🧀', label: 'Laitages',       kind: 'contexte' },
   { id: 'fibres',        emoji: '🥦', label: 'Fruits, légumes', kind: 'contexte' },
   { id: 'medicament',    emoji: '💊', label: 'Médicament',     kind: 'contexte' },
+  { id: 'probiotiques',  emoji: '🦠', label: 'Probiotiques',   kind: 'contexte' },
+  { id: 'antibiotiques', emoji: '💊', label: 'Antibiotiques',  kind: 'contexte' },
   { id: 'voyage',        emoji: '✈️', label: 'Voyage',         kind: 'contexte' },
 ];
 
@@ -240,6 +242,47 @@ function delayedTriggerInsights(logs, checkins = [], { min = 3, ecart = 0.25 } =
   return out.sort((a, b) => b.diff - a.diff || b.count - a.count);
 }
 
+/**
+ * Fonction pure : compare la part de selles dures (`texture === 'dur'`) les jours
+ * avec < 4 verres d'eau vs >= 4 verres d'eau (via `waterByDay['YYYY-MM-DD']`).
+ * Retourne `{ lowHardPct, highHardPct, ratio, text }` si chaque groupe a >= `min`
+ * entrées et un écart >= 0.15, sinon `null`.
+ */
+function waterBristolCorrelation(logs, waterByDay = {}, min = 3) {
+  if (!Array.isArray(logs) || !logs.length || !waterByDay || typeof waterByDay !== 'object') {
+    return null;
+  }
+
+  const low = [];
+  const high = [];
+  logs.forEach(l => {
+    if (!l || !Number.isFinite(Number(l.date))) return;
+    const d = new Date(Number(l.date));
+    if (Number.isNaN(d.getTime())) return;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const raw = waterByDay[key];
+    if (raw === undefined || raw === null || raw === '') return;
+    const glasses = Number(raw);
+    if (!Number.isFinite(glasses) || glasses < 0) return;
+    if (glasses < 4) low.push(l);
+    else high.push(l);
+  });
+
+  if (low.length < min || high.length < min) return null;
+
+  const lowRate = low.filter(l => l.texture === 'dur').length / low.length;
+  const highRate = high.filter(l => l.texture === 'dur').length / high.length;
+  if (Math.abs(lowRate - highRate) < 0.15) return null;
+
+  const lowHardPct = Math.round(lowRate * 100);
+  const highHardPct = Math.round(highRate * 100);
+  const ratio = highRate > 0 ? Math.round((lowRate / highRate) * 10) / 10 : null;
+  const ratioTxt = ratio !== null && lowRate > highRate ? ` (soit ×${ratio})` : '';
+  const text = `Jours < 4 verres d'eau : ${lowHardPct} % de selles dures, contre ${highHardPct} % avec ≥ 4 verres${ratioTxt}.`;
+
+  return { lowHardPct, highHardPct, ratio, text };
+}
+
 /** Fonction pure : étiquettes les plus notées depuis `since`. */
 function healthTagCounts(logs, since = 0) {
   const compte = {};
@@ -341,14 +384,39 @@ function _escSante(s) {
   ));
 }
 
+function _readWaterLogForInsights() {
+  if (typeof getWaterLog === 'function') {
+    const res = getWaterLog();
+    return res && typeof res === 'object' ? res : {};
+  }
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem('hydratation.v1') : null;
+    const parsed = raw ? JSON.parse(raw) : {};
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return parsed.days && typeof parsed.days === 'object' ? parsed.days : parsed;
+  } catch {
+    return {};
+  }
+}
+
 function renderHealthInsights() {
   const el = typeof $id === 'function' ? $id('insights-container') : document.getElementById('insights-container');
   if (!el) return;
   const logs = typeof state !== 'undefined' && Array.isArray(state?.logs) ? state.logs : [];
   const checkins = typeof getZeroPoopCheckins === 'function' ? getZeroPoopCheckins() : [];
+  const waterLog = _readWaterLogForInsights();
   const insights = healthInsights(logs);
   const delayed = delayedTriggerInsights(logs, checkins);
+  const waterCorr = waterBristolCorrelation(logs, waterLog);
   const top = healthTagCounts(logs, Date.now() - 30 * 86400000).slice(0, 6);
+
+  const waterBlock = waterCorr
+    ? `
+      <div class="rounded-[1rem] p-3 mb-2 text-sm" style="background:color-mix(in srgb,var(--accent) 8%,transparent)">
+        <div class="font-bold">💧 Hydratation &amp; consistance</div>
+        <div class="text-xs opacity-80 mt-0.5">${_escSante(waterCorr.text)}</div>
+      </div>`
+    : '';
 
   const corps = insights.length
     ? insights.slice(0, 5).map(i => `
@@ -359,7 +427,7 @@ function renderHealthInsights() {
             contre ${i.sansPct} % le reste du temps.
           </div>
         </div>`).join('')
-    : (!delayed.length ? `<div class="text-xs opacity-60 mb-2">
+    : (!delayed.length && !waterCorr ? `<div class="text-xs opacity-60 mb-2">
         Rien de marquant pour l'instant. Coche le contexte de tes cacas (section 🩺 à la saisie) :
         dès qu'une étiquette revient 3 fois, je compare avec le reste du temps.
       </div>` : '');
@@ -381,6 +449,7 @@ function renderHealthInsights() {
     <div class="card p-4 rounded-[1.5rem]">
       <div class="font-bold text-sm mb-1">🔍 Ce que j'ai remarqué</div>
       <div class="text-xs opacity-60 mb-3">Carnet de santé privé : tes copines ne le voient jamais.</div>
+      ${waterBlock}
       ${corps}
       ${delayedBlock}
       ${top.length ? `
