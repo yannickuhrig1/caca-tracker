@@ -244,7 +244,7 @@
           <div class="bento-tile-head">
             <span class="bento-tile-title">🎮 Pause Trône</span>
           </div>
-          <div class="grid grid-cols-2 gap-1.5">
+          <div class="grid grid-cols-3 gap-1.5">
             <button id="jeux-open-btn" type="button" class="py-1.5 px-2 rounded-xl text-[11px] font-bold truncate"
               style="background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 28%,transparent)">
               🎮 Jeux
@@ -252,6 +252,10 @@
             <button id="share-stats-btn" type="button" class="py-1.5 px-2 rounded-xl text-[11px] font-bold truncate"
               style="background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 28%,transparent)">
               📤 Story
+            </button>
+            <button id="home-map-btn" type="button" class="py-1.5 px-2 rounded-xl text-[11px] font-bold truncate"
+              style="background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 28%,transparent)">
+              🗺️ Carte
             </button>
           </div>
         </div>
@@ -517,11 +521,6 @@
             style="border-color:var(--card-border);background:var(--card-bg);color:var(--text-primary)">
             <option value="">Aucun groupe</option>
           </select>
-          <button type="button" id="open-group-map-btn" class="p-2.5 rounded-[1rem] text-sm font-bold"
-            style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)"
-            title="Carte des cacas du groupe" aria-label="Carte des cacas du groupe">
-            🗺️
-          </button>
           <button type="button" id="share-group-btn" class="p-2.5 rounded-[1rem] text-sm font-bold"
             style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)"
             title="Code QR d'invitation" aria-label="Code QR d'invitation">
@@ -531,6 +530,11 @@
             style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)"
             title="Gérer le groupe" aria-label="Gérer le groupe">
             ⚙️
+          </button>
+          <button type="button" id="open-group-map-btn" class="w-full py-2.5 px-4 rounded-full text-sm font-bold flex items-center justify-center gap-2 transition active:scale-[0.98]"
+            style="background:var(--accent);color:#fff;box-shadow:0 2px 10px color-mix(in srgb,var(--accent) 30%,transparent)"
+            title="Carte des cacas du groupe" aria-label="Carte des cacas du groupe">
+            🗺️ Carte du groupe
           </button>
 
           <details id="groups-drawer" class="w-full pt-1 border-t" style="border-color:var(--card-border)">
