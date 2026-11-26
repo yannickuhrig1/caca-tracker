@@ -113,3 +113,112 @@ test('leagueWeekStart : lundi minuit, y compris le dimanche', () => {
   assert.strictEqual(new Date(F.leagueWeekStart(at(2026, 8, 20, 23))).getDate(), 14);
   assert.strictEqual(new Date(F.leagueWeekStart(at(2026, 8, 21, 0))).getDate(), 21);
 });
+
+// ---------- Titres hebdo ----------
+
+test('weeklyMemberTitle : null si moins de 2 cacas sur les 7 derniers jours', () => {
+  const ref = at(2026, 8, 17, 18);
+  assert.strictEqual(F.weeklyMemberTitle([], ref), null);
+  assert.strictEqual(F.weeklyMemberTitle([{ date: at(2026, 8, 17, 10) }], ref), null);
+  // Entrées vieilles de plus de 7 jours ignorées
+  assert.strictEqual(F.weeklyMemberTitle([
+    { date: at(2026, 8, 1, 10) },
+    { date: at(2026, 8, 2, 10) },
+    { date: at(2026, 8, 17, 10) },
+  ], ref), null);
+});
+
+test('weeklyMemberTitle : attribue le titre selon le profil de la semaine', () => {
+  const ref = at(2026, 8, 17, 18);
+
+  const matinal = F.weeklyMemberTitle([
+    { date: at(2026, 8, 16, 7) },
+    { date: at(2026, 8, 17, 8) },
+  ], ref);
+  assert.strictEqual(matinal.id, 'matinal');
+  assert.strictEqual(matinal.emoji, '☀️');
+
+  const hibou = F.weeklyMemberTitle([
+    { date: at(2026, 8, 16, 23) },
+    { date: at(2026, 8, 17, 14) },
+  ], ref);
+  assert.strictEqual(hibou.id, 'hibou');
+  assert.strictEqual(hibou.emoji, '🦉');
+
+  const voyageur = F.weeklyMemberTitle([
+    { date: at(2026, 8, 15, 12), place: 'Maison' },
+    { date: at(2026, 8, 16, 12), place: 'Boulot' },
+    { date: at(2026, 8, 17, 12), city: 'Lyon' },
+  ], ref);
+  assert.strictEqual(voyageur.id, 'voyageur');
+  assert.strictEqual(voyageur.emoji, '🗺️');
+
+  const express = F.weeklyMemberTitle([
+    { date: at(2026, 8, 16, 12), duration: 60 },
+    { date: at(2026, 8, 17, 12), duration_s: 80 },
+  ], ref);
+  assert.strictEqual(express.id, 'express');
+  assert.strictEqual(express.emoji, '⚡');
+
+  const prolifique = F.weeklyMemberTitle(
+    Array.from({ length: 10 }, (_, i) => ({ date: at(2026, 8, 11 + Math.floor(i / 2), 14 + (i % 2)) })),
+    ref
+  );
+  assert.strictEqual(prolifique.id, 'prolifique');
+
+  const regulier = F.weeklyMemberTitle([
+    { date: at(2026, 8, 16, 14), duration: 240 },
+    { date: at(2026, 8, 17, 15), duration: 300 },
+  ], ref);
+  assert.strictEqual(regulier.id, 'regulier');
+});
+
+// ---------- Télépathie intestinale ----------
+
+test('detectTelepathy : détecte les paires distinctes à <= maxGapMs et dédoublonne', () => {
+  assert.strictEqual(F.detectTelepathy(null).length, 0);
+  const t0 = at(2026, 8, 17, 10);
+  const items = [
+    { user_id: 'a', username: 'Léa', avatar: '🦊', date: t0 },
+    { user_id: 'a', username: 'Léa', avatar: '🦊', date: t0 + 60_000 }, // même utilisatrice
+    { user_id: 'b', username: 'Zoé', avatar: '🐱', date: t0 + 120_000 }, // 1 min après Léa #2, 2 min après Léa #1 -> dédoublonné
+    { user_id: 'c', username: 'Mia', avatar: '🐼', date: t0 + 10 * 60_000 }, // > 5 min
+  ];
+  const matches = F.detectTelepathy(items);
+  assert.strictEqual(matches.length, 1);
+  assert.strictEqual(matches[0].users[0].user_id, 'a');
+  assert.strictEqual(matches[0].users[1].user_id, 'b');
+  assert.ok(matches[0].gapMs <= 5 * 60 * 1000);
+});
+
+// ---------- Mission coopérative du week-end ----------
+
+test('weekendCoopMission : détecte le week-end et calcule la progression', () => {
+  // 2026-09-19 est un samedi (mois 8 en base 0), 2026-09-17 un jeudi
+  const samedi = at(2026, 8, 19, 15);
+  const jeudi = at(2026, 8, 17, 15);
+
+  const enSemaine = F.weekendCoopMission([], 2, jeudi);
+  assert.strictEqual(enSemaine.isWeekend, false);
+  assert.strictEqual(enSemaine.target, 8);
+  assert.strictEqual(enSemaine.count, 0);
+  assert.strictEqual(enSemaine.done, false);
+
+  const logs = [
+    [
+      { date: at(2026, 8, 18, 23) }, // vendredi : hors week-end
+      { date: at(2026, 8, 19, 9) },
+      { date: at(2026, 8, 19, 18) },
+    ],
+    [
+      { date: at(2026, 8, 20, 10) },
+      { date: at(2026, 8, 20, 21) },
+    ],
+  ];
+  const m = F.weekendCoopMission(logs, 1, samedi);
+  assert.strictEqual(m.isWeekend, true);
+  assert.strictEqual(m.count, 4);
+  assert.strictEqual(m.target, 4);
+  assert.strictEqual(m.pct, 100);
+  assert.strictEqual(m.done, true);
+});

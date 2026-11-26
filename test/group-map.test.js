@@ -174,3 +174,34 @@ test('filterRowsByMembers : filtre avec Array ou Set sans muter l’entrée', ()
   assert.strictEqual(G.filterRowsByMembers(null, ['a']).length, 0);
   assert.deepStrictEqual(rows, snapshot);
 });
+
+test('territoryWinners : désigne le membre dominant par ville et trie par volume', () => {
+  assert.strictEqual(G.territoryWinners(null).length, 0);
+  assert.strictEqual(G.territoryWinners([]).length, 0);
+
+  const rows = [
+    { ...row('a', 'Léa', 48.85, 2.35, 'maison'), city: 'Paris' },
+    { ...row('b', 'Zoé', 48.86, 2.34, 'boulot'), city: 'Paris' },
+    { ...row('b', 'Zoé', 48.87, 2.33, 'resto'), city: ' Paris ' },
+    { ...row('a', 'Léa', 45.76, 4.83, 'gare'), city: 'Lyon' },
+    { ...row('a', 'Léa', 45.75, 4.84, 'parc'), city: 'Lyon' },
+    { ...row('a', 'Léa', 45.74, 4.85, 'cafe'), city: 'Lyon' },
+    { ...row('b', 'Zoé', 45.73, 4.86, 'hotel'), city: 'Lyon' },
+    { ...row('c', 'Mia', 43.30, 5.37, 'plage'), city: '' }, // ignoré car ville vide
+  ];
+
+  const winners = G.territoryWinners(rows);
+  assert.strictEqual(winners.length, 2);
+
+  assert.strictEqual(winners[0].city, 'Lyon');
+  assert.strictEqual(winners[0].winnerId, 'a');
+  assert.strictEqual(winners[0].winnerName, 'Léa');
+  assert.strictEqual(winners[0].winnerCount, 3);
+  assert.strictEqual(winners[0].totalCount, 4);
+
+  assert.strictEqual(winners[1].city, 'Paris');
+  assert.strictEqual(winners[1].winnerId, 'b');
+  assert.strictEqual(winners[1].winnerName, 'Zoé');
+  assert.strictEqual(winners[1].winnerCount, 2);
+  assert.strictEqual(winners[1].totalCount, 3);
+});
