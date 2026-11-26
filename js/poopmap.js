@@ -398,6 +398,7 @@ window.PoopMapModule = (() => {
         const attrib = canvas.querySelector('.poopmap-attrib');
         if (attrib) attrib.textContent = mapStyle().attrib;
         drawLayer(canvas, clusters, width, height);
+        wirePins(canvas.querySelector('.poopmap-pins') || canvas, clusters);
       });
     });
   }
@@ -457,10 +458,18 @@ window.PoopMapModule = (() => {
     wireInteractions(canvas, clusters, width, height);
   }
 
-  /** Dessine tuiles + pastilles pour la vue courante. */
+  /** Dessine tuiles + pastilles pour la vue courante (en réutilisant les <img> existantes). */
   function drawLayer(canvas, clusters, width, height) {
     const layer = canvas?.querySelector('#poopmap-layer');
     if (!layer || !view) return;
+
+    let pinsEl = layer.querySelector('.poopmap-pins');
+    if (!pinsEl) {
+      pinsEl = document.createElement('div');
+      pinsEl.className = 'poopmap-pins';
+      pinsEl.style.cssText = 'position:absolute;inset:0;';
+      layer.appendChild(pinsEl);
+    }
 
     const { zoom } = view;
     const centerX = lonToTileX(view.lon, zoom) * TILE;
@@ -472,30 +481,59 @@ window.PoopMapModule = (() => {
     const x0 = Math.floor(originX / TILE), x1 = Math.floor((originX + width) / TILE);
     const y0 = Math.floor(originY / TILE), y1 = Math.floor((originY + height) / TILE);
 
-    let html = '';
+    const styleId = getMapStyle();
+    const style = MAP_STYLES[styleId];
+    const needed = new Map();
+
     for (let x = x0; x <= x1; x++) {
       for (let y = y0; y <= y1; y++) {
         if (y < 0 || y >= maxTile) continue;           // au-delà des pôles
         const wrapped = ((x % maxTile) + maxTile) % maxTile;  // tour du monde
-        const style = mapStyle();
-        html += `<img class="poopmap-tile" alt="" aria-hidden="true" loading="lazy"
-          src="${style.tile(zoom, wrapped, y)}"
-          style="left:${x * TILE - originX}px;top:${y * TILE - originY}px">`;
+        const left = (x * TILE - originX) + 'px';
+        const top = (y * TILE - originY) + 'px';
+        const key = `${styleId}/${zoom}/${x}/${y}`;
+        needed.set(key, { src: style.tile(zoom, wrapped, y), left, top });
         // Surcouche (noms de lieux, transparente) pour les styles qui en ont une.
         if (style.overlay) {
-          html += `<img class="poopmap-tile" alt="" aria-hidden="true" loading="lazy"
-            src="${style.overlay(zoom, wrapped, y)}"
-            style="left:${x * TILE - originX}px;top:${y * TILE - originY}px">`;
+          needed.set(key + '-ov', { src: style.overlay(zoom, wrapped, y), left, top });
         }
       }
     }
 
+    const existing = new Map();
+    layer.querySelectorAll('img.poopmap-tile').forEach(img => {
+      const key = img.dataset.tileKey;
+      const spec = key ? needed.get(key) : null;
+      if (spec) {
+        img.style.left = spec.left;
+        img.style.top = spec.top;
+        existing.set(key, img);
+      } else {
+        img.remove();
+      }
+    });
+
+    needed.forEach((spec, key) => {
+      if (existing.has(key)) return;
+      const img = document.createElement('img');
+      img.className = 'poopmap-tile';
+      img.alt = '';
+      img.setAttribute('aria-hidden', 'true');
+      img.loading = 'lazy';
+      img.dataset.tileKey = key;
+      img.src = spec.src;
+      img.style.left = spec.left;
+      img.style.top = spec.top;
+      layer.insertBefore(img, pinsEl);
+    });
+
+    let pinsHtml = '';
     clusters.forEach((c, i) => {
       const px = lonToTileX(c.lon, zoom) * TILE - originX;
       const py = latToTileY(c.lat, zoom) * TILE - originY;
       if (px < -40 || py < -40 || px > width + 40 || py > height + 40) return;
       const emoji = placeEmoji(c.logs.map(l => l.place).filter(Boolean)[0]);
-      html += `<button type="button" class="poopmap-pin" data-cluster="${i}"
+      pinsHtml += `<button type="button" class="poopmap-pin" data-cluster="${i}"
         style="left:${px}px;top:${py}px"
         aria-label="${c.count} caca${c.count > 1 ? 's' : ''} ici">
         <span aria-hidden="true">${emoji}</span>
@@ -503,11 +541,14 @@ window.PoopMapModule = (() => {
       </button>`;
     });
 
-    layer.innerHTML = html;
+    pinsEl.innerHTML = pinsHtml;
   }
 
   function wireInteractions(canvas, clusters, width, height) {
     if (!canvas) return;
+    const layer = canvas.querySelector('#poopmap-layer');
+    const getPinsEl = () => layer?.querySelector('.poopmap-pins') || canvas;
+    const redraw = () => { drawLayer(canvas, clusters, width, height); wirePins(getPinsEl(), clusters); };
 
     canvas.querySelectorAll('[data-map]').forEach(btn => {
       btn.addEventListener('click', e => {
@@ -515,17 +556,17 @@ window.PoopMapModule = (() => {
         const act = btn.dataset.map;
         if (act === 'reset') view = fitView(clusters, width, height);
         else view = { ...view, zoom: Math.max(2, Math.min(18, view.zoom + (act === 'in' ? 1 : -1))) };
-        drawLayer(canvas, clusters, width, height);
-        wirePins(canvas, clusters);
+        redraw();
       });
     });
 
-    // Gestes : 1 doigt = déplacement, 2 doigts = pincement (zoom autour des doigts).
-    // Un seul jeu d'événements pointer, multi-pointer (Map pointerId -> position).
+    // Gestes : 1 doigt = déplacement (GPU translate3d puis commit au relâchement),
+    // 2 doigts = pincement (zoom autour des doigts) cadencé par requestAnimationFrame.
     // Pas de setPointerCapture : il retargeterait le `click` de compatibilité
     // vers le canvas, et les pastilles ne répondraient plus.
     const pointers = new Map();
     let pinchDist = 0, pinchMX = 0, pinchMY = 0, moved = 0;
+    let totalDx = 0, totalDy = 0, panRaf = 0, pinchRaf = 0;
 
     const rel = (clientX, clientY) => {
       const r = canvas.getBoundingClientRect();
@@ -538,7 +579,15 @@ window.PoopMapModule = (() => {
       const cy = Math.max(0, Math.min(scale, latToTileY(view.lat, view.zoom) * TILE - dy));
       view = { ...view, lon: tileXToLon(cx / TILE, view.zoom), lat: tileYToLat(cy / TILE, view.zoom) };
     };
-    const redraw = () => { drawLayer(canvas, clusters, width, height); wirePins(canvas, clusters); };
+    const commitPan = () => {
+      if (panRaf) { cancelAnimationFrame(panRaf); panRaf = 0; }
+      if (layer) layer.style.transform = '';
+      if (totalDx !== 0 || totalDy !== 0) {
+        panBy(totalDx, totalDy);
+        totalDx = 0; totalDy = 0;
+        redraw();
+      }
+    };
 
     const onMove = e => {
       if (!pointers.has(e.pointerId) || !view) return;
@@ -549,26 +598,44 @@ window.PoopMapModule = (() => {
       if (pointers.size === 1) {
         // Seuil : un doigt tremble toujours un peu, sinon le clic est perdu.
         moved += Math.abs(dx) + Math.abs(dy);
-        if (moved > 4) { panBy(dx, dy); redraw(); }
+        if (moved > 4) {
+          totalDx += dx; totalDy += dy;
+          if (!panRaf) {
+            panRaf = requestAnimationFrame(() => {
+              panRaf = 0;
+              if (layer) layer.style.transform = `translate3d(${totalDx}px, ${totalDy}px, 0)`;
+            });
+          }
+        }
       } else if (pointers.size === 2) {
-        const [a, b] = [...pointers.values()];
-        const dist = Math.hypot(a.x - b.x, a.y - b.y);
-        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-        if (pinchDist > 0 && dist > 0) {
-          const r = rel(mx, my);
-          const factor = dist / pinchDist;
-          const nv = zoomAroundView(view, r.x, r.y, view.zoom + Math.log2(factor), width, height);
-          if (nv !== view) view = nv;
-          panBy(mx - pinchMX, my - pinchMY);
-          pinchDist = dist; pinchMX = mx; pinchMY = my;
-          redraw();
+        if (!pinchRaf) {
+          pinchRaf = requestAnimationFrame(() => {
+            pinchRaf = 0;
+            if (pointers.size !== 2 || !view) return;
+            const [a, b] = [...pointers.values()];
+            const dist = Math.hypot(a.x - b.x, a.y - b.y);
+            const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+            if (pinchDist > 0 && dist > 0) {
+              const r = rel(mx, my);
+              const factor = dist / pinchDist;
+              const nv = zoomAroundView(view, r.x, r.y, view.zoom + Math.log2(factor), width, height);
+              if (nv !== view) view = nv;
+              panBy(mx - pinchMX, my - pinchMY);
+              pinchDist = dist; pinchMX = mx; pinchMY = my;
+              redraw();
+            }
+          });
         }
       }
     };
     const onUp = e => {
       pointers.delete(e.pointerId);
-      if (pointers.size < 2) pinchDist = 0;
+      if (pointers.size < 2) {
+        if (pinchRaf) { cancelAnimationFrame(pinchRaf); pinchRaf = 0; }
+        pinchDist = 0;
+      }
       if (pointers.size === 0) {
+        commitPan();
         window.removeEventListener('pointermove', onMove);
         window.removeEventListener('pointerup', onUp);
         window.removeEventListener('pointercancel', onUp);
@@ -583,21 +650,23 @@ window.PoopMapModule = (() => {
         window.addEventListener('pointerup', onUp);
         window.addEventListener('pointercancel', onUp);
         moved = 0;
+        totalDx = 0; totalDy = 0;
       }
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pointers.size === 2) {
+        commitPan();
         const [a, b] = [...pointers.values()];
         pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
         pinchMX = (a.x + b.x) / 2; pinchMY = (a.y + b.y) / 2;
       }
     });
 
-    wirePins(canvas, clusters);
+    wirePins(getPinsEl(), clusters);
     wireStyleSwitcher(canvas, clusters, width, height);
   }
 
-  function wirePins(canvas, clusters) {
-    canvas.querySelectorAll('.poopmap-pin').forEach(pin => {
+  function wirePins(container, clusters) {
+    container?.querySelectorAll('.poopmap-pin').forEach(pin => {
       pin.addEventListener('click', e => {
         e.stopPropagation();
         showCluster(clusters[Number(pin.dataset.cluster)]);
