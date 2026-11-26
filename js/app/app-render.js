@@ -150,17 +150,19 @@ function renderHistory() {
     const dt = new Date(log.date).toLocaleString('fr-FR', {weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
     const icon = textureEmoji(log.texture);
     const retroTag = log.isRetro ? `<span class="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full ml-1 font-bold">⏪ retard</span>` : '';
+    const hasGeo = !!window.PoopMapModule?.hasGeo(log);
     const placeMeta = window.PoopMapModule?.placeMeta(log.place);
-    const placeTag = placeMeta
-      ? `<span class="text-xs px-2 py-0.5 rounded-full mr-1" style="background:color-mix(in srgb,var(--accent) 12%,transparent)">${placeMeta.emoji} ${esc(placeMeta.label)}${window.PoopMapModule.hasGeo(log) ? ' 📍' : ''}</span>`
-      : '';
     const chip = txt => `<span class="text-xs px-2 py-0.5 rounded-full mr-1" style="background:color-mix(in srgb,var(--accent) 12%,transparent)">${txt}</span>`;
+    const placeTag = placeMeta
+      ? chip(`${placeMeta.emoji} ${esc(placeMeta.label)}${hasGeo ? ' 📍' : ''}`)
+      : (hasGeo ? chip('📍 Géolocalisé') : '');
+    const cornTag = log.corn ? chip('🌽 Maïs') : '';
     const dureeTag = typeof validDuration === 'function' && validDuration(log.duration) !== null
       ? chip('⏱️ ' + formatDuration(log.duration)) : '';
     const santeTags = (Array.isArray(log.health) ? log.health : [])
       .map(t => typeof healthTagMeta === 'function' ? healthTagMeta(t) : null).filter(Boolean)
       .map(m => chip(`${m.emoji} ${esc(m.label)}`)).join('');
-    const note = placeTag + dureeTag + santeTags + (log.mood ? `<span class="text-xs px-2 py-0.5 rounded-full mr-1" style="background:color-mix(in srgb,var(--accent) 12%,transparent)">${{normal:'😊',douloureux:'😫',urgent:'⚡',difficile:'😴'}[log.mood] || ''} ${log.mood}</span>` : '') + (log.comment ? `<div class="text-xs mt-1 bg-amber-100 text-amber-800 px-2 py-1 rounded-xl">${esc(log.comment)}</div>` : '');
+    const note = placeTag + cornTag + dureeTag + santeTags + (log.mood ? `<span class="text-xs px-2 py-0.5 rounded-full mr-1" style="background:color-mix(in srgb,var(--accent) 12%,transparent)">${{normal:'😊',douloureux:'😫',urgent:'⚡',difficile:'😴'}[log.mood] || ''} ${log.mood}</span>` : '') + (log.comment ? `<div class="text-xs mt-1 bg-amber-100 text-amber-800 px-2 py-1 rounded-xl">${esc(log.comment)}</div>` : '');
     return `<div class="card flex items-center gap-3 p-4 rounded-[1.5rem] shadow">
       <div class="w-12 h-12 rounded-[1rem] flex items-center justify-center text-2xl flex-shrink-0"
         style="background:linear-gradient(135deg,var(--header-from),var(--header-to))">${icon}</div>

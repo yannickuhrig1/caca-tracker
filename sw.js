@@ -1,4 +1,4 @@
-const CACHE = 'caca-v58';
+const CACHE = 'caca-v59';
 const TILES_CACHE = 'caca-tiles-v1';
 const TILES_MAX = 250;
 const ASSETS = [

@@ -187,7 +187,9 @@ function refreshSaisieSanteBadge() {
 
 function switchSaisieMode(mode = 'express') {
   const target = mode === 'sante' ? 'sante' : 'express';
-  $id('saisie-pane-express')?.classList.toggle('hidden', target !== 'express');
+  // En mode Santé & Détails, on conserve les champs Express visibles au-dessus
+  // (texture, couleur, lieu, position GPS, retard) pour ne rien perdre à la saisie.
+  $id('saisie-pane-express')?.classList.remove('hidden');
   $id('saisie-pane-sante')?.classList.toggle('hidden', target !== 'sante');
   document.querySelectorAll('.saisie-mode-btn').forEach(btn => {
     const on = btn.dataset.saisieMode === target;
