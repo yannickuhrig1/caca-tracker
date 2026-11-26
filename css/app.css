@@ -415,6 +415,57 @@ nav {
 [data-theme="neon"] .poop-btn { box-shadow:0 14px 0 0 #007a40; }
 [data-theme="neon"] .texture-btn.selected { border-color:#00ff88!important; background:#001a0a!important; }
 
+[data-theme="royaume-dore"] {
+  --bg-from:#fef9e7; --bg-via:#fdf0c4; --bg-to:#fbe39d;
+  --header-from:#b45309; --header-to:#d97706;
+  --card-bg:rgba(255,252,240,0.86); --card-border:rgba(180,83,9,0.25);
+  --surface-solid:#fffcf0; --surface-muted:#fef3c7;
+  --text-primary:#1c1002; --text-secondary:#6b420c;
+  --nav-bg:rgba(254,249,231,0.97); --btn-shadow:#92400e; --accent:#d97706;
+  --font:'Fredoka',system-ui,sans-serif;
+}
+[data-theme="royaume-dore"] .poop-btn { box-shadow:0 14px 0 0 #92400e; }
+[data-theme="royaume-dore"] .texture-btn.selected { border-color:#d97706!important; background:#fef3c7!important; }
+
+[data-theme="synthwave"] {
+  --bg-from:#140826; --bg-via:#1f0a3c; --bg-to:#0d041a;
+  --header-from:#ff2a85; --header-to:#7928ca;
+  --card-bg:rgba(24,10,48,0.82); --card-border:rgba(255,42,133,0.35);
+  --surface-solid:#180a30; --surface-muted:#140826;
+  --text-primary:#f8e8ff; --text-secondary:#ff85c0;
+  --nav-bg:rgba(18,7,36,0.97); --btn-shadow:#9d174d; --accent:#ff2a85;
+  --font:'Space Mono',monospace;
+}
+[data-theme="synthwave"] .poop-btn { box-shadow:0 14px 0 0 #9d174d; }
+[data-theme="synthwave"] .texture-btn { background:#180a30; border-color:rgba(255,42,133,0.4); color:#f8e8ff; }
+[data-theme="synthwave"] .texture-btn.selected { border-color:#ff2a85!important; background:#2d0f4e!important; }
+[data-theme="synthwave"] .text-slate-600 { color:#ff85c0; }
+[data-theme="synthwave"] .text-slate-700 { color:#f0abfc; }
+[data-theme="synthwave"] .text-slate-800, [data-theme="synthwave"] .text-slate-900 { color:#f8e8ff; }
+[data-theme="synthwave"] .text-slate-500, [data-theme="synthwave"] .text-gray-400, [data-theme="synthwave"] .text-gray-500 { color:#c084fc; }
+[data-theme="synthwave"] .bg-white { background:#180a30 !important; }
+[data-theme="synthwave"] .bg-white\/60, [data-theme="synthwave"] .bg-white\/70 { background:rgba(24,10,48,0.82) !important; }
+[data-theme="synthwave"] .bg-gray-50, [data-theme="synthwave"] .bg-gray-100 { background:#140826; }
+[data-theme="synthwave"] .bg-gray-200 { background:#2d0f4e; }
+[data-theme="synthwave"] .border-gray-100, [data-theme="synthwave"] .border-gray-200 { border-color:rgba(255,42,133,0.25); }
+[data-theme="synthwave"] .border-b { border-color:rgba(255,42,133,0.2); }
+[data-theme="synthwave"] #drawer-inner { background:var(--surface-solid); color:var(--text-primary); }
+[data-theme="synthwave"] textarea, [data-theme="synthwave"] input[type="datetime-local"], [data-theme="synthwave"] input[type="number"], [data-theme="synthwave"] #drawer-inner input[type="text"] {
+  background:#140826; color:#f8e8ff; border-color:rgba(255,42,133,0.4);
+}
+
+[data-theme="matcha"] {
+  --bg-from:#f2f8ec; --bg-via:#e4f1d8; --bg-to:#d5e8c4;
+  --header-from:#4d7c0f; --header-to:#65a30d;
+  --card-bg:rgba(255,255,255,0.86); --card-border:rgba(77,124,15,0.22);
+  --surface-solid:#fafdf7; --surface-muted:#ecf5e3;
+  --text-primary:#1a2e05; --text-secondary:#3f6212;
+  --nav-bg:rgba(242,248,236,0.97); --btn-shadow:#365314; --accent:#65a30d;
+  --font:'Fredoka',system-ui,sans-serif;
+}
+[data-theme="matcha"] .poop-btn { box-shadow:0 14px 0 0 #365314; }
+[data-theme="matcha"] .texture-btn.selected { border-color:#65a30d!important; background:#e4f1d8!important; }
+
 /* ===================== INSTALL BANNER ===================== */
 #install-banner {
   position: fixed; bottom: max(80px, env(safe-area-inset-bottom,0px) + 80px);

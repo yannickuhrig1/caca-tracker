@@ -78,7 +78,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const saved = loadState();
   if (saved?.logs && Array.isArray(saved.logs)) state = { ...state, ...saved };
 
-  // Theme
+  // Theme (dont mode auto Jour/Nuit)
+  if (typeof applyTheme === 'function') {
+    const _baseApplyTheme = applyTheme;
+    window.applyTheme = function(t) {
+      const resolved = t === 'auto'
+        ? (window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ? 'dark' : 'default')
+        : t;
+      _baseApplyTheme(resolved);
+      if (t === 'auto') {
+        document.querySelectorAll('[data-theme-btn]').forEach(b => {
+          b.classList.toggle('selected', b.dataset.themeBtn === 'auto');
+        });
+      }
+    };
+  }
+  const darkMq = window.matchMedia?.('(prefers-color-scheme: dark)');
+  darkMq?.addEventListener?.('change', () => {
+    if (state.theme === 'auto') applyTheme('auto');
+  });
   applyTheme(state.theme || 'default');
   applyAutoNight();
   setInterval(() => { applyAutoNight(); checkCustomReminder(); }, 60000);
