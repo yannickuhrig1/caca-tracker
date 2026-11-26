@@ -205,3 +205,34 @@ test('territoryWinners : désigne le membre dominant par ville et trie par volum
   assert.strictEqual(winners[1].winnerCount, 2);
   assert.strictEqual(winners[1].totalCount, 3);
 });
+
+test('localLegends : seuil >= 2 et gagnant majoritaire sur un spot dans la fenêtre de jours', () => {
+  assert.strictEqual(Object.keys(G.localLegends(null)).length, 0);
+  assert.strictEqual(Object.keys(G.localLegends([])).length, 0);
+
+  const now = 1700000000000;
+  const dayMs = 86400 * 1000;
+  const at = (userId, username, lat, lon, daysBack) => ({
+    ...row(userId, username, lat, lon, 'spot'),
+    date: now - daysBack * dayMs,
+  });
+
+  const rows = [
+    // Spot A (48.850/2.350) : Léa a 3 passages récents, Zoé a 2 passages récents -> Léa gagne
+    at('a', 'Léa', 48.8501, 2.3501, 1),
+    at('a', 'Léa', 48.8502, 2.3502, 2),
+    at('a', 'Léa', 48.8503, 2.3503, 3),
+    at('b', 'Zoé', 48.8501, 2.3501, 1),
+    at('b', 'Zoé', 48.8502, 2.3502, 4),
+    // Spot B (45.760/4.830) : Mia a 1 seul passage récent (< 2) et 2 trop anciens (> 30j) -> pas de légende
+    at('c', 'Mia', 45.7601, 4.8301, 2),
+    at('c', 'Mia', 45.7601, 4.8301, 40),
+    at('c', 'Mia', 45.7601, 4.8301, 45),
+  ];
+
+  const legends = G.localLegends(rows, 30, now);
+  assert.deepStrictEqual(Object.keys(legends).slice(), ['48.850/2.350']);
+  assert.strictEqual(legends['48.850/2.350'].userId, 'a');
+  assert.strictEqual(legends['48.850/2.350'].username, 'Léa');
+  assert.strictEqual(legends['48.850/2.350'].count, 3);
+});
