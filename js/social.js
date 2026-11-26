@@ -111,6 +111,8 @@ const SocialModule = (() => {
     guest.classList.add('hidden');
     connected.classList.remove('hidden');
 
+    ensureDrawerGeoToggle();
+    applySharingToggles();
     initRealtime();
     await renderGroupList();
   }
@@ -1448,7 +1450,9 @@ const SocialModule = (() => {
       if (e.target === e.currentTarget) document.getElementById('member-modal').classList.add('hidden');
     });
 
-    // Réglages de partage (profil)
+    // Réglages de partage (profil + tiroir groupe)
+    ensureDrawerGeoToggle();
+    applySharingToggles();
     document.getElementById('geo-share-toggle')?.addEventListener('click', toggleGeoSharing);
     document.getElementById('stats-share-toggle')?.addEventListener('click', toggleStatsSharing);
   });
@@ -1568,15 +1572,44 @@ const SocialModule = (() => {
     }
   }
 
-  // Réglages de partage (profil) : position + stats détaillées
+  // Réglages de partage (profil + tiroir #groups-drawer) : position + stats détaillées
+  function ensureDrawerGeoToggle() {
+    if (document.getElementById('drawer-geo-share-toggle')) return;
+    const drawer = document.getElementById('groups-drawer');
+    const body = drawer?.querySelector('div');
+    if (!body) return;
+    const row = document.createElement('div');
+    row.className = 'flex items-center justify-between gap-2 pt-2 border-t';
+    row.style.borderColor = 'var(--card-border)';
+    row.innerHTML = `
+      <div class="min-w-0">
+        <div class="text-xs font-bold">📍 Partager mes cacas sur la carte du groupe</div>
+        <div class="text-[11px] opacity-60">Visible uniquement par les membres du groupe</div>
+      </div>
+      <button type="button" id="drawer-geo-share-toggle" role="switch" aria-checked="false"
+        aria-label="Partager mes cacas sur la carte du groupe"
+        class="w-11 h-6 rounded-full transition-colors relative shrink-0"
+        style="background:rgba(0,0,0,0.15)">
+        <span id="drawer-geo-share-knob"
+          class="block w-5 h-5 rounded-full bg-white shadow transition-transform translate-x-0.5"></span>
+      </button>`;
+    const shareWrap = document.getElementById('share-app-btn')?.parentElement;
+    if (shareWrap && shareWrap.parentElement === body) body.insertBefore(row, shareWrap);
+    else body.appendChild(row);
+    row.querySelector('#drawer-geo-share-toggle')?.addEventListener('click', toggleGeoSharing);
+  }
+
   function applySharingToggles() {
-    const geoOn   = window.SupabaseClient.geoSharingEnabled();
-    const statsOn = window.SupabaseClient.detailedStatsEnabled();
+    const geoOn   = !!window.SupabaseClient?.geoSharingEnabled?.();
+    const statsOn = !!window.SupabaseClient?.detailedStatsEnabled?.();
     const gBtn = document.getElementById('geo-share-toggle');
     const gKnob = document.getElementById('geo-share-knob');
+    const dBtn = document.getElementById('drawer-geo-share-toggle');
+    const dKnob = document.getElementById('drawer-geo-share-knob');
     const sBtn = document.getElementById('stats-share-toggle');
     const sKnob = document.getElementById('stats-share-knob');
-    if (gBtn) { gBtn.style.background = geoOn ? 'var(--accent)' : 'rgba(0,0,0,0.15)'; if (gKnob) gKnob.style.transform = geoOn ? 'translateX(20px)' : 'translateX(0)'; }
+    if (gBtn) { gBtn.style.background = geoOn ? 'var(--accent)' : 'rgba(0,0,0,0.15)'; gBtn.setAttribute('aria-checked', String(geoOn)); if (gKnob) gKnob.style.transform = geoOn ? 'translateX(20px)' : 'translateX(0)'; }
+    if (dBtn) { dBtn.style.background = geoOn ? 'var(--accent)' : 'rgba(0,0,0,0.15)'; dBtn.setAttribute('aria-checked', String(geoOn)); if (dKnob) dKnob.style.transform = geoOn ? 'translateX(20px)' : 'translateX(0)'; }
     if (sBtn) { sBtn.style.background = statsOn ? 'var(--accent)' : 'rgba(0,0,0,0.15)'; if (sKnob) sKnob.style.transform = statsOn ? 'translateX(20px)' : 'translateX(0)'; }
   }
 
@@ -1644,7 +1677,7 @@ const SocialModule = (() => {
   // Le groupe affiché — la rareté des badges (onglet Badges) en a besoin.
   const currentGroupId = () => _activeGroupId;
 
-  return { renderSocialTab, openProfileModal, afterLogin, currentGroupId, setSocialPane, switchSocialPane, refreshGameBoard: () => _gameBoard.groupId && _activeGroupId === _gameBoard.groupId && renderGameBoard(_activeGroupId) };
+  return { renderSocialTab, openProfileModal, afterLogin, applySharingToggles, currentGroupId, setSocialPane, switchSocialPane, refreshGameBoard: () => _gameBoard.groupId && _activeGroupId === _gameBoard.groupId && renderGameBoard(_activeGroupId) };
 
 })();
 

@@ -20,7 +20,26 @@ window.GroupMapModule = (() => {
   const MEMBER_COLORS = ['#f43f5e','#f59e0b','#10b981','#3b82f6','#8b5cf6',
                          '#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#e11d48','#0ea5e9'];
 
+  const TEST_USER_ID = 'test-user-poopmap';
+
   // ---- fonctions pures (testées) ----
+
+  /** Données fictives d'un membre test pour vérifier visuellement la carte multi-couleurs. */
+  function getTestRows(now = Date.now()) {
+    const h = 3600 * 1000;
+    return [
+      { id: 'test-1', user_id: TEST_USER_ID, username: 'Testeur', avatar: '🦊', date: now - 2 * h,   texture: 'normal', color: 'marron', place: 'boulot', lat: 48.8566, lon: 2.3522 },
+      { id: 'test-2', user_id: TEST_USER_ID, username: 'Testeur', avatar: '🦊', date: now - 14 * h,  texture: 'moule',  color: 'marron', place: 'resto',  lat: 48.8566, lon: 2.3522 },
+      { id: 'test-3', user_id: TEST_USER_ID, username: 'Testeur', avatar: '🦊', date: now - 28 * h,  texture: 'dur',    color: 'fonce',  place: 'train',  lat: 45.7640, lon: 4.8357 },
+      { id: 'test-4', user_id: TEST_USER_ID, username: 'Testeur', avatar: '🦊', date: now - 54 * h,  texture: 'normal', color: 'marron', place: 'parc',   lat: 43.2965, lon: 5.3698 },
+      { id: 'test-5', user_id: TEST_USER_ID, username: 'Testeur', avatar: '🦊', date: now - 96 * h,  texture: 'mou',    color: 'clair',  place: 'maison', lat: 44.8378, lon: -0.5792 },
+    ];
+  }
+
+  /** Fusionne les cacas réels du groupe avec ceux du membre fictif. */
+  function mergeTestRows(rows, now = Date.now()) {
+    return [...(Array.isArray(rows) ? rows : []), ...getTestRows(now)];
+  }
 
   /** user_id -> couleur stable, dans l'ordre des membres. */
   function memberColorMap(rows) {
@@ -65,6 +84,73 @@ window.GroupMapModule = (() => {
     ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 
   let view = null;
+  let _testMode = false;
+  let _currentGroupId = null;
+
+  const isTestMode = () => _testMode;
+  const setTestMode = enabled => { _testMode = !!enabled; return _testMode; };
+
+  function ensureToolbar() {
+    let bar = document.getElementById('group-map-toolbar');
+    if (bar) return bar;
+    const legendEl = document.getElementById('group-map-legend');
+    const parent = legendEl?.parentElement;
+    if (!parent) return null;
+    bar = document.createElement('div');
+    bar.id = 'group-map-toolbar';
+    bar.className = 'flex flex-wrap items-center justify-between gap-2';
+    parent.insertBefore(bar, legendEl);
+    return bar;
+  }
+
+  function renderToolbar() {
+    const bar = ensureToolbar();
+    if (!bar) return;
+    const geoOn = !!window.SupabaseClient?.geoSharingEnabled?.();
+    const shareStyle = geoOn
+      ? 'background:var(--accent);color:#fff;border:1px solid var(--accent)'
+      : 'background:var(--card-bg);color:var(--text-primary);border:1px solid var(--card-border)';
+    const testStyle = _testMode
+      ? 'background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent);border:1px solid var(--accent)'
+      : 'background:var(--card-bg);color:var(--text-primary);border:1px solid var(--card-border);opacity:0.8';
+
+    bar.innerHTML = `
+      <button type="button" id="group-map-share-btn"
+        class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
+        style="${shareStyle}" aria-pressed="${geoOn}">
+        ${geoOn ? '📍 Position partagée ✓' : '📍 Partager ma position avec le groupe'}
+      </button>
+      <button type="button" id="group-map-test-btn"
+        class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
+        style="${testStyle}" aria-pressed="${_testMode}">
+        ${_testMode ? '🧪 Membre fictif actif ✓' : '🧪 Tester avec un membre fictif'}
+      </button>`;
+
+    const shareBtn = bar.querySelector('#group-map-share-btn');
+    shareBtn?.addEventListener('click', async () => {
+      if (!window.SupabaseClient?.setGeoSharing) return;
+      shareBtn.disabled = true;
+      try {
+        const next = !window.SupabaseClient.geoSharingEnabled?.();
+        await window.SupabaseClient.setGeoSharing(next);
+        window.SocialModule?.applySharingToggles?.();
+        window.UI?.toast?.(next
+          ? 'Ta position est maintenant visible sur la carte du groupe 📍'
+          : 'Ta position n\'est plus partagée', 'success');
+        if (_currentGroupId) await open(_currentGroupId);
+        else renderToolbar();
+      } catch (e) {
+        window.UI?.toast?.(e.message || 'Impossible de modifier le partage', 'error');
+        shareBtn.disabled = false;
+      }
+    });
+
+    bar.querySelector('#group-map-test-btn')?.addEventListener('click', () => {
+      _testMode = !_testMode;
+      if (_currentGroupId) open(_currentGroupId);
+      else renderToolbar();
+    });
+  }
 
   function renderLegend(groups, colors) {
     const el = document.getElementById('group-map-legend');
@@ -182,9 +268,8 @@ window.GroupMapModule = (() => {
       }
     }
 
-    let gi = 0, ci = 0;
-    groups.forEach(g => {
-      g.clusters.forEach(c => {
+    groups.forEach((g, gi) => {
+      g.clusters.forEach((c, ci) => {
         const px = PMm.lonToTileX(c.lon, zoom) * 256 - originX;
         const py = PMm.latToTileY(c.lat, zoom) * 256 - originY;
         if (px < -40 || py < -40 || px > width + 40 || py > height + 40) return;
@@ -195,9 +280,7 @@ window.GroupMapModule = (() => {
           <span aria-hidden="true">${emoji}</span>
           ${c.count > 1 ? `<span class="poopmap-pin-count">${c.count}</span>` : ''}
         </button>`;
-        ci++;
       });
-      gi++; ci = 0;
     });
 
     layer.innerHTML = html;
@@ -319,28 +402,33 @@ window.GroupMapModule = (() => {
   async function open(groupId) {
     const modal = document.getElementById('group-map-modal');
     if (!modal) return;
+    _currentGroupId = groupId;
 
     document.getElementById('group-map-members').textContent = '';
+    const legendEl = document.getElementById('group-map-legend');
+    if (legendEl) legendEl.innerHTML = '';
+    renderToolbar();
     const mapEl = document.getElementById('group-map-map');
     if (mapEl) mapEl.innerHTML = '<div class="text-center text-sm opacity-50 py-6">Chargement de la carte…</div>';
 
     modal.classList.remove('hidden');
 
     const rows = await window.SupabaseClient.getGroupGeoPoops(groupId, 30).catch(() => null);
-    const summary = groupGeoSummary(rows);
+    const effectiveRows = _testMode ? mergeTestRows(rows) : rows;
+    const summary = groupGeoSummary(effectiveRows);
     document.getElementById('group-map-members').textContent =
       `${summary.members} membre${summary.members > 1 ? 's' : ''} · ${summary.total} caca${summary.total > 1 ? 's' : ''} · ${summary.spots} spot${summary.spots > 1 ? 's' : ''}`;
 
-    if (!rows || !summary.total) {
+    if (!effectiveRows || !summary.total) {
       if (mapEl) mapEl.innerHTML = `
         <div class="text-center text-sm opacity-60 py-8">
-          ${emptyStateHTML(rows === null, window.SupabaseClient?.geoSharingEnabled?.())}
+          ${emptyStateHTML(rows === null && !_testMode, window.SupabaseClient?.geoSharingEnabled?.())}
         </div>`;
       return;
     }
 
-    const colors = memberColorMap(rows);
-    const groups = clusterByMember(rows);
+    const colors = memberColorMap(effectiveRows);
+    const groups = clusterByMember(effectiveRows);
     renderLegend(groups, colors);
     renderMap(groups, colors, mapEl);
   }
@@ -357,5 +445,9 @@ window.GroupMapModule = (() => {
     });
   });
 
-  return { memberColorMap, groupGeoSummary, clusterByMember, allPoints, emptyStateHTML, open, close };
+  return {
+    memberColorMap, groupGeoSummary, clusterByMember, allPoints, emptyStateHTML,
+    TEST_USER_ID, getTestRows, mergeTestRows, isTestMode, setTestMode,
+    open, close,
+  };
 })();
