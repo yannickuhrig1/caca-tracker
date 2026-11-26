@@ -95,7 +95,6 @@ function bindPoopDockButton(btn) {
 }
 
 function setupEvents() {
-  $id('poop-btn').addEventListener('click', openDrawer);
   bindPoopDockButton($id('dock-poop-btn'));
   bindPoopDockButton($id('sidebar-poop-btn'));
 
@@ -206,6 +205,10 @@ function setupEvents() {
   $id('geo-btn')?.addEventListener('click', async () => {
     const btn = $id('geo-btn');
     const status = $id('geo-status');
+    if (window.PoopMapModule && !window.PoopMapModule.geoEnabled()) {
+      window.PoopMapModule.setGeoEnabled(true);
+      if (typeof refreshPoopMapSettings === 'function') refreshPoopMapSettings();
+    }
     btn.disabled = true;
     btn.textContent = '📍 Localisation…';
     try {

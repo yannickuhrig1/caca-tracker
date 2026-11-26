@@ -385,11 +385,11 @@ function buildPlaceGrid() {
     </button>`).join('');
 }
 
-// Le bouton 📍 n'existe que si la position est autorisée dans les Réglages.
+// Le bouton 📍 reste toujours visible dans la saisie Express.
 function refreshGeoButton() {
   const btn = $id('geo-btn');
   if (!btn) return;
-  btn.classList.toggle('hidden', !window.PoopMapModule?.geoEnabled());
+  btn.classList.remove('hidden');
   const status = $id('geo-status');
   if (status && !pendingGeo) status.textContent = '';
 }
